@@ -82,7 +82,7 @@ message Access {
 
   // Whose personal data the call carried, by identifier, at most a thousand of
   // them -- and how many there were.
-  repeated bytes subjects = 20;
+  repeated bytes subjects = 20 [(orm.field) = {type: TYPE_UUID}];
   uint32 subject_count = 21;
 
   option (orm.message) = {

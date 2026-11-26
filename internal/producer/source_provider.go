@@ -183,7 +183,10 @@ func providerError(err error) error {
 			return safe
 		}
 	}
-	if code := status.Code(err); code != codes.Unknown {
+	// Unknown is an error that is no status, here or at an older CP; a CP
+	// answers one of its own that carried none as Internal now, and it is
+	// the same thing.
+	if code := status.Code(err); code != codes.Unknown && code != codes.Internal {
 		return status.Error(code, "source catalog request failed")
 	}
 	return catalog.ErrUnavailable

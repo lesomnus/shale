@@ -101,7 +101,9 @@ message CameraPreset {
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
   option (orm.message) = {
-    rpc: {crud: true}
+    // Made by the core layer when a preset is published; never changed in
+    // place.
+    rpc: {add: {}, get: {}}
     indexes: [
       {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
       {name: "revision" refs: [{name: "tenant", number: 2}, {name: "preset_key", number: 8}, {name: "revision", number: 9}] unique: true includes_erased: true}

@@ -42,7 +42,8 @@ message SiteMember {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // Made and taken away; nothing patches a membership.
+    rpc: {add: {}, get: {}, erase: {}}
     indexes: [
       {
         name: "page"

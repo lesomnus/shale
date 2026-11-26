@@ -79,6 +79,18 @@ func (_c *OutboxCreate) SetEvent(v []byte) *OutboxCreate {
 	return _c
 }
 
+// SetRoutes sets the "routes" field.
+func (_c *OutboxCreate) SetRoutes(v []byte) *OutboxCreate {
+	_c.mutation.SetRoutes(v)
+	return _c
+}
+
+// SetSignal sets the "signal" field.
+func (_c *OutboxCreate) SetSignal(v []byte) *OutboxCreate {
+	_c.mutation.SetSignal(v)
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *OutboxCreate) SetId(v uuid.UUID) *OutboxCreate {
 	_c.mutation.SetId(v)
@@ -222,6 +234,14 @@ func (_c *OutboxCreate) createSpec() (*Outbox, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Event(); ok {
 		_spec.SetField(outbox.FieldEvent, field.TypeBytes, value)
 		_node.Event = &value
+	}
+	if value, ok := _c.mutation.Routes(); ok {
+		_spec.SetField(outbox.FieldRoutes, field.TypeBytes, value)
+		_node.Routes = &value
+	}
+	if value, ok := _c.mutation.Signal(); ok {
+		_spec.SetField(outbox.FieldSignal, field.TypeBytes, value)
+		_node.Signal = &value
 	}
 	return _node, _spec
 }

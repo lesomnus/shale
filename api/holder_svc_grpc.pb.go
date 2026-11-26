@@ -22,7 +22,6 @@ const (
 	HolderService_Add_FullMethodName           = "/shale.HolderService/Add"
 	HolderService_Get_FullMethodName           = "/shale.HolderService/Get"
 	HolderService_Patch_FullMethodName         = "/shale.HolderService/Patch"
-	HolderService_Apply_FullMethodName         = "/shale.HolderService/Apply"
 	HolderService_Erase_FullMethodName         = "/shale.HolderService/Erase"
 	HolderService_List_FullMethodName          = "/shale.HolderService/List"
 	HolderService_Watch_FullMethodName         = "/shale.HolderService/Watch"
@@ -39,23 +38,29 @@ type HolderServiceClient interface {
 	Get(ctx context.Context, in *HolderGetRequest, opts ...grpc.CallOption) (*Holder, error)
 	// Patch updates an existing Holder
 	Patch(ctx context.Context, in *HolderPatchRequest, opts ...grpc.CallOption) (*Holder, error)
-	// Apply applies a patch document to an existing Holder
-	Apply(ctx context.Context, in *HolderApplyRequest, opts ...grpc.CallOption) (*Holder, error)
 	// Erase deletes a Holder
 	Erase(ctx context.Context, in *HolderRef, opts ...grpc.CallOption) (*HolderEraseResponse, error)
 	// List reads Holders a page at a time.
 	List(ctx context.Context, in *HolderListRequest, opts ...grpc.CallOption) (*HolderListResponse, error)
 	// Watch the Holders this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *HolderWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HolderWatchResponse], error)
 	// IssuePassword gives a person a fresh password, replacing whatever they
 	// had, and answers it once. Only a person who sees every site may, and
@@ -96,16 +101,6 @@ func (c *holderServiceClient) Patch(ctx context.Context, in *HolderPatchRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Holder)
 	err := c.cc.Invoke(ctx, HolderService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *holderServiceClient) Apply(ctx context.Context, in *HolderApplyRequest, opts ...grpc.CallOption) (*Holder, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Holder)
-	err := c.cc.Invoke(ctx, HolderService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,23 +166,29 @@ type HolderServiceServer interface {
 	Get(context.Context, *HolderGetRequest) (*Holder, error)
 	// Patch updates an existing Holder
 	Patch(context.Context, *HolderPatchRequest) (*Holder, error)
-	// Apply applies a patch document to an existing Holder
-	Apply(context.Context, *HolderApplyRequest) (*Holder, error)
 	// Erase deletes a Holder
 	Erase(context.Context, *HolderRef) (*HolderEraseResponse, error)
 	// List reads Holders a page at a time.
 	List(context.Context, *HolderListRequest) (*HolderListResponse, error)
 	// Watch the Holders this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*HolderWatchRequest, grpc.ServerStreamingServer[HolderWatchResponse]) error
 	// IssuePassword gives a person a fresh password, replacing whatever they
 	// had, and answers it once. Only a person who sees every site may, and
@@ -212,9 +213,6 @@ func (UnimplementedHolderServiceServer) Get(context.Context, *HolderGetRequest) 
 }
 func (UnimplementedHolderServiceServer) Patch(context.Context, *HolderPatchRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedHolderServiceServer) Apply(context.Context, *HolderApplyRequest) (*Holder, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedHolderServiceServer) Erase(context.Context, *HolderRef) (*HolderEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -303,24 +301,6 @@ func _HolderService_Patch_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HolderService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HolderApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HolderServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HolderService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HolderServiceServer).Apply(ctx, req.(*HolderApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _HolderService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HolderRef)
 	if err := dec(in); err != nil {
@@ -404,10 +384,6 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _HolderService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _HolderService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

@@ -5,18 +5,13 @@ package bare
 
 import (
 	context "context"
-	errors "errors"
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
 	audit "github.com/lesomnus/shale/internal/ent/audit"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
-	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -34,11 +29,14 @@ type AuditServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewAuditServiceServer(db *ent.Client, opts ...Option) api.AuditServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return AuditServiceServer{Store: s.Store}
 }
@@ -125,6 +123,23 @@ func (st AuditServiceServer) create(ctx context.Context, req *api.AuditAddReques
 	} else {
 		q.SetActorId(v)
 	}
+	if req.HasCallerId() {
+		if v, err := entuuid.FromBytes(req.GetCallerId()); err != nil {
+			return nil, nil, status.Errorf(codes.InvalidArgument, "caller_id: %s", err)
+		} else {
+			q.SetCallerId(v)
+		}
+	}
+	if req.HasCallerTenantId() {
+		if v, err := entuuid.FromBytes(req.GetCallerTenantId()); err != nil {
+			return nil, nil, status.Errorf(codes.InvalidArgument, "caller_tenant_id: %s", err)
+		} else {
+			q.SetCallerTenantId(v)
+		}
+	}
+	if req.HasPresence() {
+		q.SetPresence(req.GetPresence())
+	}
 	q.SetTraceId(req.GetTraceId())
 	q.SetAction(req.GetAction())
 	if v, err := entuuid.FromBytes(req.GetObjectId()); err != nil {
@@ -171,7 +186,10 @@ func (st AuditServiceServer) create(ctx context.Context, req *api.AuditAddReques
 }
 
 func (s AuditServiceServer) Add(ctx context.Context, req *api.AuditAddRequest) (*api.Audit, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +204,7 @@ func (s AuditServiceServer) Add(ctx context.Context, req *api.AuditAddRequest) (
 	}
 
 	var stored *ent.Audit
-	if snapshotOptions(s.Rec, api.AuditService_Add_FullMethodName).Value {
+	if s.images(api.AuditService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -212,10 +230,11 @@ func (s AuditServiceServer) Add(ctx context.Context, req *api.AuditAddRequest) (
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.AuditService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Audit",
+		By:     api.AuditService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -269,7 +288,9 @@ func (s AuditServiceServer) Get(ctx context.Context, req *api.AuditGetRequest) (
 	}
 
 	q := s.Db.Audit.Query().Where(p)
-	AuditSelectInit(q, req.GetSelect())
+	if err := AuditSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -299,6 +320,15 @@ func AuditSelectedFields(m *api.AuditSelect) []string {
 	}
 	if m.GetActorId() {
 		vs = append(vs, audit.FieldActorId)
+	}
+	if m.GetCallerId() {
+		vs = append(vs, audit.FieldCallerId)
+	}
+	if m.GetCallerTenantId() {
+		vs = append(vs, audit.FieldCallerTenantId)
+	}
+	if m.GetPresence() {
+		vs = append(vs, audit.FieldPresence)
 	}
 	if m.GetTraceId() {
 		vs = append(vs, audit.FieldTraceId)
@@ -340,264 +370,25 @@ func AuditSelectedFields(m *api.AuditSelect) []string {
 	return vs
 }
 
-func AuditSelect(q *ent.AuditQuery, m *api.AuditSelect) {
+// AuditSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func AuditSelect(ctx context.Context, scope Scope, q *ent.AuditQuery, m *api.AuditSelect) error {
 	if !m.GetAll() {
 		fields := AuditSelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func AuditSelectInit(q *ent.AuditQuery, m *api.AuditSelect) {
+// AuditSelectInit is [AuditSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func AuditSelectInit(ctx context.Context, scope Scope, q *ent.AuditQuery, m *api.AuditSelect) error {
 	if m != nil {
-		AuditSelect(q, m)
+		return AuditSelect(ctx, scope, q, m)
 	}
-}
-
-func (s AuditServiceServer) Patch(ctx context.Context, req *api.AuditPatchRequest) (*api.Audit, error) {
-	doc, err := ormpatch.FromPatchRequest(auditOrmEntity, req.ProtoReflect(), nil)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return nil, err
-		}
-		if errors.Is(err, ormpatch.ErrRequestLayout) {
-			return nil, status.Errorf(codes.Internal, "%s", err)
-		}
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-
-	return s.apply(ctx, req.GetRef(), doc, api.AuditService_Patch_FullMethodName)
-}
-
-func AuditGetKey(ctx context.Context, db *ent.Client, ref *api.AuditRef) (uuid.UUID, error) {
-	var z uuid.UUID
-	if ref.HasId() {
-		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
-			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
-		} else {
-			return v, nil
-		}
-	}
-
-	p, err := AuditPick(ref)
-	if err != nil {
-		return z, err
-	}
-
-	v, err := db.Audit.Query().Where(p).OnlyId(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return z, status.Error(codes.NotFound, "Audit not found")
-		}
-		return z, err
-	}
-
-	return v, nil
-}
-
-var auditOrmEntity = ormpatch.MustEntityOf(api.File_shale_payday_audit_proto, "Audit")
-
-var auditPatchColumns = entpatch.Columns{
-	1: audit.FieldId, 2: audit.FieldTenantId, 8: audit.FieldActorId, 9: audit.FieldTraceId, 10: audit.FieldAction, 11: audit.FieldObjectId, 12: audit.FieldPatch, 15: audit.FieldDateCreated, 16: audit.FieldActorTenantId, 17: audit.FieldValue, 18: audit.FieldCounterpartTenantId, 19: audit.FieldDomain, 20: audit.FieldFields, 21: audit.FieldDigest, 22: audit.FieldDigestFields}
-
-func (s AuditServiceServer) Apply(ctx context.Context, req *api.AuditApplyRequest) (*api.Audit, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.AuditService_Apply_FullMethodName)
-}
-
-func (s AuditServiceServer) apply(ctx context.Context, ref *api.AuditRef, doc *patchpb.Patch, by string) (*api.Audit, error) {
-	plan := &ormpatch.Plan{Entity: auditOrmEntity}
-	if doc != nil {
-		v, err := ormpatch.Compile(auditOrmEntity, doc)
-		if err != nil {
-			if errors.Is(err, ormpatch.ErrUnsupported) {
-				return nil, status.Errorf(codes.Unimplemented, "%s", err)
-			}
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		plan = v
-	}
-
-	pred, mod, err := entpatch.Build(plan, auditPatchColumns, s.Db.Dialect())
-	if err != nil {
-		if errors.Is(err, entpatch.ErrValue) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		return nil, status.Errorf(codes.Internal, "%s", err)
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	k, err := AuditGetKey(ctx, st.Db, ref)
-	if err != nil {
-		return nil, err
-	}
-	at := &api.AuditRef{}
-	at.SetId(k[:])
-	p, err := s.narrow(ctx, audit.IdEQ(k))
-	if err != nil {
-		return nil, err
-	}
-
-	var previous *api.Audit
-	images := snapshotOptions(s.Rec, by)
-	if images.Previous && mod != nil {
-		u, err := st.snapshot(ctx, p, true)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return nil, status.Error(codes.NotFound, "resource not found")
-			}
-			return nil, err
-		}
-		previous = s.image(u.Proto())
-	}
-	if mod == nil {
-		q := st.Db.Audit.Query().Where(p)
-		if pred != nil {
-			q.Where(predicate.Audit(pred))
-		}
-		if ok, err := q.Exist(ctx); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, func() error {
-				if ok, err := st.Db.Audit.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "Audit not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	} else {
-		q := st.Db.Audit.Update().Where(p)
-		if pred != nil {
-			q.Where(predicate.Audit(pred))
-		}
-		q.Modify(mod)
-		tx.Writing()
-		if n, err := q.Save(ctx); err != nil {
-			if err, ok := err.(*ent.ConstraintError); ok {
-				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Error(codes.AlreadyExists, "Audit already exists")
-				}
-				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Error(codes.NotFound, "Audit: referenced entity not found")
-				}
-			}
-			return nil, err
-		} else if n == 0 {
-			return nil, func() error {
-				if ok, err := st.Db.Audit.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "Audit not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	}
-
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
-	if mod != nil {
-		var value *api.Audit
-		if images.Value {
-			value = s.image(out)
-		}
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       by,
-			Key:      k,
-			Patch:    doc,
-			Previous: previous, Value: value,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (s AuditServiceServer) Erase(ctx context.Context, req *api.AuditRef) (*api.AuditEraseResponse, error) {
-	p, err := AuditPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.Audit
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.AuditService_Erase_FullMethodName)
-		var v *ent.Audit
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.Audit.Query().Where(p).Select(audit.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.AuditEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = audit.And(p, audit.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	n, err := st.Db.Audit.Delete().Where(p).Exec(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.AuditService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.AuditEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
+	return nil
 }
 
 func AuditPick(req *api.AuditRef) (predicate.Audit, error) {

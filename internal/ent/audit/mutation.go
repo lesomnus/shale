@@ -19,6 +19,9 @@ type Mutation struct {
 	typ                   string
 	tenant_id             *uuid.UUID
 	actor_id              *uuid.UUID
+	caller_id             *uuid.UUID
+	caller_tenant_id      *uuid.UUID
+	presence              *string
 	trace_id              *[]byte
 	action                *string
 	object_id             *uuid.UUID
@@ -93,6 +96,114 @@ func (m *Mutation) ActorId() (r uuid.UUID, exists bool) {
 func (m *Mutation) ResetActorId() {
 	m.actor_id = nil
 	delete(m.exprs, FieldActorId)
+}
+
+// SetCallerId sets the "caller_id" field.
+func (m *Mutation) SetCallerId(u uuid.UUID) {
+	m.caller_id = &u
+	delete(m.clearedFields, FieldCallerId)
+	delete(m.exprs, FieldCallerId)
+}
+
+// CallerId returns the value of the "caller_id" field in the mutation.
+func (m *Mutation) CallerId() (r uuid.UUID, exists bool) {
+	v := m.caller_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCallerId clears the value of the "caller_id" field.
+func (m *Mutation) ClearCallerId() {
+	m.caller_id = nil
+	delete(m.exprs, FieldCallerId)
+	m.clearedFields[FieldCallerId] = struct{}{}
+}
+
+// CallerIdCleared returns if the "caller_id" field was cleared in this mutation.
+func (m *Mutation) CallerIdCleared() bool {
+	_, ok := m.clearedFields[FieldCallerId]
+	return ok
+}
+
+// ResetCallerId resets all changes to the "caller_id" field.
+func (m *Mutation) ResetCallerId() {
+	m.caller_id = nil
+	delete(m.clearedFields, FieldCallerId)
+	delete(m.exprs, FieldCallerId)
+}
+
+// SetCallerTenantId sets the "caller_tenant_id" field.
+func (m *Mutation) SetCallerTenantId(u uuid.UUID) {
+	m.caller_tenant_id = &u
+	delete(m.clearedFields, FieldCallerTenantId)
+	delete(m.exprs, FieldCallerTenantId)
+}
+
+// CallerTenantId returns the value of the "caller_tenant_id" field in the mutation.
+func (m *Mutation) CallerTenantId() (r uuid.UUID, exists bool) {
+	v := m.caller_tenant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCallerTenantId clears the value of the "caller_tenant_id" field.
+func (m *Mutation) ClearCallerTenantId() {
+	m.caller_tenant_id = nil
+	delete(m.exprs, FieldCallerTenantId)
+	m.clearedFields[FieldCallerTenantId] = struct{}{}
+}
+
+// CallerTenantIdCleared returns if the "caller_tenant_id" field was cleared in this mutation.
+func (m *Mutation) CallerTenantIdCleared() bool {
+	_, ok := m.clearedFields[FieldCallerTenantId]
+	return ok
+}
+
+// ResetCallerTenantId resets all changes to the "caller_tenant_id" field.
+func (m *Mutation) ResetCallerTenantId() {
+	m.caller_tenant_id = nil
+	delete(m.clearedFields, FieldCallerTenantId)
+	delete(m.exprs, FieldCallerTenantId)
+}
+
+// SetPresence sets the "presence" field.
+func (m *Mutation) SetPresence(s string) {
+	m.presence = &s
+	delete(m.clearedFields, FieldPresence)
+	delete(m.exprs, FieldPresence)
+}
+
+// Presence returns the value of the "presence" field in the mutation.
+func (m *Mutation) Presence() (r string, exists bool) {
+	v := m.presence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPresence clears the value of the "presence" field.
+func (m *Mutation) ClearPresence() {
+	m.presence = nil
+	delete(m.exprs, FieldPresence)
+	m.clearedFields[FieldPresence] = struct{}{}
+}
+
+// PresenceCleared returns if the "presence" field was cleared in this mutation.
+func (m *Mutation) PresenceCleared() bool {
+	_, ok := m.clearedFields[FieldPresence]
+	return ok
+}
+
+// ResetPresence resets all changes to the "presence" field.
+func (m *Mutation) ResetPresence() {
+	m.presence = nil
+	delete(m.clearedFields, FieldPresence)
+	delete(m.exprs, FieldPresence)
 }
 
 // SetTraceId sets the "trace_id" field.
@@ -521,12 +632,21 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 17)
 	if m.tenant_id != nil || m.exprs[FieldTenantId] != nil {
 		fields = append(fields, FieldTenantId)
 	}
 	if m.actor_id != nil || m.exprs[FieldActorId] != nil {
 		fields = append(fields, FieldActorId)
+	}
+	if m.caller_id != nil || m.exprs[FieldCallerId] != nil {
+		fields = append(fields, FieldCallerId)
+	}
+	if m.caller_tenant_id != nil || m.exprs[FieldCallerTenantId] != nil {
+		fields = append(fields, FieldCallerTenantId)
+	}
+	if m.presence != nil || m.exprs[FieldPresence] != nil {
+		fields = append(fields, FieldPresence)
 	}
 	if m.trace_id != nil || m.exprs[FieldTraceId] != nil {
 		fields = append(fields, FieldTraceId)
@@ -582,6 +702,12 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.TenantId()
 	case FieldActorId:
 		return m.ActorId()
+	case FieldCallerId:
+		return m.CallerId()
+	case FieldCallerTenantId:
+		return m.CallerTenantId()
+	case FieldPresence:
+		return m.Presence()
 	case FieldTraceId:
 		return m.TraceId()
 	case FieldAction:
@@ -644,6 +770,36 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetActorId(v)
+		return nil
+	case FieldCallerId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCallerId(v)
+		return nil
+	case FieldCallerTenantId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCallerTenantId(v)
+		return nil
+	case FieldPresence:
+		v, ok := value.(string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPresence(v)
 		return nil
 	case FieldTraceId:
 		v, ok := value.([]byte)
@@ -791,6 +947,12 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetTenantId()
 	case FieldActorId:
 		m.ResetActorId()
+	case FieldCallerId:
+		m.ResetCallerId()
+	case FieldCallerTenantId:
+		m.ResetCallerTenantId()
+	case FieldPresence:
+		m.ResetPresence()
 	case FieldTraceId:
 		m.ResetTraceId()
 	case FieldAction:
@@ -841,6 +1003,15 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldActorId]; ok {
 		fields = append(fields, FieldActorId)
+	}
+	if _, ok := m.exprs[FieldCallerId]; ok {
+		fields = append(fields, FieldCallerId)
+	}
+	if _, ok := m.exprs[FieldCallerTenantId]; ok {
+		fields = append(fields, FieldCallerTenantId)
+	}
+	if _, ok := m.exprs[FieldPresence]; ok {
+		fields = append(fields, FieldPresence)
 	}
 	if _, ok := m.exprs[FieldTraceId]; ok {
 		fields = append(fields, FieldTraceId)
@@ -919,6 +1090,15 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(FieldCallerId) {
+		fields = append(fields, FieldCallerId)
+	}
+	if m.FieldCleared(FieldCallerTenantId) {
+		fields = append(fields, FieldCallerTenantId)
+	}
+	if m.FieldCleared(FieldPresence) {
+		fields = append(fields, FieldPresence)
+	}
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
@@ -951,6 +1131,15 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
+	case FieldCallerId:
+		m.ClearCallerId()
+		return nil
+	case FieldCallerTenantId:
+		m.ClearCallerTenantId()
+		return nil
+	case FieldPresence:
+		m.ClearPresence()
+		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
 		return nil
@@ -982,6 +1171,15 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldActorId:
 		m.ResetActorId()
+		return nil
+	case FieldCallerId:
+		m.ResetCallerId()
+		return nil
+	case FieldCallerTenantId:
+		m.ResetCallerTenantId()
+		return nil
+	case FieldPresence:
+		m.ResetPresence()
 		return nil
 	case FieldTraceId:
 		m.ResetTraceId()

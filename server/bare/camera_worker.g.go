@@ -11,8 +11,6 @@ import (
 	ent "github.com/lesomnus/shale/internal/ent"
 	cameraworker "github.com/lesomnus/shale/internal/ent/cameraworker"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	site "github.com/lesomnus/shale/internal/ent/site"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -37,11 +35,14 @@ type CameraWorkerServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraWorkerServiceServer(db *ent.Client, opts ...Option) api.CameraWorkerServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraWorkerServiceServer{Store: s.Store}
 }
@@ -214,7 +215,10 @@ func (st CameraWorkerServiceServer) create(ctx context.Context, req *api.CameraW
 }
 
 func (s CameraWorkerServiceServer) Add(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorker, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +233,7 @@ func (s CameraWorkerServiceServer) Add(ctx context.Context, req *api.CameraWorke
 	}
 
 	var stored *ent.CameraWorker
-	if snapshotOptions(s.Rec, api.CameraWorkerService_Add_FullMethodName).Value {
+	if s.images(api.CameraWorkerService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -255,10 +259,11 @@ func (s CameraWorkerServiceServer) Add(ctx context.Context, req *api.CameraWorke
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraWorkerService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraWorker",
+		By:     api.CameraWorkerService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -312,7 +317,9 @@ func (s CameraWorkerServiceServer) Get(ctx context.Context, req *api.CameraWorke
 	}
 
 	q := s.Db.CameraWorker.Query().Where(p)
-	CameraWorkerSelectInit(q, req.GetSelect())
+	if err := CameraWorkerSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -401,31 +408,61 @@ func CameraWorkerSelectedFields(m *api.CameraWorkerSelect) []string {
 	return vs
 }
 
-func CameraWorkerSelect(q *ent.CameraWorkerQuery, m *api.CameraWorkerSelect) {
+// CameraWorkerSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraWorkerSelect(ctx context.Context, scope Scope, q *ent.CameraWorkerQuery, m *api.CameraWorkerSelect) error {
 	if !m.GetAll() {
 		fields := CameraWorkerSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraWorkerSelectInit(q *ent.CameraWorkerQuery, m *api.CameraWorkerSelect) {
+// CameraWorkerSelectInit is [CameraWorkerSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraWorkerSelectInit(ctx context.Context, scope Scope, q *ent.CameraWorkerQuery, m *api.CameraWorkerSelect) error {
 	if m != nil {
-		CameraWorkerSelect(q, m)
+		return CameraWorkerSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CameraWorkerServiceServer) Patch(ctx context.Context, req *api.CameraWorkerPatchRequest) (*api.CameraWorker, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(cameraWorkerOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 3:
@@ -484,13 +521,6 @@ var cameraWorkerOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_worker_p
 var cameraWorkerPatchColumns = entpatch.Columns{
 	1: cameraworker.FieldId, 2: cameraworker.TenantColumn, 3: cameraworker.SiteColumn, 4: cameraworker.FieldAlias, 5: cameraworker.FieldName, 6: cameraworker.FieldDesc, 7: cameraworker.FieldLabels, 8: cameraworker.FieldHardwareId, 9: cameraworker.FieldHostname, 10: cameraworker.FieldState, 11: cameraworker.FieldCertSerial, 12: cameraworker.FieldJoin, 13: cameraworker.FieldDateUpdated, 14: cameraworker.FieldDateErased, 15: cameraworker.FieldDateCreated, 16: cameraworker.FieldDateAdopted, 17: cameraworker.FieldDateSeen, 18: cameraworker.FieldDateCertExpires, 19: cameraworker.FieldVersion, 20: cameraworker.FieldApprovedKeyFingerprint, 21: cameraworker.FieldDateCertIssued, 22: cameraworker.FieldCertificate, 23: cameraworker.FieldCaHash}
 
-func (s CameraWorkerServiceServer) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraWorkerService_Apply_FullMethodName)
-}
-
 func (s CameraWorkerServiceServer) apply(ctx context.Context, ref *api.CameraWorkerRef, doc *patchpb.Patch, by string) (*api.CameraWorker, error) {
 	plan := &ormpatch.Plan{Entity: cameraWorkerOrmEntity}
 	if doc != nil {
@@ -512,7 +542,7 @@ func (s CameraWorkerServiceServer) apply(ctx context.Context, ref *api.CameraWor
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -533,7 +563,7 @@ func (s CameraWorkerServiceServer) apply(ctx context.Context, ref *api.CameraWor
 	}
 
 	var previous *api.CameraWorker
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -602,7 +632,8 @@ func (s CameraWorkerServiceServer) apply(ctx context.Context, ref *api.CameraWor
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraWorker",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -619,6 +650,9 @@ func (s CameraWorkerServiceServer) apply(ctx context.Context, ref *api.CameraWor
 }
 
 func (s CameraWorkerServiceServer) Erase(ctx context.Context, req *api.CameraWorkerRef) (*api.CameraWorkerEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := CameraWorkerPick(req)
 	if err != nil {
 		return nil, err
@@ -628,7 +662,7 @@ func (s CameraWorkerServiceServer) Erase(ctx context.Context, req *api.CameraWor
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -639,8 +673,8 @@ func (s CameraWorkerServiceServer) Erase(ctx context.Context, req *api.CameraWor
 
 	var k any
 	var previous *api.CameraWorker
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraWorkerService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.CameraWorkerService_Erase_FullMethodName)
 		var v *ent.CameraWorker
 		var err error
 		if images.Previous {
@@ -671,7 +705,8 @@ func (s CameraWorkerServiceServer) Erase(ctx context.Context, req *api.CameraWor
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraWorker",
 			By:       api.CameraWorkerService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

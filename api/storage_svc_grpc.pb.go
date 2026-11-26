@@ -22,8 +22,6 @@ const (
 	DeviceService_Add_FullMethodName         = "/shale.DeviceService/Add"
 	DeviceService_Get_FullMethodName         = "/shale.DeviceService/Get"
 	DeviceService_Patch_FullMethodName       = "/shale.DeviceService/Patch"
-	DeviceService_Apply_FullMethodName       = "/shale.DeviceService/Apply"
-	DeviceService_Erase_FullMethodName       = "/shale.DeviceService/Erase"
 	DeviceService_List_FullMethodName        = "/shale.DeviceService/List"
 	DeviceService_Watch_FullMethodName       = "/shale.DeviceService/Watch"
 	DeviceService_Quarantine_FullMethodName  = "/shale.DeviceService/Quarantine"
@@ -43,23 +41,27 @@ type DeviceServiceClient interface {
 	Get(ctx context.Context, in *DeviceGetRequest, opts ...grpc.CallOption) (*Device, error)
 	// Patch updates an existing Device
 	Patch(ctx context.Context, in *DevicePatchRequest, opts ...grpc.CallOption) (*Device, error)
-	// Apply applies a patch document to an existing Device
-	Apply(ctx context.Context, in *DeviceApplyRequest, opts ...grpc.CallOption) (*Device, error)
-	// Erase deletes a Device
-	Erase(ctx context.Context, in *DeviceRef, opts ...grpc.CallOption) (*DeviceEraseResponse, error)
 	// List reads Devices a page at a time.
 	List(ctx context.Context, in *DeviceListRequest, opts ...grpc.CallOption) (*DeviceListResponse, error)
 	// Watch the Devices this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *DeviceWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DeviceWatchResponse], error)
 	Quarantine(ctx context.Context, in *DeviceQuarantineRequest, opts ...grpc.CallOption) (*Device, error)
 	Release(ctx context.Context, in *DeviceReleaseRequest, opts ...grpc.CallOption) (*Device, error)
@@ -102,26 +104,6 @@ func (c *deviceServiceClient) Patch(ctx context.Context, in *DevicePatchRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Device)
 	err := c.cc.Invoke(ctx, DeviceService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *deviceServiceClient) Apply(ctx context.Context, in *DeviceApplyRequest, opts ...grpc.CallOption) (*Device, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Device)
-	err := c.cc.Invoke(ctx, DeviceService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *deviceServiceClient) Erase(ctx context.Context, in *DeviceRef, opts ...grpc.CallOption) (*DeviceEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeviceEraseResponse)
-	err := c.cc.Invoke(ctx, DeviceService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -217,23 +199,27 @@ type DeviceServiceServer interface {
 	Get(context.Context, *DeviceGetRequest) (*Device, error)
 	// Patch updates an existing Device
 	Patch(context.Context, *DevicePatchRequest) (*Device, error)
-	// Apply applies a patch document to an existing Device
-	Apply(context.Context, *DeviceApplyRequest) (*Device, error)
-	// Erase deletes a Device
-	Erase(context.Context, *DeviceRef) (*DeviceEraseResponse, error)
 	// List reads Devices a page at a time.
 	List(context.Context, *DeviceListRequest) (*DeviceListResponse, error)
 	// Watch the Devices this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*DeviceWatchRequest, grpc.ServerStreamingServer[DeviceWatchResponse]) error
 	Quarantine(context.Context, *DeviceQuarantineRequest) (*Device, error)
 	Release(context.Context, *DeviceReleaseRequest) (*Device, error)
@@ -260,12 +246,6 @@ func (UnimplementedDeviceServiceServer) Get(context.Context, *DeviceGetRequest) 
 }
 func (UnimplementedDeviceServiceServer) Patch(context.Context, *DevicePatchRequest) (*Device, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedDeviceServiceServer) Apply(context.Context, *DeviceApplyRequest) (*Device, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedDeviceServiceServer) Erase(context.Context, *DeviceRef) (*DeviceEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedDeviceServiceServer) List(context.Context, *DeviceListRequest) (*DeviceListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -359,42 +339,6 @@ func _DeviceService_Patch_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DeviceServiceServer).Patch(ctx, req.(*DevicePatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DeviceService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeviceApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DeviceServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DeviceService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DeviceServiceServer).Apply(ctx, req.(*DeviceApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DeviceService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeviceRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DeviceServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DeviceService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DeviceServiceServer).Erase(ctx, req.(*DeviceRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -538,14 +482,6 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DeviceService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _DeviceService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _DeviceService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _DeviceService_List_Handler,
 		},
@@ -584,8 +520,6 @@ const (
 	SinkService_Add_FullMethodName       = "/shale.SinkService/Add"
 	SinkService_Get_FullMethodName       = "/shale.SinkService/Get"
 	SinkService_Patch_FullMethodName     = "/shale.SinkService/Patch"
-	SinkService_Apply_FullMethodName     = "/shale.SinkService/Apply"
-	SinkService_Erase_FullMethodName     = "/shale.SinkService/Erase"
 	SinkService_List_FullMethodName      = "/shale.SinkService/List"
 	SinkService_Watch_FullMethodName     = "/shale.SinkService/Watch"
 	SinkService_ProposeGc_FullMethodName = "/shale.SinkService/ProposeGc"
@@ -605,23 +539,27 @@ type SinkServiceClient interface {
 	Get(ctx context.Context, in *SinkGetRequest, opts ...grpc.CallOption) (*Sink, error)
 	// Patch updates an existing Sink
 	Patch(ctx context.Context, in *SinkPatchRequest, opts ...grpc.CallOption) (*Sink, error)
-	// Apply applies a patch document to an existing Sink
-	Apply(ctx context.Context, in *SinkApplyRequest, opts ...grpc.CallOption) (*Sink, error)
-	// Erase deletes a Sink
-	Erase(ctx context.Context, in *SinkRef, opts ...grpc.CallOption) (*SinkEraseResponse, error)
 	// List reads Sinks a page at a time.
 	List(ctx context.Context, in *SinkListRequest, opts ...grpc.CallOption) (*SinkListResponse, error)
 	// Watch the Sinks this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *SinkWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SinkWatchResponse], error)
 	// The node proposes deletion candidates; the CP approves (§21.2).
 	ProposeGc(ctx context.Context, in *SinkProposeGcRequest, opts ...grpc.CallOption) (*SinkProposeGcResponse, error)
@@ -667,26 +605,6 @@ func (c *sinkServiceClient) Patch(ctx context.Context, in *SinkPatchRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Sink)
 	err := c.cc.Invoke(ctx, SinkService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sinkServiceClient) Apply(ctx context.Context, in *SinkApplyRequest, opts ...grpc.CallOption) (*Sink, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Sink)
-	err := c.cc.Invoke(ctx, SinkService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sinkServiceClient) Erase(ctx context.Context, in *SinkRef, opts ...grpc.CallOption) (*SinkEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SinkEraseResponse)
-	err := c.cc.Invoke(ctx, SinkService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -782,23 +700,27 @@ type SinkServiceServer interface {
 	Get(context.Context, *SinkGetRequest) (*Sink, error)
 	// Patch updates an existing Sink
 	Patch(context.Context, *SinkPatchRequest) (*Sink, error)
-	// Apply applies a patch document to an existing Sink
-	Apply(context.Context, *SinkApplyRequest) (*Sink, error)
-	// Erase deletes a Sink
-	Erase(context.Context, *SinkRef) (*SinkEraseResponse, error)
 	// List reads Sinks a page at a time.
 	List(context.Context, *SinkListRequest) (*SinkListResponse, error)
 	// Watch the Sinks this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*SinkWatchRequest, grpc.ServerStreamingServer[SinkWatchResponse]) error
 	// The node proposes deletion candidates; the CP approves (§21.2).
 	ProposeGc(context.Context, *SinkProposeGcRequest) (*SinkProposeGcResponse, error)
@@ -828,12 +750,6 @@ func (UnimplementedSinkServiceServer) Get(context.Context, *SinkGetRequest) (*Si
 }
 func (UnimplementedSinkServiceServer) Patch(context.Context, *SinkPatchRequest) (*Sink, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSinkServiceServer) Apply(context.Context, *SinkApplyRequest) (*Sink, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedSinkServiceServer) Erase(context.Context, *SinkRef) (*SinkEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedSinkServiceServer) List(context.Context, *SinkListRequest) (*SinkListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -927,42 +843,6 @@ func _SinkService_Patch_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SinkServiceServer).Patch(ctx, req.(*SinkPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SinkService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SinkApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SinkServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SinkService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SinkServiceServer).Apply(ctx, req.(*SinkApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SinkService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SinkRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SinkServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SinkService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SinkServiceServer).Erase(ctx, req.(*SinkRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1104,14 +984,6 @@ var SinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _SinkService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _SinkService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _SinkService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

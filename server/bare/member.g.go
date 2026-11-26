@@ -5,21 +5,13 @@ package bare
 
 import (
 	context "context"
-	errors "errors"
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
-	holder "github.com/lesomnus/shale/internal/ent/holder"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	reader "github.com/lesomnus/shale/internal/ent/reader"
-	site "github.com/lesomnus/shale/internal/ent/site"
 	sitemember "github.com/lesomnus/shale/internal/ent/sitemember"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
-	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -38,11 +30,14 @@ type SiteMemberServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewSiteMemberServiceServer(db *ent.Client, opts ...Option) api.SiteMemberServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return SiteMemberServiceServer{Store: s.Store}
 }
@@ -222,7 +217,10 @@ func (st SiteMemberServiceServer) create(ctx context.Context, req *api.SiteMembe
 }
 
 func (s SiteMemberServiceServer) Add(ctx context.Context, req *api.SiteMemberAddRequest) (*api.SiteMember, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +235,7 @@ func (s SiteMemberServiceServer) Add(ctx context.Context, req *api.SiteMemberAdd
 	}
 
 	var stored *ent.SiteMember
-	if snapshotOptions(s.Rec, api.SiteMemberService_Add_FullMethodName).Value {
+	if s.images(api.SiteMemberService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -263,10 +261,11 @@ func (s SiteMemberServiceServer) Add(ctx context.Context, req *api.SiteMemberAdd
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.SiteMemberService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.SiteMember",
+		By:     api.SiteMemberService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -320,7 +319,9 @@ func (s SiteMemberServiceServer) Get(ctx context.Context, req *api.SiteMemberGet
 	}
 
 	q := s.Db.SiteMember.Query().Where(p)
-	SiteMemberSelectInit(q, req.GetSelect())
+	if err := SiteMemberSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -355,226 +356,91 @@ func SiteMemberSelectedFields(m *api.SiteMemberSelect) []string {
 	return vs
 }
 
-func SiteMemberSelect(q *ent.SiteMemberQuery, m *api.SiteMemberSelect) {
+// SiteMemberSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SiteMemberSelect(ctx context.Context, scope Scope, q *ent.SiteMemberQuery, m *api.SiteMemberSelect) error {
 	if !m.GetAll() {
 		fields := SiteMemberSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasReader() {
+		p, err := ReaderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithReader(func(q *ent.ReaderQuery) {
-			q.Where(reader.DateErasedIsNil())
-			ReaderSelect(q, m.GetReader())
+			if p != nil {
+				q.Where(p)
+			}
+			err = ReaderSelect(ctx, scope, q, m.GetReader())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func SiteMemberSelectInit(q *ent.SiteMemberQuery, m *api.SiteMemberSelect) {
+// SiteMemberSelectInit is [SiteMemberSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SiteMemberSelectInit(ctx context.Context, scope Scope, q *ent.SiteMemberQuery, m *api.SiteMemberSelect) error {
 	if m != nil {
-		SiteMemberSelect(q, m)
+		return SiteMemberSelect(ctx, scope, q, m)
 	}
-}
-
-func (s SiteMemberServiceServer) Patch(ctx context.Context, req *api.SiteMemberPatchRequest) (*api.SiteMember, error) {
-	doc, err := ormpatch.FromPatchRequest(siteMemberOrmEntity, req.ProtoReflect(), nil)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return nil, err
-		}
-		if errors.Is(err, ormpatch.ErrRequestLayout) {
-			return nil, status.Errorf(codes.Internal, "%s", err)
-		}
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-
-	return s.apply(ctx, req.GetRef(), doc, api.SiteMemberService_Patch_FullMethodName)
-}
-
-func SiteMemberGetKey(ctx context.Context, db *ent.Client, ref *api.SiteMemberRef) (uuid.UUID, error) {
-	var z uuid.UUID
-	if ref.HasId() {
-		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
-			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
-		} else {
-			return v, nil
-		}
-	}
-
-	p, err := SiteMemberPick(ref)
-	if err != nil {
-		return z, err
-	}
-
-	v, err := db.SiteMember.Query().Where(p).OnlyId(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return z, status.Error(codes.NotFound, "SiteMember not found")
-		}
-		return z, err
-	}
-
-	return v, nil
-}
-
-var siteMemberOrmEntity = ormpatch.MustEntityOf(api.File_shale_member_proto, "SiteMember")
-
-var siteMemberPatchColumns = entpatch.Columns{
-	1: sitemember.FieldId, 2: sitemember.TenantColumn, 3: sitemember.SiteColumn, 8: sitemember.HolderColumn, 9: sitemember.ReaderColumn, 13: sitemember.FieldDateUpdated, 15: sitemember.FieldDateCreated}
-
-func (s SiteMemberServiceServer) Apply(ctx context.Context, req *api.SiteMemberApplyRequest) (*api.SiteMember, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.SiteMemberService_Apply_FullMethodName)
-}
-
-func (s SiteMemberServiceServer) apply(ctx context.Context, ref *api.SiteMemberRef, doc *patchpb.Patch, by string) (*api.SiteMember, error) {
-	plan := &ormpatch.Plan{Entity: siteMemberOrmEntity}
-	if doc != nil {
-		v, err := ormpatch.Compile(siteMemberOrmEntity, doc)
-		if err != nil {
-			if errors.Is(err, ormpatch.ErrUnsupported) {
-				return nil, status.Errorf(codes.Unimplemented, "%s", err)
-			}
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		plan = v
-	}
-
-	pred, mod, err := entpatch.Build(plan, siteMemberPatchColumns, s.Db.Dialect())
-	if err != nil {
-		if errors.Is(err, entpatch.ErrValue) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		return nil, status.Errorf(codes.Internal, "%s", err)
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	k, err := SiteMemberGetKey(ctx, st.Db, ref)
-	if err != nil {
-		return nil, err
-	}
-	at := &api.SiteMemberRef{}
-	at.SetId(k[:])
-	p, err := s.narrow(ctx, sitemember.IdEQ(k))
-	if err != nil {
-		return nil, err
-	}
-
-	var previous *api.SiteMember
-	images := snapshotOptions(s.Rec, by)
-	if images.Previous && mod != nil {
-		u, err := st.snapshot(ctx, p, true)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return nil, status.Error(codes.NotFound, "resource not found")
-			}
-			return nil, err
-		}
-		previous = s.image(u.Proto())
-	}
-	if mod == nil {
-		q := st.Db.SiteMember.Query().Where(p)
-		if pred != nil {
-			q.Where(predicate.SiteMember(pred))
-		}
-		if ok, err := q.Exist(ctx); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, func() error {
-				if ok, err := st.Db.SiteMember.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "SiteMember not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	} else {
-		q := st.Db.SiteMember.Update().Where(p)
-		if pred != nil {
-			q.Where(predicate.SiteMember(pred))
-		}
-		q.Modify(mod)
-		if !plan.WritesTo(13) {
-			q.SetDateUpdated(st.now())
-		}
-		tx.Writing()
-		if n, err := q.Save(ctx); err != nil {
-			if err, ok := err.(*ent.ConstraintError); ok {
-				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Error(codes.AlreadyExists, "SiteMember already exists")
-				}
-				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Error(codes.NotFound, "SiteMember: referenced entity not found")
-				}
-			}
-			return nil, err
-		} else if n == 0 {
-			return nil, func() error {
-				if ok, err := st.Db.SiteMember.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "SiteMember not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	}
-
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
-	if mod != nil {
-		var value *api.SiteMember
-		if images.Value {
-			value = s.image(out)
-		}
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       by,
-			Key:      k,
-			Patch:    doc,
-			Previous: previous, Value: value,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return nil
 }
 
 func (s SiteMemberServiceServer) Erase(ctx context.Context, req *api.SiteMemberRef) (*api.SiteMemberEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := SiteMemberPick(req)
 	if err != nil {
 		return nil, err
@@ -584,7 +450,7 @@ func (s SiteMemberServiceServer) Erase(ctx context.Context, req *api.SiteMemberR
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -595,8 +461,8 @@ func (s SiteMemberServiceServer) Erase(ctx context.Context, req *api.SiteMemberR
 
 	var k any
 	var previous *api.SiteMember
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.SiteMemberService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.SiteMemberService_Erase_FullMethodName)
 		var v *ent.SiteMember
 		var err error
 		if images.Previous {
@@ -621,10 +487,14 @@ func (s SiteMemberServiceServer) Erase(ctx context.Context, req *api.SiteMemberR
 	tx.Writing()
 	n, err := st.Db.SiteMember.Delete().Where(p).Exec(ctx)
 	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok && sqlgraph.IsForeignKeyConstraintError(err) {
+			return nil, status.Error(codes.FailedPrecondition, "SiteMember is still named by another row and cannot be erased")
+		}
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.SiteMember",
 			By:       api.SiteMemberService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

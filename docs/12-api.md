@@ -44,15 +44,21 @@ people, and per tenant on top of that (`rpc_rate`,
 [§36.1](13-configuration.md#361-configuration-reference)). A caller over its
 rate is answered `RESOURCE_EXHAUSTED` with a retry delay.
 
-**General writes.** payday closes `Patch` and `Apply` by default, since
-they can write anything the schema has. Shale serves `Patch` for the rows
-[§32](09-operations.md#32-cli--processes) says people and operators edit
-(a set's retention and placement, a source, a site, a person, a tenant's
-share, a relay's labels, a producer's live policy, the policies) and keeps
-it closed for what the system writes (laminae, attempts) and for readers,
-nodes, devices, sinks, and keys, whose states move only through their own
-verbs; a producer's or a relay's `Patch` takes the fields a person owns and
-refuses the rest of the row. `Apply` stays closed.
+**General writes.** Each entity names the generated verbs it has
+(`rpc` in its `(orm.message)`, `proto/shale/`): the ones something of
+Shale's calls or serves, and no more. No entity has an `Apply`, the
+patch document, since nothing here writes with one. Shale serves `Patch`
+for the rows [§32](09-operations.md#32-cli--processes) says people and
+operators edit (a set's retention and placement, a source, a site, a
+person, a tenant's share, a relay's labels, a producer's live policy, the
+policies) and keeps it closed for what the system writes (laminae,
+attempts) and for readers, nodes, devices, sinks, and keys, whose states
+move only through their own verbs; a producer's or a relay's `Patch`
+takes the fields a person owns and refuses the rest of the row. An entity
+nothing erases has no `Erase` (the camera rows but a worker, a device, a
+sink, a key, the policies, a delegation); a site membership, which is
+made and taken away, has no `Patch`, and a camera preset or policy, a
+revision written once, neither.
 
 ### 35.2 Two API surfaces
 
@@ -78,7 +84,7 @@ code rather than configuration, with one switch
 | person, roster says (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`), and every other call a pattern roster grants them covers, but what the system writes | the people of the tenant `auth.operators` names whom roster grants all of Shale (`/shale.*/*`) there: everything but what the system writes. A narrower grant is nothing here, since every call here spans tenants |
 
 What the system writes is the same on both surfaces: laminae and attempts,
-the generated `Add` and `Apply` of every host, device, sink and key, and
+the generated `Add` of every host, device, sink and key, and
 `Patch` of nodes, readers, devices, sinks and keys, which change by the
 custom verbs of §32 alone (a key by `Rotate`), and every write of a CA,
 which `Rotate` and the leader make alone ([§33.5](10-security.md#335-tls)). `DelegationService` is

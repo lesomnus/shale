@@ -140,6 +140,9 @@ type Server struct {
 	// provisionMu serializes making rows for people, so two first sign-ins
 	// of a tenant do not both become its admin.
 	provisionMu sync.Mutex
+	// elsewhere is what was said of a tenant roster names by another
+	// identifier (#322), so it is said once.
+	elsewhere elsewhere
 
 	// Spin is whatever this deployment has to run besides answering.
 	Spin []any

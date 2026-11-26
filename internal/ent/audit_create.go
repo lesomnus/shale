@@ -35,6 +35,48 @@ func (_c *AuditCreate) SetActorId(v uuid.UUID) *AuditCreate {
 	return _c
 }
 
+// SetCallerId sets the "caller_id" field.
+func (_c *AuditCreate) SetCallerId(v uuid.UUID) *AuditCreate {
+	_c.mutation.SetCallerId(v)
+	return _c
+}
+
+// SetNillableCallerId sets the "caller_id" field if the given value is not nil.
+func (_c *AuditCreate) SetNillableCallerId(v *uuid.UUID) *AuditCreate {
+	if v != nil {
+		_c.SetCallerId(*v)
+	}
+	return _c
+}
+
+// SetCallerTenantId sets the "caller_tenant_id" field.
+func (_c *AuditCreate) SetCallerTenantId(v uuid.UUID) *AuditCreate {
+	_c.mutation.SetCallerTenantId(v)
+	return _c
+}
+
+// SetNillableCallerTenantId sets the "caller_tenant_id" field if the given value is not nil.
+func (_c *AuditCreate) SetNillableCallerTenantId(v *uuid.UUID) *AuditCreate {
+	if v != nil {
+		_c.SetCallerTenantId(*v)
+	}
+	return _c
+}
+
+// SetPresence sets the "presence" field.
+func (_c *AuditCreate) SetPresence(v string) *AuditCreate {
+	_c.mutation.SetPresence(v)
+	return _c
+}
+
+// SetNillablePresence sets the "presence" field if the given value is not nil.
+func (_c *AuditCreate) SetNillablePresence(v *string) *AuditCreate {
+	if v != nil {
+		_c.SetPresence(*v)
+	}
+	return _c
+}
+
 // SetTraceId sets the "trace_id" field.
 func (_c *AuditCreate) SetTraceId(v []byte) *AuditCreate {
 	_c.mutation.SetTraceId(v)
@@ -267,6 +309,18 @@ func (_c *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ActorId(); ok {
 		_spec.SetField(audit.FieldActorId, field.TypeUuid, value)
 		_node.ActorId = value
+	}
+	if value, ok := _c.mutation.CallerId(); ok {
+		_spec.SetField(audit.FieldCallerId, field.TypeUuid, value)
+		_node.CallerId = &value
+	}
+	if value, ok := _c.mutation.CallerTenantId(); ok {
+		_spec.SetField(audit.FieldCallerTenantId, field.TypeUuid, value)
+		_node.CallerTenantId = &value
+	}
+	if value, ok := _c.mutation.Presence(); ok {
+		_spec.SetField(audit.FieldPresence, field.TypeString, value)
+		_node.Presence = &value
 	}
 	if value, ok := _c.mutation.TraceId(); ok {
 		_spec.SetField(audit.FieldTraceId, field.TypeBytes, value)

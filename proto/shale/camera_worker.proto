@@ -44,7 +44,7 @@ message CameraWorker {
   // default, so the column is added to a database that predates it.
   string ca_hash = 23 [(orm.field) = {default: ""}];
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
       {name: "slug" refs: [{name: "alias", number: 4}, {name: "tenant", number: 2}] unique: true},

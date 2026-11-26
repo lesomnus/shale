@@ -57,7 +57,8 @@ message CameraPolicy {
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
   option (orm.message) = {
-    rpc: {crud: true}
+    // Made by the core layer; a revision is never changed in place.
+    rpc: {add: {}, get: {}}
     indexes: [
       {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
       {name: "revision" refs: [{name: "tenant", number: 2}, {name: "policy_key", number: 9}, {name: "revision", number: 10}] unique: true includes_erased: true}

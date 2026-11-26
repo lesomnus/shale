@@ -1,8 +1,12 @@
 package identity
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -126,4 +130,52 @@ func TestAdopt(t *testing.T) {
 	require.Empty(t, again, "nothing made twice")
 	_, err = s.Verify(ctx, "legacy", "ops", passwords["ops"])
 	require.NoError(t, err, "and the password stands")
+}
+
+// roster makes a tenant with an administrator of its own, `admin`
+// (`server/core/tenant.go`), which is what `shale init` calls the first
+// person too: the one adopted under that name is the person from before,
+// with their identifier, and roster's is not left beside them holding the
+// tenant.
+func TestAdoptTheFirstPersonCalledAdmin(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s, err := Open(ctx, Config{}, t.TempDir(), nil)
+	require.NoError(t, err)
+	defer s.Close()
+
+	tenant, admin, bob := pdid.New(1), pdid.New(2), pdid.New(2)
+	people := []Adoptee{{Id: admin, Alias: "admin", Name: "Admin", Admin: true}, {Id: bob, Alias: "bob"}}
+	passwords, err := s.Adopt(ctx, tenant, "acme", "", people)
+	require.NoError(t, err)
+	require.Len(t, passwords, 2)
+	p, err := s.Verify(ctx, "acme", "admin", passwords["admin"])
+	require.NoError(t, err)
+	require.Equal(t, admin, p.Id, "the identifier from before")
+
+	again, err := s.Adopt(ctx, tenant, "acme", "", people)
+	require.NoError(t, err)
+	require.Empty(t, again, "nothing made twice")
+}
+
+// A roster.db the build before this one made (shale ab1ea96, roster
+// c7bca4b8) is not carried across this roster, which keeps nothing for an
+// earlier one: the store refuses to open it, and says what a deployment of
+// Shale does about it rather than leaving roster's words about columns.
+func TestEmbeddedRosterFromBefore(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Open("testdata/roster-ab1ea96.db.gz")
+	require.NoError(t, err)
+	defer f.Close()
+	z, err := gzip.NewReader(f)
+	require.NoError(t, err)
+	b, err := io.ReadAll(z)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, RosterDbFile), b, 0o600))
+
+	_, err = Open(context.Background(), Config{}, dir, nil)
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrRosterFromBefore)
+	require.Contains(t, err.Error(), "shale identity migrate")
+	require.Contains(t, err.Error(), "§32.2")
 }

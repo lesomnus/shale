@@ -260,7 +260,7 @@ func TestClusterPolicyOperators(t *testing.T) {
 	// Closed to everybody, operators included.
 	for _, v := range []string{
 		api.LaminaService_Add_FullMethodName, api.AttemptService_Patch_FullMethodName, api.NodeService_Patch_FullMethodName,
-		api.SinkService_Apply_FullMethodName, api.ReaderService_Add_FullMethodName, api.RelayService_Add_FullMethodName,
+		api.SinkService_Patch_FullMethodName, api.ReaderService_Add_FullMethodName, api.RelayService_Add_FullMethodName,
 		api.DelegationService_Add_FullMethodName, api.DelegationService_Get_FullMethodName, api.DelegationService_Patch_FullMethodName,
 		api.DelegationService_Start_FullMethodName, api.DelegationService_Live_FullMethodName,
 	} {
@@ -330,7 +330,7 @@ func TestSatelliteHasOnlyItsOwnVerbs(t *testing.T) {
 	// theirs.
 	op := pdid.New(DomHolder)
 	byTenant := ClusterPolicy{ClusterTenant: cluster.ClusterTenant}
-	for _, m := range []string{api.SatelliteService_Add_FullMethodName, api.SatelliteService_Apply_FullMethodName} {
+	for _, m := range []string{api.SatelliteService_Add_FullMethodName} {
 		require.Equal(t, codes.PermissionDenied, status.Code(byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: m})), m)
 	}
 	require.NoError(t, byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: api.SatelliteService_Patch_FullMethodName}))

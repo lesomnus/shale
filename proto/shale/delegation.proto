@@ -78,7 +78,9 @@ message Delegation {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // Written by `Start` and ended by `Revoke` (`server/core/delegation.go`);
+    // none is served.
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"

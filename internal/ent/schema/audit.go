@@ -22,6 +22,15 @@ func (Audit) Fields() []ent.Field {
 			Immutable(),
 		field.Uuid("tenant_id"),
 		field.Uuid("actor_id"),
+		field.Uuid("caller_id").
+			Nillable().
+			Optional(),
+		field.Uuid("caller_tenant_id").
+			Nillable().
+			Optional(),
+		field.String("presence").
+			Nillable().
+			Optional(),
 		field.Bytes("trace_id"),
 		field.String("action"),
 		field.Uuid("object_id"),

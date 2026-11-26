@@ -5,19 +5,13 @@ package bare
 
 import (
 	context "context"
-	errors "errors"
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
 	camerapreset "github.com/lesomnus/shale/internal/ent/camerapreset"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	site "github.com/lesomnus/shale/internal/ent/site"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
-	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -36,11 +30,14 @@ type CameraPresetServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraPresetServiceServer(db *ent.Client, opts ...Option) api.CameraPresetServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraPresetServiceServer{Store: s.Store}
 }
@@ -189,7 +186,10 @@ func (st CameraPresetServiceServer) create(ctx context.Context, req *api.CameraP
 }
 
 func (s CameraPresetServiceServer) Add(ctx context.Context, req *api.CameraPresetAddRequest) (*api.CameraPreset, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (s CameraPresetServiceServer) Add(ctx context.Context, req *api.CameraPrese
 	}
 
 	var stored *ent.CameraPreset
-	if snapshotOptions(s.Rec, api.CameraPresetService_Add_FullMethodName).Value {
+	if s.images(api.CameraPresetService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -230,10 +230,11 @@ func (s CameraPresetServiceServer) Add(ctx context.Context, req *api.CameraPrese
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraPresetService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraPreset",
+		By:     api.CameraPresetService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -287,7 +288,9 @@ func (s CameraPresetServiceServer) Get(ctx context.Context, req *api.CameraPrese
 	}
 
 	q := s.Db.CameraPreset.Query().Where(p)
-	CameraPresetSelectInit(q, req.GetSelect())
+	if err := CameraPresetSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -346,46 +349,55 @@ func CameraPresetSelectedFields(m *api.CameraPresetSelect) []string {
 	return vs
 }
 
-func CameraPresetSelect(q *ent.CameraPresetQuery, m *api.CameraPresetSelect) {
+// CameraPresetSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraPresetSelect(ctx context.Context, scope Scope, q *ent.CameraPresetQuery, m *api.CameraPresetSelect) error {
 	if !m.GetAll() {
 		fields := CameraPresetSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraPresetSelectInit(q *ent.CameraPresetQuery, m *api.CameraPresetSelect) {
+// CameraPresetSelectInit is [CameraPresetSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraPresetSelectInit(ctx context.Context, scope Scope, q *ent.CameraPresetQuery, m *api.CameraPresetSelect) error {
 	if m != nil {
-		CameraPresetSelect(q, m)
+		return CameraPresetSelect(ctx, scope, q, m)
 	}
-}
-
-func (s CameraPresetServiceServer) Patch(ctx context.Context, req *api.CameraPresetPatchRequest) (*api.CameraPreset, error) {
-	doc, err := ormpatch.FromPatchRequest(cameraPresetOrmEntity, req.ProtoReflect(), nil)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return nil, err
-		}
-		if errors.Is(err, ormpatch.ErrRequestLayout) {
-			return nil, status.Errorf(codes.Internal, "%s", err)
-		}
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-
-	return s.apply(ctx, req.GetRef(), doc, api.CameraPresetService_Patch_FullMethodName)
+	return nil
 }
 
 func CameraPresetGetKey(ctx context.Context, db *ent.Client, ref *api.CameraPresetRef) (uuid.UUID, error) {
@@ -412,215 +424,6 @@ func CameraPresetGetKey(ctx context.Context, db *ent.Client, ref *api.CameraPres
 	}
 
 	return v, nil
-}
-
-var cameraPresetOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_preset_proto, "CameraPreset")
-
-var cameraPresetPatchColumns = entpatch.Columns{
-	1: camerapreset.FieldId, 2: camerapreset.TenantColumn, 3: camerapreset.SiteColumn, 4: camerapreset.FieldAlias, 5: camerapreset.FieldName, 6: camerapreset.FieldDesc, 7: camerapreset.FieldLabels, 8: camerapreset.FieldPresetKey, 9: camerapreset.FieldRevision, 10: camerapreset.FieldRules, 13: camerapreset.FieldDateUpdated, 14: camerapreset.FieldDateErased, 15: camerapreset.FieldDateCreated}
-
-func (s CameraPresetServiceServer) Apply(ctx context.Context, req *api.CameraPresetApplyRequest) (*api.CameraPreset, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraPresetService_Apply_FullMethodName)
-}
-
-func (s CameraPresetServiceServer) apply(ctx context.Context, ref *api.CameraPresetRef, doc *patchpb.Patch, by string) (*api.CameraPreset, error) {
-	plan := &ormpatch.Plan{Entity: cameraPresetOrmEntity}
-	if doc != nil {
-		v, err := ormpatch.Compile(cameraPresetOrmEntity, doc)
-		if err != nil {
-			if errors.Is(err, ormpatch.ErrUnsupported) {
-				return nil, status.Errorf(codes.Unimplemented, "%s", err)
-			}
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		plan = v
-	}
-
-	pred, mod, err := entpatch.Build(plan, cameraPresetPatchColumns, s.Db.Dialect())
-	if err != nil {
-		if errors.Is(err, entpatch.ErrValue) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		return nil, status.Errorf(codes.Internal, "%s", err)
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	k, err := CameraPresetGetKey(ctx, st.Db, ref)
-	if err != nil {
-		return nil, err
-	}
-	at := &api.CameraPresetRef{}
-	at.SetId(k[:])
-	p, err := s.narrow(ctx, camerapreset.IdEQ(k))
-	if err != nil {
-		return nil, err
-	}
-
-	var previous *api.CameraPreset
-	images := snapshotOptions(s.Rec, by)
-	if images.Previous && mod != nil {
-		u, err := st.snapshot(ctx, p, true)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return nil, status.Error(codes.NotFound, "resource not found")
-			}
-			return nil, err
-		}
-		previous = s.image(u.Proto())
-	}
-	if mod == nil {
-		q := st.Db.CameraPreset.Query().Where(p)
-		if pred != nil {
-			q.Where(predicate.CameraPreset(pred))
-		}
-		if ok, err := q.Exist(ctx); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, func() error {
-				if ok, err := st.Db.CameraPreset.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "CameraPreset not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	} else {
-		q := st.Db.CameraPreset.Update().Where(p)
-		if pred != nil {
-			q.Where(predicate.CameraPreset(pred))
-		}
-		q.Modify(mod)
-		if !plan.WritesTo(13) {
-			q.SetDateUpdated(st.now())
-		}
-		tx.Writing()
-		if n, err := q.Save(ctx); err != nil {
-			if err, ok := err.(*ent.ConstraintError); ok {
-				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Error(codes.AlreadyExists, "CameraPreset already exists")
-				}
-				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Error(codes.NotFound, "CameraPreset: referenced entity not found")
-				}
-			}
-			return nil, err
-		} else if n == 0 {
-			return nil, func() error {
-				if ok, err := st.Db.CameraPreset.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "CameraPreset not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	}
-
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
-	if mod != nil {
-		var value *api.CameraPreset
-		if images.Value {
-			value = s.image(out)
-		}
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       by,
-			Key:      k,
-			Patch:    doc,
-			Previous: previous, Value: value,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (s CameraPresetServiceServer) Erase(ctx context.Context, req *api.CameraPresetRef) (*api.CameraPresetEraseResponse, error) {
-	p, err := CameraPresetPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraPreset
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraPresetService_Erase_FullMethodName)
-		var v *ent.CameraPreset
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraPreset.Query().Where(p).Select(camerapreset.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraPresetEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = camerapreset.And(p, camerapreset.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraPreset.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraPresetService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraPresetEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // CameraPresetPick answers with the predicate this reference selects on,

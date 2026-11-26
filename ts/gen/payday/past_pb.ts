@@ -33,7 +33,7 @@ export const file_payday_past: GenFile = /*@__PURE__*/
  * 	  option (payday.event) = {kinds: ["correct", "retract"]};
  *
  * 	  bytes event = 1;
- * 	  google.protobuf.Timestamp at = 2;
+ * 	  google.protobuf.Timestamp date_occurred = 2;
  * 	}
  *
  * A kind is the operation -- what a list of events is filtered by, and what a
@@ -89,9 +89,6 @@ export type EventMessage = Message<"payday.EventMessage"> & {
    * Each is chosen once, like a field's number: a row says which message its
    * value is by its kind, so the lock refuses a kind dropped or moved to
    * another message, and a message may only take more.
-   *
-   * At 1, where `string kind` was until payday#171: a declaration compiled
-   * against that is read as its one kind.
    *
    * @generated from field: repeated string kinds = 1;
    */

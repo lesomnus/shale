@@ -22,7 +22,6 @@ const (
 	CertificateAuthorityService_Add_FullMethodName    = "/shale.CertificateAuthorityService/Add"
 	CertificateAuthorityService_Get_FullMethodName    = "/shale.CertificateAuthorityService/Get"
 	CertificateAuthorityService_Patch_FullMethodName  = "/shale.CertificateAuthorityService/Patch"
-	CertificateAuthorityService_Apply_FullMethodName  = "/shale.CertificateAuthorityService/Apply"
 	CertificateAuthorityService_Erase_FullMethodName  = "/shale.CertificateAuthorityService/Erase"
 	CertificateAuthorityService_List_FullMethodName   = "/shale.CertificateAuthorityService/List"
 	CertificateAuthorityService_Watch_FullMethodName  = "/shale.CertificateAuthorityService/Watch"
@@ -40,23 +39,29 @@ type CertificateAuthorityServiceClient interface {
 	Get(ctx context.Context, in *CertificateAuthorityGetRequest, opts ...grpc.CallOption) (*CertificateAuthority, error)
 	// Patch updates an existing CertificateAuthority
 	Patch(ctx context.Context, in *CertificateAuthorityPatchRequest, opts ...grpc.CallOption) (*CertificateAuthority, error)
-	// Apply applies a patch document to an existing CertificateAuthority
-	Apply(ctx context.Context, in *CertificateAuthorityApplyRequest, opts ...grpc.CallOption) (*CertificateAuthority, error)
 	// Erase deletes a CertificateAuthority
 	Erase(ctx context.Context, in *CertificateAuthorityRef, opts ...grpc.CallOption) (*CertificateAuthorityEraseResponse, error)
 	// List reads CertificateAuthoritys a page at a time.
 	List(ctx context.Context, in *CertificateAuthorityListRequest, opts ...grpc.CallOption) (*CertificateAuthorityListResponse, error)
 	// Watch the CertificateAuthoritys this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CertificateAuthorityWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CertificateAuthorityWatchResponse], error)
 	// Begins a CA rollover now: makes the next CA, which every bundle carries
 	// from then on, and answers it. The rest runs on the CP leader. Refused
@@ -99,16 +104,6 @@ func (c *certificateAuthorityServiceClient) Patch(ctx context.Context, in *Certi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CertificateAuthority)
 	err := c.cc.Invoke(ctx, CertificateAuthorityService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *certificateAuthorityServiceClient) Apply(ctx context.Context, in *CertificateAuthorityApplyRequest, opts ...grpc.CallOption) (*CertificateAuthority, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CertificateAuthority)
-	err := c.cc.Invoke(ctx, CertificateAuthorityService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -184,23 +179,29 @@ type CertificateAuthorityServiceServer interface {
 	Get(context.Context, *CertificateAuthorityGetRequest) (*CertificateAuthority, error)
 	// Patch updates an existing CertificateAuthority
 	Patch(context.Context, *CertificateAuthorityPatchRequest) (*CertificateAuthority, error)
-	// Apply applies a patch document to an existing CertificateAuthority
-	Apply(context.Context, *CertificateAuthorityApplyRequest) (*CertificateAuthority, error)
 	// Erase deletes a CertificateAuthority
 	Erase(context.Context, *CertificateAuthorityRef) (*CertificateAuthorityEraseResponse, error)
 	// List reads CertificateAuthoritys a page at a time.
 	List(context.Context, *CertificateAuthorityListRequest) (*CertificateAuthorityListResponse, error)
 	// Watch the CertificateAuthoritys this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CertificateAuthorityWatchRequest, grpc.ServerStreamingServer[CertificateAuthorityWatchResponse]) error
 	// Begins a CA rollover now: makes the next CA, which every bundle carries
 	// from then on, and answers it. The rest runs on the CP leader. Refused
@@ -227,9 +228,6 @@ func (UnimplementedCertificateAuthorityServiceServer) Get(context.Context, *Cert
 }
 func (UnimplementedCertificateAuthorityServiceServer) Patch(context.Context, *CertificateAuthorityPatchRequest) (*CertificateAuthority, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCertificateAuthorityServiceServer) Apply(context.Context, *CertificateAuthorityApplyRequest) (*CertificateAuthority, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedCertificateAuthorityServiceServer) Erase(context.Context, *CertificateAuthorityRef) (*CertificateAuthorityEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -318,24 +316,6 @@ func _CertificateAuthorityService_Patch_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CertificateAuthorityServiceServer).Patch(ctx, req.(*CertificateAuthorityPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CertificateAuthorityService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CertificateAuthorityApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CertificateAuthorityServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CertificateAuthorityService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CertificateAuthorityServiceServer).Apply(ctx, req.(*CertificateAuthorityApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -441,10 +421,6 @@ var CertificateAuthorityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _CertificateAuthorityService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _CertificateAuthorityService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

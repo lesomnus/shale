@@ -22,8 +22,6 @@ const (
 	SigningKeyService_Add_FullMethodName    = "/shale.SigningKeyService/Add"
 	SigningKeyService_Get_FullMethodName    = "/shale.SigningKeyService/Get"
 	SigningKeyService_Patch_FullMethodName  = "/shale.SigningKeyService/Patch"
-	SigningKeyService_Apply_FullMethodName  = "/shale.SigningKeyService/Apply"
-	SigningKeyService_Erase_FullMethodName  = "/shale.SigningKeyService/Erase"
 	SigningKeyService_List_FullMethodName   = "/shale.SigningKeyService/List"
 	SigningKeyService_Watch_FullMethodName  = "/shale.SigningKeyService/Watch"
 	SigningKeyService_Rotate_FullMethodName = "/shale.SigningKeyService/Rotate"
@@ -39,23 +37,27 @@ type SigningKeyServiceClient interface {
 	Get(ctx context.Context, in *SigningKeyGetRequest, opts ...grpc.CallOption) (*SigningKey, error)
 	// Patch updates an existing SigningKey
 	Patch(ctx context.Context, in *SigningKeyPatchRequest, opts ...grpc.CallOption) (*SigningKey, error)
-	// Apply applies a patch document to an existing SigningKey
-	Apply(ctx context.Context, in *SigningKeyApplyRequest, opts ...grpc.CallOption) (*SigningKey, error)
-	// Erase deletes a SigningKey
-	Erase(ctx context.Context, in *SigningKeyRef, opts ...grpc.CallOption) (*SigningKeyEraseResponse, error)
 	// List reads SigningKeys a page at a time.
 	List(ctx context.Context, in *SigningKeyListRequest, opts ...grpc.CallOption) (*SigningKeyListResponse, error)
 	// Watch the SigningKeys this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *SigningKeyWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SigningKeyWatchResponse], error)
 	// Add a key, wait until every live node holds it, sign with it, retire
 	// the old one after the longest token lifetime (§33.3). Answers the new
@@ -95,26 +97,6 @@ func (c *signingKeyServiceClient) Patch(ctx context.Context, in *SigningKeyPatch
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SigningKey)
 	err := c.cc.Invoke(ctx, SigningKeyService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *signingKeyServiceClient) Apply(ctx context.Context, in *SigningKeyApplyRequest, opts ...grpc.CallOption) (*SigningKey, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SigningKey)
-	err := c.cc.Invoke(ctx, SigningKeyService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *signingKeyServiceClient) Erase(ctx context.Context, in *SigningKeyRef, opts ...grpc.CallOption) (*SigningKeyEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SigningKeyEraseResponse)
-	err := c.cc.Invoke(ctx, SigningKeyService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,23 +152,27 @@ type SigningKeyServiceServer interface {
 	Get(context.Context, *SigningKeyGetRequest) (*SigningKey, error)
 	// Patch updates an existing SigningKey
 	Patch(context.Context, *SigningKeyPatchRequest) (*SigningKey, error)
-	// Apply applies a patch document to an existing SigningKey
-	Apply(context.Context, *SigningKeyApplyRequest) (*SigningKey, error)
-	// Erase deletes a SigningKey
-	Erase(context.Context, *SigningKeyRef) (*SigningKeyEraseResponse, error)
 	// List reads SigningKeys a page at a time.
 	List(context.Context, *SigningKeyListRequest) (*SigningKeyListResponse, error)
 	// Watch the SigningKeys this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*SigningKeyWatchRequest, grpc.ServerStreamingServer[SigningKeyWatchResponse]) error
 	// Add a key, wait until every live node holds it, sign with it, retire
 	// the old one after the longest token lifetime (§33.3). Answers the new
@@ -210,12 +196,6 @@ func (UnimplementedSigningKeyServiceServer) Get(context.Context, *SigningKeyGetR
 }
 func (UnimplementedSigningKeyServiceServer) Patch(context.Context, *SigningKeyPatchRequest) (*SigningKey, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSigningKeyServiceServer) Apply(context.Context, *SigningKeyApplyRequest) (*SigningKey, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedSigningKeyServiceServer) Erase(context.Context, *SigningKeyRef) (*SigningKeyEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedSigningKeyServiceServer) List(context.Context, *SigningKeyListRequest) (*SigningKeyListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -301,42 +281,6 @@ func _SigningKeyService_Patch_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SigningKeyService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SigningKeyApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SigningKeyServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SigningKeyService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SigningKeyServiceServer).Apply(ctx, req.(*SigningKeyApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SigningKeyService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SigningKeyRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SigningKeyServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SigningKeyService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SigningKeyServiceServer).Erase(ctx, req.(*SigningKeyRef))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SigningKeyService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SigningKeyListRequest)
 	if err := dec(in); err != nil {
@@ -404,14 +348,6 @@ var SigningKeyService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SigningKeyService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _SigningKeyService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _SigningKeyService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _SigningKeyService_List_Handler,
 		},
@@ -434,8 +370,6 @@ const (
 	PlacementPolicyService_Add_FullMethodName      = "/shale.PlacementPolicyService/Add"
 	PlacementPolicyService_Get_FullMethodName      = "/shale.PlacementPolicyService/Get"
 	PlacementPolicyService_Patch_FullMethodName    = "/shale.PlacementPolicyService/Patch"
-	PlacementPolicyService_Apply_FullMethodName    = "/shale.PlacementPolicyService/Apply"
-	PlacementPolicyService_Erase_FullMethodName    = "/shale.PlacementPolicyService/Erase"
 	PlacementPolicyService_List_FullMethodName     = "/shale.PlacementPolicyService/List"
 	PlacementPolicyService_Activate_FullMethodName = "/shale.PlacementPolicyService/Activate"
 )
@@ -450,10 +384,6 @@ type PlacementPolicyServiceClient interface {
 	Get(ctx context.Context, in *PlacementPolicyGetRequest, opts ...grpc.CallOption) (*PlacementPolicy, error)
 	// Patch updates an existing PlacementPolicy
 	Patch(ctx context.Context, in *PlacementPolicyPatchRequest, opts ...grpc.CallOption) (*PlacementPolicy, error)
-	// Apply applies a patch document to an existing PlacementPolicy
-	Apply(ctx context.Context, in *PlacementPolicyApplyRequest, opts ...grpc.CallOption) (*PlacementPolicy, error)
-	// Erase deletes a PlacementPolicy
-	Erase(ctx context.Context, in *PlacementPolicyRef, opts ...grpc.CallOption) (*PlacementPolicyEraseResponse, error)
 	// List reads PlacementPolicys a page at a time.
 	List(ctx context.Context, in *PlacementPolicyListRequest, opts ...grpc.CallOption) (*PlacementPolicyListResponse, error)
 	Activate(ctx context.Context, in *PlacementPolicyActivateRequest, opts ...grpc.CallOption) (*PlacementPolicy, error)
@@ -497,26 +427,6 @@ func (c *placementPolicyServiceClient) Patch(ctx context.Context, in *PlacementP
 	return out, nil
 }
 
-func (c *placementPolicyServiceClient) Apply(ctx context.Context, in *PlacementPolicyApplyRequest, opts ...grpc.CallOption) (*PlacementPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PlacementPolicy)
-	err := c.cc.Invoke(ctx, PlacementPolicyService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *placementPolicyServiceClient) Erase(ctx context.Context, in *PlacementPolicyRef, opts ...grpc.CallOption) (*PlacementPolicyEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PlacementPolicyEraseResponse)
-	err := c.cc.Invoke(ctx, PlacementPolicyService_Erase_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *placementPolicyServiceClient) List(ctx context.Context, in *PlacementPolicyListRequest, opts ...grpc.CallOption) (*PlacementPolicyListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PlacementPolicyListResponse)
@@ -547,10 +457,6 @@ type PlacementPolicyServiceServer interface {
 	Get(context.Context, *PlacementPolicyGetRequest) (*PlacementPolicy, error)
 	// Patch updates an existing PlacementPolicy
 	Patch(context.Context, *PlacementPolicyPatchRequest) (*PlacementPolicy, error)
-	// Apply applies a patch document to an existing PlacementPolicy
-	Apply(context.Context, *PlacementPolicyApplyRequest) (*PlacementPolicy, error)
-	// Erase deletes a PlacementPolicy
-	Erase(context.Context, *PlacementPolicyRef) (*PlacementPolicyEraseResponse, error)
 	// List reads PlacementPolicys a page at a time.
 	List(context.Context, *PlacementPolicyListRequest) (*PlacementPolicyListResponse, error)
 	Activate(context.Context, *PlacementPolicyActivateRequest) (*PlacementPolicy, error)
@@ -572,12 +478,6 @@ func (UnimplementedPlacementPolicyServiceServer) Get(context.Context, *Placement
 }
 func (UnimplementedPlacementPolicyServiceServer) Patch(context.Context, *PlacementPolicyPatchRequest) (*PlacementPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedPlacementPolicyServiceServer) Apply(context.Context, *PlacementPolicyApplyRequest) (*PlacementPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedPlacementPolicyServiceServer) Erase(context.Context, *PlacementPolicyRef) (*PlacementPolicyEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedPlacementPolicyServiceServer) List(context.Context, *PlacementPolicyListRequest) (*PlacementPolicyListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -661,42 +561,6 @@ func _PlacementPolicyService_Patch_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PlacementPolicyService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PlacementPolicyApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlacementPolicyServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlacementPolicyService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlacementPolicyServiceServer).Apply(ctx, req.(*PlacementPolicyApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PlacementPolicyService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PlacementPolicyRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlacementPolicyServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlacementPolicyService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlacementPolicyServiceServer).Erase(ctx, req.(*PlacementPolicyRef))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _PlacementPolicyService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PlacementPolicyListRequest)
 	if err := dec(in); err != nil {
@@ -753,14 +617,6 @@ var PlacementPolicyService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PlacementPolicyService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _PlacementPolicyService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _PlacementPolicyService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _PlacementPolicyService_List_Handler,
 		},
@@ -777,8 +633,6 @@ const (
 	UploadPolicyService_Add_FullMethodName      = "/shale.UploadPolicyService/Add"
 	UploadPolicyService_Get_FullMethodName      = "/shale.UploadPolicyService/Get"
 	UploadPolicyService_Patch_FullMethodName    = "/shale.UploadPolicyService/Patch"
-	UploadPolicyService_Apply_FullMethodName    = "/shale.UploadPolicyService/Apply"
-	UploadPolicyService_Erase_FullMethodName    = "/shale.UploadPolicyService/Erase"
 	UploadPolicyService_List_FullMethodName     = "/shale.UploadPolicyService/List"
 	UploadPolicyService_Activate_FullMethodName = "/shale.UploadPolicyService/Activate"
 )
@@ -793,10 +647,6 @@ type UploadPolicyServiceClient interface {
 	Get(ctx context.Context, in *UploadPolicyGetRequest, opts ...grpc.CallOption) (*UploadPolicy, error)
 	// Patch updates an existing UploadPolicy
 	Patch(ctx context.Context, in *UploadPolicyPatchRequest, opts ...grpc.CallOption) (*UploadPolicy, error)
-	// Apply applies a patch document to an existing UploadPolicy
-	Apply(ctx context.Context, in *UploadPolicyApplyRequest, opts ...grpc.CallOption) (*UploadPolicy, error)
-	// Erase deletes a UploadPolicy
-	Erase(ctx context.Context, in *UploadPolicyRef, opts ...grpc.CallOption) (*UploadPolicyEraseResponse, error)
 	// List reads UploadPolicys a page at a time.
 	List(ctx context.Context, in *UploadPolicyListRequest, opts ...grpc.CallOption) (*UploadPolicyListResponse, error)
 	Activate(ctx context.Context, in *UploadPolicyActivateRequest, opts ...grpc.CallOption) (*UploadPolicy, error)
@@ -840,26 +690,6 @@ func (c *uploadPolicyServiceClient) Patch(ctx context.Context, in *UploadPolicyP
 	return out, nil
 }
 
-func (c *uploadPolicyServiceClient) Apply(ctx context.Context, in *UploadPolicyApplyRequest, opts ...grpc.CallOption) (*UploadPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadPolicy)
-	err := c.cc.Invoke(ctx, UploadPolicyService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *uploadPolicyServiceClient) Erase(ctx context.Context, in *UploadPolicyRef, opts ...grpc.CallOption) (*UploadPolicyEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadPolicyEraseResponse)
-	err := c.cc.Invoke(ctx, UploadPolicyService_Erase_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *uploadPolicyServiceClient) List(ctx context.Context, in *UploadPolicyListRequest, opts ...grpc.CallOption) (*UploadPolicyListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UploadPolicyListResponse)
@@ -890,10 +720,6 @@ type UploadPolicyServiceServer interface {
 	Get(context.Context, *UploadPolicyGetRequest) (*UploadPolicy, error)
 	// Patch updates an existing UploadPolicy
 	Patch(context.Context, *UploadPolicyPatchRequest) (*UploadPolicy, error)
-	// Apply applies a patch document to an existing UploadPolicy
-	Apply(context.Context, *UploadPolicyApplyRequest) (*UploadPolicy, error)
-	// Erase deletes a UploadPolicy
-	Erase(context.Context, *UploadPolicyRef) (*UploadPolicyEraseResponse, error)
 	// List reads UploadPolicys a page at a time.
 	List(context.Context, *UploadPolicyListRequest) (*UploadPolicyListResponse, error)
 	Activate(context.Context, *UploadPolicyActivateRequest) (*UploadPolicy, error)
@@ -915,12 +741,6 @@ func (UnimplementedUploadPolicyServiceServer) Get(context.Context, *UploadPolicy
 }
 func (UnimplementedUploadPolicyServiceServer) Patch(context.Context, *UploadPolicyPatchRequest) (*UploadPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedUploadPolicyServiceServer) Apply(context.Context, *UploadPolicyApplyRequest) (*UploadPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedUploadPolicyServiceServer) Erase(context.Context, *UploadPolicyRef) (*UploadPolicyEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedUploadPolicyServiceServer) List(context.Context, *UploadPolicyListRequest) (*UploadPolicyListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -1003,42 +823,6 @@ func _UploadPolicyService_Patch_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UploadPolicyService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadPolicyApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UploadPolicyServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UploadPolicyService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UploadPolicyServiceServer).Apply(ctx, req.(*UploadPolicyApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UploadPolicyService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadPolicyRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UploadPolicyServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UploadPolicyService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UploadPolicyServiceServer).Erase(ctx, req.(*UploadPolicyRef))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _UploadPolicyService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UploadPolicyListRequest)
 	if err := dec(in); err != nil {
@@ -1095,14 +879,6 @@ var UploadPolicyService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UploadPolicyService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _UploadPolicyService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _UploadPolicyService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _UploadPolicyService_List_Handler,
 		},
@@ -1119,8 +895,6 @@ const (
 	AddressPolicyService_Add_FullMethodName      = "/shale.AddressPolicyService/Add"
 	AddressPolicyService_Get_FullMethodName      = "/shale.AddressPolicyService/Get"
 	AddressPolicyService_Patch_FullMethodName    = "/shale.AddressPolicyService/Patch"
-	AddressPolicyService_Apply_FullMethodName    = "/shale.AddressPolicyService/Apply"
-	AddressPolicyService_Erase_FullMethodName    = "/shale.AddressPolicyService/Erase"
 	AddressPolicyService_List_FullMethodName     = "/shale.AddressPolicyService/List"
 	AddressPolicyService_Activate_FullMethodName = "/shale.AddressPolicyService/Activate"
 )
@@ -1135,10 +909,6 @@ type AddressPolicyServiceClient interface {
 	Get(ctx context.Context, in *AddressPolicyGetRequest, opts ...grpc.CallOption) (*AddressPolicy, error)
 	// Patch updates an existing AddressPolicy
 	Patch(ctx context.Context, in *AddressPolicyPatchRequest, opts ...grpc.CallOption) (*AddressPolicy, error)
-	// Apply applies a patch document to an existing AddressPolicy
-	Apply(ctx context.Context, in *AddressPolicyApplyRequest, opts ...grpc.CallOption) (*AddressPolicy, error)
-	// Erase deletes a AddressPolicy
-	Erase(ctx context.Context, in *AddressPolicyRef, opts ...grpc.CallOption) (*AddressPolicyEraseResponse, error)
 	// List reads AddressPolicys a page at a time.
 	List(ctx context.Context, in *AddressPolicyListRequest, opts ...grpc.CallOption) (*AddressPolicyListResponse, error)
 	// Activates after every live node holds a certificate for the new names
@@ -1184,26 +954,6 @@ func (c *addressPolicyServiceClient) Patch(ctx context.Context, in *AddressPolic
 	return out, nil
 }
 
-func (c *addressPolicyServiceClient) Apply(ctx context.Context, in *AddressPolicyApplyRequest, opts ...grpc.CallOption) (*AddressPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddressPolicy)
-	err := c.cc.Invoke(ctx, AddressPolicyService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *addressPolicyServiceClient) Erase(ctx context.Context, in *AddressPolicyRef, opts ...grpc.CallOption) (*AddressPolicyEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddressPolicyEraseResponse)
-	err := c.cc.Invoke(ctx, AddressPolicyService_Erase_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *addressPolicyServiceClient) List(ctx context.Context, in *AddressPolicyListRequest, opts ...grpc.CallOption) (*AddressPolicyListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddressPolicyListResponse)
@@ -1234,10 +984,6 @@ type AddressPolicyServiceServer interface {
 	Get(context.Context, *AddressPolicyGetRequest) (*AddressPolicy, error)
 	// Patch updates an existing AddressPolicy
 	Patch(context.Context, *AddressPolicyPatchRequest) (*AddressPolicy, error)
-	// Apply applies a patch document to an existing AddressPolicy
-	Apply(context.Context, *AddressPolicyApplyRequest) (*AddressPolicy, error)
-	// Erase deletes a AddressPolicy
-	Erase(context.Context, *AddressPolicyRef) (*AddressPolicyEraseResponse, error)
 	// List reads AddressPolicys a page at a time.
 	List(context.Context, *AddressPolicyListRequest) (*AddressPolicyListResponse, error)
 	// Activates after every live node holds a certificate for the new names
@@ -1261,12 +1007,6 @@ func (UnimplementedAddressPolicyServiceServer) Get(context.Context, *AddressPoli
 }
 func (UnimplementedAddressPolicyServiceServer) Patch(context.Context, *AddressPolicyPatchRequest) (*AddressPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedAddressPolicyServiceServer) Apply(context.Context, *AddressPolicyApplyRequest) (*AddressPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedAddressPolicyServiceServer) Erase(context.Context, *AddressPolicyRef) (*AddressPolicyEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedAddressPolicyServiceServer) List(context.Context, *AddressPolicyListRequest) (*AddressPolicyListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -1349,42 +1089,6 @@ func _AddressPolicyService_Patch_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AddressPolicyService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddressPolicyApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AddressPolicyServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AddressPolicyService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AddressPolicyServiceServer).Apply(ctx, req.(*AddressPolicyApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AddressPolicyService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddressPolicyRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AddressPolicyServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AddressPolicyService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AddressPolicyServiceServer).Erase(ctx, req.(*AddressPolicyRef))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AddressPolicyService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddressPolicyListRequest)
 	if err := dec(in); err != nil {
@@ -1439,14 +1143,6 @@ var AddressPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _AddressPolicyService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _AddressPolicyService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _AddressPolicyService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

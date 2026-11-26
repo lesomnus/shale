@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1093,99 +1093,6 @@ func (b0 TenantPatchRequest_builder) Build() *TenantPatchRequest {
 	return m0
 }
 
-type TenantApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *TenantRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *TenantApplyRequest) Reset() {
-	*x = TenantApplyRequest{}
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TenantApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TenantApplyRequest) ProtoMessage() {}
-
-func (x *TenantApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *TenantApplyRequest) GetRef() *TenantRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *TenantApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *TenantApplyRequest) SetRef(v *TenantRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *TenantApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *TenantApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *TenantApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *TenantApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *TenantApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type TenantApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *TenantRef
-	Patch *patchpb.Patch
-}
-
-func (b0 TenantApplyRequest_builder) Build() *TenantApplyRequest {
-	m0 := &TenantApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type TenantEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1197,7 +1104,7 @@ type TenantEraseResponse struct {
 
 func (x *TenantEraseResponse) Reset() {
 	*x = TenantEraseResponse{}
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[6]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1209,7 +1116,7 @@ func (x *TenantEraseResponse) String() string {
 func (*TenantEraseResponse) ProtoMessage() {}
 
 func (x *TenantEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[6]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1272,13 +1179,14 @@ type TenantListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *TenantSelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *TenantListRequest) Reset() {
 	*x = TenantListRequest{}
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[7]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1290,7 +1198,7 @@ func (x *TenantListRequest) String() string {
 func (*TenantListRequest) ProtoMessage() {}
 
 func (x *TenantListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[7]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1331,6 +1239,13 @@ func (x *TenantListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *TenantListRequest) GetSelect() *TenantSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *TenantListRequest) SetFilters(v []*TenantFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1345,6 +1260,21 @@ func (x *TenantListRequest) SetAfter(v string) {
 
 func (x *TenantListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *TenantListRequest) SetSelect(v *TenantSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *TenantListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *TenantListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type TenantListRequest_builder struct {
@@ -1367,6 +1297,15 @@ type TenantListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *TenantSelect
 }
 
 func (b0 TenantListRequest_builder) Build() *TenantListRequest {
@@ -1377,6 +1316,7 @@ func (b0 TenantListRequest_builder) Build() *TenantListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1390,7 +1330,7 @@ type TenantListResponse struct {
 
 func (x *TenantListResponse) Reset() {
 	*x = TenantListResponse{}
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[8]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1402,7 +1342,7 @@ func (x *TenantListResponse) String() string {
 func (*TenantListResponse) ProtoMessage() {}
 
 func (x *TenantListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[8]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1469,7 +1409,7 @@ type TenantFilter struct {
 
 func (x *TenantFilter) Reset() {
 	*x = TenantFilter{}
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[9]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1481,7 +1421,7 @@ func (x *TenantFilter) String() string {
 func (*TenantFilter) ProtoMessage() {}
 
 func (x *TenantFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[9]
+	mi := &file_shale_payday_tenant_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1532,9 +1472,9 @@ var File_shale_payday_tenant_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/payday/tenant_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19shale/payday/tenant.proto\"\x84\x03\n" +
-	"\x10TenantAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x1fshale/payday/tenant_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x19shale/payday/tenant.proto\"\x8c\x03\n" +
+	"\x10TenantAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12;\n" +
@@ -1547,9 +1487,9 @@ const file_shale_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"c\n" +
 	"\x10TenantGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.TenantRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06select\"<\n" +
-	"\tTenantRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06select\"D\n" +
+	"\tTenantRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
 	"\x03key\"\x86\x02\n" +
 	"\fTenantSelect\x12\x10\n" +
@@ -1575,78 +1515,70 @@ const file_shale_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\fstored_bytes\x18\x12 \x01(\x03R\vstoredBytes\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
-	"\x12TenantApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.TenantRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"-\n" +
 	"\x13TenantEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9b\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc8\x01\n" +
 	"\x11TenantListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.shale.TenantFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"T\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.shale.TenantSelectR\x06select\"T\n" +
 	"\x12TenantListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.shale.TenantR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"2\n" +
 	"\fTenantFilter\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.TenantRefR\x03ref2\xc7\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.TenantRefR\x03ref2\x94\x02\n" +
 	"\rTenantService\x12-\n" +
 	"\x03Add\x12\x17.shale.TenantAddRequest\x1a\r.shale.Tenant\x12-\n" +
 	"\x03Get\x12\x17.shale.TenantGetRequest\x1a\r.shale.Tenant\x121\n" +
-	"\x05Patch\x12\x19.shale.TenantPatchRequest\x1a\r.shale.Tenant\x121\n" +
-	"\x05Apply\x12\x19.shale.TenantApplyRequest\x1a\r.shale.Tenant\x125\n" +
+	"\x05Patch\x12\x19.shale.TenantPatchRequest\x1a\r.shale.Tenant\x125\n" +
 	"\x05Erase\x12\x10.shale.TenantRef\x1a\x1a.shale.TenantEraseResponse\x12;\n" +
 	"\x04List\x12\x18.shale.TenantListRequest\x1a\x19.shale.TenantListResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_payday_tenant_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_shale_payday_tenant_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_shale_payday_tenant_svc_g_proto_goTypes = []any{
 	(*TenantAddRequest)(nil),      // 0: shale.TenantAddRequest
 	(*TenantGetRequest)(nil),      // 1: shale.TenantGetRequest
 	(*TenantRef)(nil),             // 2: shale.TenantRef
 	(*TenantSelect)(nil),          // 3: shale.TenantSelect
 	(*TenantPatchRequest)(nil),    // 4: shale.TenantPatchRequest
-	(*TenantApplyRequest)(nil),    // 5: shale.TenantApplyRequest
-	(*TenantEraseResponse)(nil),   // 6: shale.TenantEraseResponse
-	(*TenantListRequest)(nil),     // 7: shale.TenantListRequest
-	(*TenantListResponse)(nil),    // 8: shale.TenantListResponse
-	(*TenantFilter)(nil),          // 9: shale.TenantFilter
-	nil,                           // 10: shale.TenantAddRequest.LabelsEntry
-	nil,                           // 11: shale.TenantPatchRequest.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
-	(*patchpb.Patch)(nil),         // 13: patch.Patch
-	(*Tenant)(nil),                // 14: shale.Tenant
+	(*TenantEraseResponse)(nil),   // 5: shale.TenantEraseResponse
+	(*TenantListRequest)(nil),     // 6: shale.TenantListRequest
+	(*TenantListResponse)(nil),    // 7: shale.TenantListResponse
+	(*TenantFilter)(nil),          // 8: shale.TenantFilter
+	nil,                           // 9: shale.TenantAddRequest.LabelsEntry
+	nil,                           // 10: shale.TenantPatchRequest.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*Tenant)(nil),                // 12: shale.Tenant
 }
 var file_shale_payday_tenant_svc_g_proto_depIdxs = []int32{
-	10, // 0: shale.TenantAddRequest.labels:type_name -> shale.TenantAddRequest.LabelsEntry
-	12, // 1: shale.TenantAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	9,  // 0: shale.TenantAddRequest.labels:type_name -> shale.TenantAddRequest.LabelsEntry
+	11, // 1: shale.TenantAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: shale.TenantGetRequest.ref:type_name -> shale.TenantRef
 	3,  // 3: shale.TenantGetRequest.select:type_name -> shale.TenantSelect
 	2,  // 4: shale.TenantPatchRequest.ref:type_name -> shale.TenantRef
-	11, // 5: shale.TenantPatchRequest.labels:type_name -> shale.TenantPatchRequest.LabelsEntry
-	12, // 6: shale.TenantPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 7: shale.TenantApplyRequest.ref:type_name -> shale.TenantRef
-	13, // 8: shale.TenantApplyRequest.patch:type_name -> patch.Patch
-	9,  // 9: shale.TenantListRequest.filters:type_name -> shale.TenantFilter
-	14, // 10: shale.TenantListResponse.items:type_name -> shale.Tenant
-	2,  // 11: shale.TenantFilter.ref:type_name -> shale.TenantRef
-	0,  // 12: shale.TenantService.Add:input_type -> shale.TenantAddRequest
-	1,  // 13: shale.TenantService.Get:input_type -> shale.TenantGetRequest
-	4,  // 14: shale.TenantService.Patch:input_type -> shale.TenantPatchRequest
-	5,  // 15: shale.TenantService.Apply:input_type -> shale.TenantApplyRequest
-	2,  // 16: shale.TenantService.Erase:input_type -> shale.TenantRef
-	7,  // 17: shale.TenantService.List:input_type -> shale.TenantListRequest
-	14, // 18: shale.TenantService.Add:output_type -> shale.Tenant
-	14, // 19: shale.TenantService.Get:output_type -> shale.Tenant
-	14, // 20: shale.TenantService.Patch:output_type -> shale.Tenant
-	14, // 21: shale.TenantService.Apply:output_type -> shale.Tenant
-	6,  // 22: shale.TenantService.Erase:output_type -> shale.TenantEraseResponse
-	8,  // 23: shale.TenantService.List:output_type -> shale.TenantListResponse
-	18, // [18:24] is the sub-list for method output_type
-	12, // [12:18] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	10, // 5: shale.TenantPatchRequest.labels:type_name -> shale.TenantPatchRequest.LabelsEntry
+	11, // 6: shale.TenantPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	8,  // 7: shale.TenantListRequest.filters:type_name -> shale.TenantFilter
+	3,  // 8: shale.TenantListRequest.select:type_name -> shale.TenantSelect
+	12, // 9: shale.TenantListResponse.items:type_name -> shale.Tenant
+	2,  // 10: shale.TenantFilter.ref:type_name -> shale.TenantRef
+	0,  // 11: shale.TenantService.Add:input_type -> shale.TenantAddRequest
+	1,  // 12: shale.TenantService.Get:input_type -> shale.TenantGetRequest
+	4,  // 13: shale.TenantService.Patch:input_type -> shale.TenantPatchRequest
+	2,  // 14: shale.TenantService.Erase:input_type -> shale.TenantRef
+	6,  // 15: shale.TenantService.List:input_type -> shale.TenantListRequest
+	12, // 16: shale.TenantService.Add:output_type -> shale.Tenant
+	12, // 17: shale.TenantService.Get:output_type -> shale.Tenant
+	12, // 18: shale.TenantService.Patch:output_type -> shale.Tenant
+	5,  // 19: shale.TenantService.Erase:output_type -> shale.TenantEraseResponse
+	7,  // 20: shale.TenantService.List:output_type -> shale.TenantListResponse
+	16, // [16:21] is the sub-list for method output_type
+	11, // [11:16] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_shale_payday_tenant_svc_g_proto_init() }
@@ -1665,7 +1597,7 @@ func file_shale_payday_tenant_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_payday_tenant_svc_g_proto_rawDesc), len(file_shale_payday_tenant_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

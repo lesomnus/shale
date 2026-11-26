@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../../patch/patch_pb.js";
-import { file_patch_patch } from "../../patch/patch_pb.js";
+import { file_orm } from "../../orm_pb.js";
 import type { Audit, AuditSchema } from "./audit_pb.js";
 import { file_shale_payday_audit } from "./audit_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -16,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/payday/audit_svc.g.proto.
  */
 export const file_shale_payday_audit_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch5zaGFsZS9wYXlkYXkvYXVkaXRfc3ZjLmcucHJvdG8SBXNoYWxlIv4CCg9BdWRpdEFkZFJlcXVlc3QSCgoCaWQYASABKAwSGAoJdGVuYW50X2lkGAIgASgMQgWqAQIIAhIXCghhY3Rvcl9pZBgIIAEoDEIFqgECCAISFwoIdHJhY2VfaWQYCSABKAxCBaoBAggCEhUKBmFjdGlvbhgKIAEoCUIFqgECCAISGAoJb2JqZWN0X2lkGAsgASgMQgWqAQIIAhIUCgVwYXRjaBgMIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIeCg9hY3Rvcl90ZW5hbnRfaWQYECABKAxCBaoBAggCEhQKBXZhbHVlGBEgASgMQgWqAQIIAhIdChVjb3VudGVycGFydF90ZW5hbnRfaWQYEiABKAwSDgoGZG9tYWluGBMgASgNEg4KBmZpZWxkcxgUIAMoDRIOCgZkaWdlc3QYFSABKAwSFQoNZGlnZXN0X2ZpZWxkcxgWIAMoDSJTCg9BdWRpdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uc2hhbGUuQXVkaXRSZWYSIgoGc2VsZWN0GAIgASgLMhIuc2hhbGUuQXVkaXRTZWxlY3QiHwoIQXVkaXRSZWYSDAoCaWQYASABKAxIAEIFCgNrZXkipwIKC0F1ZGl0U2VsZWN0EgsKA2FsbBgBIAEoCBIRCgl0ZW5hbnRfaWQYAiABKAgSEAoIYWN0b3JfaWQYCCABKAgSEAoIdHJhY2VfaWQYCSABKAgSDgoGYWN0aW9uGAogASgIEhEKCW9iamVjdF9pZBgLIAEoCBINCgVwYXRjaBgMIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFwoPYWN0b3JfdGVuYW50X2lkGBAgASgIEg0KBXZhbHVlGBEgASgIEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoCBIOCgZkb21haW4YEyABKAgSDgoGZmllbGRzGBQgASgIEg4KBmRpZ2VzdBgVIAEoCBIVCg1kaWdlc3RfZmllbGRzGBYgASgIIswCChFBdWRpdFBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5zaGFsZS5BdWRpdFJlZhIRCgl0ZW5hbnRfaWQYBCABKAwSEAoIYWN0b3JfaWQYECABKAwSEAoIdHJhY2VfaWQYEiABKAwSDgoGYWN0aW9uGBQgASgJEhEKCW9iamVjdF9pZBgWIAEoDBINCgVwYXRjaBgYIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYICABKAwSDQoFdmFsdWUYIiABKAwSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGCQgASgMEiIKGmNvdW50ZXJwYXJ0X3RlbmFudF9pZF9udWxsGCUgASgIEg4KBmRvbWFpbhgmIAEoDRIOCgZmaWVsZHMYKCADKA0SDgoGZGlnZXN0GCogASgMEhUKDWRpZ2VzdF9maWVsZHMYLCADKA0iTgoRQXVkaXRBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uc2hhbGUuQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIInoKEEF1ZGl0TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnNoYWxlLkF1ZGl0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJFChFBdWRpdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnNoYWxlLkF1ZGl0EhMKBG5leHQYAiABKAlCBaoBAggCIn0KC0F1ZGl0RmlsdGVyEhEKCW9iamVjdF9pZBgBIAEoDBIQCghhY3Rvcl9pZBgCIAEoDBIRCgl0ZW5hbnRfaWQYAyABKAwSFwoPYWN0b3JfdGVuYW50X2lkGAQgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgFIAEoDDK6AgoMQXVkaXRTZXJ2aWNlEisKA0FkZBIWLnNoYWxlLkF1ZGl0QWRkUmVxdWVzdBoMLnNoYWxlLkF1ZGl0EisKA0dldBIWLnNoYWxlLkF1ZGl0R2V0UmVxdWVzdBoMLnNoYWxlLkF1ZGl0Ei8KBVBhdGNoEhguc2hhbGUuQXVkaXRQYXRjaFJlcXVlc3QaDC5zaGFsZS5BdWRpdBIvCgVBcHBseRIYLnNoYWxlLkF1ZGl0QXBwbHlSZXF1ZXN0Ggwuc2hhbGUuQXVkaXQSMwoFRXJhc2USDy5zaGFsZS5BdWRpdFJlZhoZLnNoYWxlLkF1ZGl0RXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcuc2hhbGUuQXVkaXRMaXN0UmVxdWVzdBoYLnNoYWxlLkF1ZGl0TGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_shale_payday_audit]);
+  fileDesc("Ch5zaGFsZS9wYXlkYXkvYXVkaXRfc3ZjLmcucHJvdG8SBXNoYWxlIvUDCg9BdWRpdEFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIeCgl0ZW5hbnRfaWQYAiABKAxCC6oBAggC6oIWAhBAEh0KCGFjdG9yX2lkGAggASgMQguqAQIIAuqCFgIQQBIZCgljYWxsZXJfaWQYFyABKAxCBuqCFgIQQBIgChBjYWxsZXJfdGVuYW50X2lkGBggASgMQgbqghYCEEASEAoIcHJlc2VuY2UYGSABKAkSFwoIdHJhY2VfaWQYCSABKAxCBaoBAggCEhUKBmFjdGlvbhgKIAEoCUIFqgECCAISHgoJb2JqZWN0X2lkGAsgASgMQguqAQIIAuqCFgIQQBIUCgVwYXRjaBgMIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIkCg9hY3Rvcl90ZW5hbnRfaWQYECABKAxCC6oBAggC6oIWAhBAEhQKBXZhbHVlGBEgASgMQgWqAQIIAhIlChVjb3VudGVycGFydF90ZW5hbnRfaWQYEiABKAxCBuqCFgIQQBIOCgZkb21haW4YEyABKA0SDgoGZmllbGRzGBQgAygNEg4KBmRpZ2VzdBgVIAEoDBIVCg1kaWdlc3RfZmllbGRzGBYgAygNIlMKD0F1ZGl0R2V0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5zaGFsZS5BdWRpdFJlZhIiCgZzZWxlY3QYAiABKAsyEi5zaGFsZS5BdWRpdFNlbGVjdCInCghBdWRpdFJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASABCBQoDa2V5IuYCCgtBdWRpdFNlbGVjdBILCgNhbGwYASABKAgSEQoJdGVuYW50X2lkGAIgASgIEhAKCGFjdG9yX2lkGAggASgIEhEKCWNhbGxlcl9pZBgXIAEoCBIYChBjYWxsZXJfdGVuYW50X2lkGBggASgIEhAKCHByZXNlbmNlGBkgASgIEhAKCHRyYWNlX2lkGAkgASgIEg4KBmFjdGlvbhgKIAEoCBIRCglvYmplY3RfaWQYCyABKAgSDQoFcGF0Y2gYDCABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhcKD2FjdG9yX3RlbmFudF9pZBgQIAEoCBINCgV2YWx1ZRgRIAEoCBIdChVjb3VudGVycGFydF90ZW5hbnRfaWQYEiABKAgSDgoGZG9tYWluGBMgASgIEg4KBmZpZWxkcxgUIAEoCBIOCgZkaWdlc3QYFSABKAgSFQoNZGlnZXN0X2ZpZWxkcxgWIAEoCCKeAQoQQXVkaXRMaXN0UmVxdWVzdBIjCgdmaWx0ZXJzGAEgAygLMhIuc2hhbGUuQXVkaXRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiIKBnNlbGVjdBgGIAEoCzISLnNoYWxlLkF1ZGl0U2VsZWN0IkUKEUF1ZGl0TGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwuc2hhbGUuQXVkaXQSEwoEbmV4dBgCIAEoCUIFqgECCAIipQEKC0F1ZGl0RmlsdGVyEhkKCW9iamVjdF9pZBgBIAEoDEIG6oIWAhBAEhgKCGFjdG9yX2lkGAIgASgMQgbqghYCEEASGQoJdGVuYW50X2lkGAMgASgMQgbqghYCEEASHwoPYWN0b3JfdGVuYW50X2lkGAQgASgMQgbqghYCEEASJQoVY291bnRlcnBhcnRfdGVuYW50X2lkGAUgASgMQgbqghYCEEAyowEKDEF1ZGl0U2VydmljZRIrCgNBZGQSFi5zaGFsZS5BdWRpdEFkZFJlcXVlc3QaDC5zaGFsZS5BdWRpdBIrCgNHZXQSFi5zaGFsZS5BdWRpdEdldFJlcXVlc3QaDC5zaGFsZS5BdWRpdBI5CgRMaXN0Ehcuc2hhbGUuQXVkaXRMaXN0UmVxdWVzdBoYLnNoYWxlLkF1ZGl0TGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_shale_payday_audit]);
 
 /**
  * @generated from message shale.AuditAddRequest
@@ -36,6 +35,21 @@ export type AuditAddRequest = Message<"shale.AuditAddRequest"> & {
    * @generated from field: bytes actor_id = 8 [features.field_presence = IMPLICIT];
    */
   actorId: Uint8Array;
+
+  /**
+   * @generated from field: bytes caller_id = 23;
+   */
+  callerId: Uint8Array;
+
+  /**
+   * @generated from field: bytes caller_tenant_id = 24;
+   */
+  callerTenantId: Uint8Array;
+
+  /**
+   * @generated from field: string presence = 25;
+   */
+  presence: string;
 
   /**
    * @generated from field: bytes trace_id = 9 [features.field_presence = IMPLICIT];
@@ -170,6 +184,21 @@ export type AuditSelect = Message<"shale.AuditSelect"> & {
   actorId: boolean;
 
   /**
+   * @generated from field: bool caller_id = 23;
+   */
+  callerId: boolean;
+
+  /**
+   * @generated from field: bool caller_tenant_id = 24;
+   */
+  callerTenantId: boolean;
+
+  /**
+   * @generated from field: bool presence = 25;
+   */
+  presence: boolean;
+
+  /**
    * @generated from field: bool trace_id = 9;
    */
   traceId: boolean;
@@ -238,143 +267,6 @@ export const AuditSelectSchema: GenMessage<AuditSelect> = /*@__PURE__*/
   messageDesc(file_shale_payday_audit_svc_g, 3);
 
 /**
- * @generated from message shale.AuditPatchRequest
- */
-export type AuditPatchRequest = Message<"shale.AuditPatchRequest"> & {
-  /**
-   * @generated from field: shale.AuditRef ref = 1;
-   */
-  ref?: AuditRef | undefined;
-
-  /**
-   * @generated from field: bytes tenant_id = 4;
-   */
-  tenantId: Uint8Array;
-
-  /**
-   * @generated from field: bytes actor_id = 16;
-   */
-  actorId: Uint8Array;
-
-  /**
-   * @generated from field: bytes trace_id = 18;
-   */
-  traceId: Uint8Array;
-
-  /**
-   * @generated from field: string action = 20;
-   */
-  action: string;
-
-  /**
-   * @generated from field: bytes object_id = 22;
-   */
-  objectId: Uint8Array;
-
-  /**
-   * @generated from field: bytes patch = 24;
-   */
-  patch: Uint8Array;
-
-  /**
-   * @generated from field: bytes actor_tenant_id = 32;
-   */
-  actorTenantId: Uint8Array;
-
-  /**
-   * @generated from field: bytes value = 34;
-   */
-  value: Uint8Array;
-
-  /**
-   * @generated from field: bytes counterpart_tenant_id = 36;
-   */
-  counterpartTenantId: Uint8Array;
-
-  /**
-   * Clear counterpart_tenant_id instead of writing it.
-   * It takes a field of its own because an unset value already means
-   * "leave it alone", so no value could have meant NULL. It wins
-   * outright: setting both this and counterpart_tenant_id clears.
-   *
-   * @generated from field: bool counterpart_tenant_id_null = 37;
-   */
-  counterpartTenantIdNull: boolean;
-
-  /**
-   * @generated from field: uint32 domain = 38;
-   */
-  domain: number;
-
-  /**
-   * @generated from field: repeated uint32 fields = 40;
-   */
-  fields: number[];
-
-  /**
-   * @generated from field: bytes digest = 42;
-   */
-  digest: Uint8Array;
-
-  /**
-   * @generated from field: repeated uint32 digest_fields = 44;
-   */
-  digestFields: number[];
-};
-
-/**
- * Describes the message shale.AuditPatchRequest.
- * Use `create(AuditPatchRequestSchema)` to create a new message.
- */
-export const AuditPatchRequestSchema: GenMessage<AuditPatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_audit_svc_g, 4);
-
-/**
- * @generated from message shale.AuditApplyRequest
- */
-export type AuditApplyRequest = Message<"shale.AuditApplyRequest"> & {
-  /**
-   * @generated from field: shale.AuditRef ref = 1;
-   */
-  ref?: AuditRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.AuditApplyRequest.
- * Use `create(AuditApplyRequestSchema)` to create a new message.
- */
-export const AuditApplyRequestSchema: GenMessage<AuditApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_audit_svc_g, 5);
-
-/**
- * @generated from message shale.AuditEraseResponse
- */
-export type AuditEraseResponse = Message<"shale.AuditEraseResponse"> & {
-  /**
-   * Erased is whether this call is the one that erased the row.
-   *
-   * False for a row that was already gone, was never there, or is out
-   * of this caller's reach -- which are one answer on purpose, and the
-   * reason the RPC does not fail instead.
-   *
-   * @generated from field: bool erased = 1;
-   */
-  erased: boolean;
-};
-
-/**
- * Describes the message shale.AuditEraseResponse.
- * Use `create(AuditEraseResponseSchema)` to create a new message.
- */
-export const AuditEraseResponseSchema: GenMessage<AuditEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_audit_svc_g, 6);
-
-/**
  * @generated from message shale.AuditListRequest
  */
 export type AuditListRequest = Message<"shale.AuditListRequest"> & {
@@ -414,6 +306,20 @@ export type AuditListRequest = Message<"shale.AuditListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.AuditSelect select = 6;
+   */
+  select?: AuditSelect | undefined;
 };
 
 /**
@@ -421,7 +327,7 @@ export type AuditListRequest = Message<"shale.AuditListRequest"> & {
  * Use `create(AuditListRequestSchema)` to create a new message.
  */
 export const AuditListRequestSchema: GenMessage<AuditListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_audit_svc_g, 7);
+  messageDesc(file_shale_payday_audit_svc_g, 4);
 
 /**
  * @generated from message shale.AuditListResponse
@@ -451,7 +357,7 @@ export type AuditListResponse = Message<"shale.AuditListResponse"> & {
  * Use `create(AuditListResponseSchema)` to create a new message.
  */
 export const AuditListResponseSchema: GenMessage<AuditListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_audit_svc_g, 8);
+  messageDesc(file_shale_payday_audit_svc_g, 5);
 
 /**
  * @generated from message shale.AuditFilter
@@ -488,7 +394,7 @@ export type AuditFilter = Message<"shale.AuditFilter"> & {
  * Use `create(AuditFilterSchema)` to create a new message.
  */
 export const AuditFilterSchema: GenMessage<AuditFilter> = /*@__PURE__*/
-  messageDesc(file_shale_payday_audit_svc_g, 9);
+  messageDesc(file_shale_payday_audit_svc_g, 6);
 
 /**
  * @generated from service shale.AuditService
@@ -513,36 +419,6 @@ export const AuditService: GenService<{
     methodKind: "unary";
     input: typeof AuditGetRequestSchema;
     output: typeof AuditSchema;
-  },
-  /**
-   * Patch updates an existing Audit
-   *
-   * @generated from rpc shale.AuditService.Patch
-   */
-  patch: {
-    methodKind: "unary";
-    input: typeof AuditPatchRequestSchema;
-    output: typeof AuditSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Audit
-   *
-   * @generated from rpc shale.AuditService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof AuditApplyRequestSchema;
-    output: typeof AuditSchema;
-  },
-  /**
-   * Erase deletes a Audit
-   *
-   * @generated from rpc shale.AuditService.Erase
-   */
-  erase: {
-    methodKind: "unary";
-    input: typeof AuditRefSchema;
-    output: typeof AuditEraseResponseSchema;
   },
   /**
    * List reads Audits a page at a time.

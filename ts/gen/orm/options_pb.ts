@@ -6,9 +6,11 @@ import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Index } from "./index_pb.js";
 import { file_orm_index } from "./index_pb.js";
+import type { OnDelete } from "./on_delete_pb.js";
+import { file_orm_on_delete } from "./on_delete_pb.js";
 import type { Ref } from "./ref_pb.js";
 import { file_orm_ref } from "./ref_pb.js";
-import type { RpcAdd, RpcErase, RpcGet, RpcPatch } from "./rpc_pb.js";
+import type { RpcAdd, RpcApply, RpcErase, RpcGet, RpcPatch } from "./rpc_pb.js";
 import { file_orm_rpc } from "./rpc_pb.js";
 import type { Type } from "./type_pb.js";
 import { file_orm_type } from "./type_pb.js";
@@ -18,9 +20,25 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file orm/options.proto.
  */
 export const file_orm_options: GenFile = /*@__PURE__*/
-  fileDesc("ChFvcm0vb3B0aW9ucy5wcm90bxIDb3JtIpwBCgpScGNPcHRpb25zEhAKCGRpc2FibGVkGAEgASgIEgwKBGNydWQYAiABKAgSGAoDYWRkGBAgASgLMgsub3JtLlJwY0FkZBIYCgNnZXQYESABKAsyCy5vcm0uUnBjR2V0EhwKBXBhdGNoGBIgASgLMg0ub3JtLlJwY1BhdGNoEhwKBWVyYXNlGBMgASgLMg0ub3JtLlJwY0VyYXNlIl0KDk1lc3NhZ2VPcHRpb25zEhAKCGRpc2FibGVkGAEgASgIEhwKA3JwYxgCIAEoCzIPLm9ybS5ScGNPcHRpb25zEhsKB2luZGV4ZXMYAyADKAsyCi5vcm0uSW5kZXgi1gEKDEZpZWxkT3B0aW9ucxIQCghkaXNhYmxlZBgBIAEoCBIXCgR0eXBlGAIgASgOMgkub3JtLlR5cGUSCwoDa2V5GAUgASgIEg4KBnVuaXF1ZRgGIAEoCBIQCghudWxsYWJsZRgHIAEoCBIRCglpbW11dGFibGUYCCABKAgSDwoHZGVmYXVsdBgQIAEoCRIkCgd2ZXJzaW9uGBEgASgLMhMub3JtLlZlcnNpb25PcHRpb25zEiIKBmVyYXNlZBgSIAEoCzISLm9ybS5FcmFzZWRPcHRpb25zIpUBCgtFZGdlT3B0aW9ucxIQCghkaXNhYmxlZBgBIAEoCBIWCgRiaW5kGAIgASgLMggub3JtLlJlZhIWCgRmcm9tGAMgASgLMggub3JtLlJlZhIOCgZ1bmlxdWUYBiABKAgSEAoIbnVsbGFibGUYByABKAgSEQoJaW1tdXRhYmxlGAggASgIEg8KB2RlZmF1bHQYECABKAkiEAoOVmVyc2lvbk9wdGlvbnMiDwoNRXJhc2VkT3B0aW9uc0IsWipnaXRodWIuY29tL3Byb3RvYnVmLW9ybS9wcm90b2J1Zi1vcm0vb3JtcGJiCGVkaXRpb25zcOgH", [file_orm_index, file_orm_ref, file_orm_rpc, file_orm_type]);
+  fileDesc("ChFvcm0vb3B0aW9ucy5wcm90bxIDb3JtIrgBCgpScGNPcHRpb25zEhAKCGRpc2FibGVkGAEgASgIEhgKA2FkZBgQIAEoCzILLm9ybS5ScGNBZGQSGAoDZ2V0GBEgASgLMgsub3JtLlJwY0dldBIcCgVwYXRjaBgSIAEoCzINLm9ybS5ScGNQYXRjaBIcCgVlcmFzZRgTIAEoCzINLm9ybS5ScGNFcmFzZRIcCgVhcHBseRgUIAEoCzINLm9ybS5ScGNBcHBseUoECAIQA1IEY3J1ZCJdCg5NZXNzYWdlT3B0aW9ucxIQCghkaXNhYmxlZBgBIAEoCBIcCgNycGMYAiABKAsyDy5vcm0uUnBjT3B0aW9ucxIbCgdpbmRleGVzGAMgAygLMgoub3JtLkluZGV4ItYBCgxGaWVsZE9wdGlvbnMSEAoIZGlzYWJsZWQYASABKAgSFwoEdHlwZRgCIAEoDjIJLm9ybS5UeXBlEgsKA2tleRgFIAEoCBIOCgZ1bmlxdWUYBiABKAgSEAoIbnVsbGFibGUYByABKAgSEQoJaW1tdXRhYmxlGAggASgIEg8KB2RlZmF1bHQYECABKAkSJAoHdmVyc2lvbhgRIAEoCzITLm9ybS5WZXJzaW9uT3B0aW9ucxIiCgZlcmFzZWQYEiABKAsyEi5vcm0uRXJhc2VkT3B0aW9ucyK3AQoLRWRnZU9wdGlvbnMSEAoIZGlzYWJsZWQYASABKAgSFgoEYmluZBgCIAEoCzIILm9ybS5SZWYSFgoEZnJvbRgDIAEoCzIILm9ybS5SZWYSDgoGdW5pcXVlGAYgASgIEhAKCG51bGxhYmxlGAcgASgIEhEKCWltbXV0YWJsZRgIIAEoCBIgCglvbl9kZWxldGUYCSABKA4yDS5vcm0uT25EZWxldGUSDwoHZGVmYXVsdBgQIAEoCSIQCg5WZXJzaW9uT3B0aW9ucyIPCg1FcmFzZWRPcHRpb25zQixaKmdpdGh1Yi5jb20vcHJvdG9idWYtb3JtL3Byb3RvYnVmLW9ybS9vcm1wYmIIZWRpdGlvbnNw6Ac", [file_orm_index, file_orm_on_delete, file_orm_ref, file_orm_rpc, file_orm_type]);
 
 /**
+ * RpcOptions says which verbs an entity's service has.
+ *
+ * A verb is there when its option is set and not disabled, and no verb brings
+ * another: each is asked for by its own name -- `add`, `get`, `patch`, `apply`,
+ * `erase`. The one exception is AddMany, which lives inside the Add (see
+ * RpcAdd.many) because it is that Add many times.
+ *
+ * An `rpc: {}` that names no verb is a service with no verb in it. The graph
+ * does not refuse it; it answers as it does for an entity with no `rpc` at
+ * all, that none of the verbs is there.
+ *
+ * There was a `crud` here that stood for four of the verbs at once. It is
+ * gone, and nothing reads it: a schema names the verbs it means. A schema
+ * compiled against an `orm` that still had it is refused by the graph rather
+ * than read as having no verb at all.
+ *
  * @generated from message orm.RpcOptions
  */
 export type RpcOptions = Message<"orm.RpcOptions"> & {
@@ -28,13 +46,6 @@ export type RpcOptions = Message<"orm.RpcOptions"> & {
    * @generated from field: bool disabled = 1;
    */
   disabled: boolean;
-
-  /**
-   * Enables add, get, patch, and erase.
-   *
-   * @generated from field: bool crud = 2;
-   */
-  crud: boolean;
 
   /**
    * @generated from field: orm.RpcAdd add = 16;
@@ -55,6 +66,11 @@ export type RpcOptions = Message<"orm.RpcOptions"> & {
    * @generated from field: orm.RpcErase erase = 19;
    */
   erase?: RpcErase | undefined;
+
+  /**
+   * @generated from field: orm.RpcApply apply = 20;
+   */
+  apply?: RpcApply | undefined;
 };
 
 /**
@@ -183,6 +199,14 @@ export type EdgeOptions = Message<"orm.EdgeOptions"> & {
    * @generated from field: bool immutable = 8;
    */
   immutable: boolean;
+
+  /**
+   * What becomes of this edge's row when the row it names is deleted. Unset is
+   * the storage generator's own default. See OnDelete.
+   *
+   * @generated from field: orm.OnDelete on_delete = 9;
+   */
+  onDelete: OnDelete;
 
   /**
    * TODO: Any?

@@ -82,6 +82,8 @@ type Outbox struct {
 	xxx_hidden_Patch       []byte                 `protobuf:"bytes,12,opt,name=patch"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Event       []byte                 `protobuf:"bytes,16,opt,name=event"`
+	xxx_hidden_Routes      []byte                 `protobuf:"bytes,17,opt,name=routes"`
+	xxx_hidden_Signal      []byte                 `protobuf:"bytes,18,opt,name=signal"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -174,6 +176,20 @@ func (x *Outbox) GetEvent() []byte {
 	return nil
 }
 
+func (x *Outbox) GetRoutes() []byte {
+	if x != nil {
+		return x.xxx_hidden_Routes
+	}
+	return nil
+}
+
+func (x *Outbox) GetSignal() []byte {
+	if x != nil {
+		return x.xxx_hidden_Signal
+	}
+	return nil
+}
+
 func (x *Outbox) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -228,6 +244,20 @@ func (x *Outbox) SetEvent(v []byte) {
 	x.xxx_hidden_Event = v
 }
 
+func (x *Outbox) SetRoutes(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Routes = v
+}
+
+func (x *Outbox) SetSignal(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Signal = v
+}
+
 func (x *Outbox) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -264,6 +294,11 @@ type Outbox_builder struct {
 	DateCreated *timestamppb.Timestamp
 	// Packed WatchEvent, absent on legacy key-only entries. Contains public data.
 	Event []byte
+	// Internal routing metadata captured with the write. Absent routes on old
+	// rows mean unknown scope and must use broad delivery. Signal carries only
+	// invalidation metadata, never request credentials or mutation patches.
+	Routes []byte
+	Signal []byte
 }
 
 func (b0 Outbox_builder) Build() *Outbox {
@@ -279,6 +314,8 @@ func (b0 Outbox_builder) Build() *Outbox {
 	x.xxx_hidden_Patch = b.Patch
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Event = b.Event
+	x.xxx_hidden_Routes = b.Routes
+	x.xxx_hidden_Signal = b.Signal
 	return m0
 }
 
@@ -286,7 +323,7 @@ var File_shale_payday_outbox_proto protoreflect.FileDescriptor
 
 const file_shale_payday_outbox_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/payday/outbox.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xdd\x02\n" +
+	"\x19shale/payday/outbox.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9d\x03\n" +
 	"\x06Outbox\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12#\n" +
 	"\ttenant_id\x18\x02 \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12!\n" +
@@ -297,7 +334,9 @@ const file_shale_payday_outbox_proto_rawDesc = "" +
 	"\tobject_id\x18\v \x01(\fB\x06\xea\x82\x16\x02\x10@R\bobjectId\x12\x14\n" +
 	"\x05patch\x18\f \x01(\fR\x05patch\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12\x1c\n" +
-	"\x05event\x18\x10 \x01(\fB\x06\xea\x82\x16\x028\x01R\x05event:#\xca\xfc\x15\x11\x1a\x0f\x12\x05queue\x1a\x06\n" +
+	"\x05event\x18\x10 \x01(\fB\x06\xea\x82\x16\x028\x01R\x05event\x12\x1e\n" +
+	"\x06routes\x18\x11 \x01(\fB\x06\xea\x82\x16\x028\x01R\x06routes\x12\x1e\n" +
+	"\x06signal\x18\x12 \x01(\fB\x06\xea\x82\x16\x028\x01R\x06signal:#\xca\xfc\x15\x11\x1a\x0f\x12\x05queue\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x16\n" +
 	"\b\x04B\x02\n" +
 	"\x00H\x04*\x00B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"

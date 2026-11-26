@@ -10,9 +10,7 @@ import (
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
 	delegation "github.com/lesomnus/shale/internal/ent/delegation"
-	holder "github.com/lesomnus/shale/internal/ent/holder"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -36,11 +34,14 @@ type DelegationServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewDelegationServiceServer(db *ent.Client, opts ...Option) api.DelegationServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return DelegationServiceServer{Store: s.Store}
 }
@@ -204,7 +205,10 @@ func (st DelegationServiceServer) create(ctx context.Context, req *api.Delegatio
 }
 
 func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +223,7 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAdd
 	}
 
 	var stored *ent.Delegation
-	if snapshotOptions(s.Rec, api.DelegationService_Add_FullMethodName).Value {
+	if s.images(api.DelegationService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -245,10 +249,11 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAdd
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.DelegationService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Delegation",
+		By:     api.DelegationService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -302,7 +307,9 @@ func (s DelegationServiceServer) Get(ctx context.Context, req *api.DelegationGet
 	}
 
 	q := s.Db.Delegation.Query().Where(p)
-	DelegationSelectInit(q, req.GetSelect())
+	if err := DelegationSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -376,31 +383,61 @@ func DelegationSelectedFields(m *api.DelegationSelect) []string {
 	return vs
 }
 
-func DelegationSelect(q *ent.DelegationQuery, m *api.DelegationSelect) {
+// DelegationSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func DelegationSelect(ctx context.Context, scope Scope, q *ent.DelegationQuery, m *api.DelegationSelect) error {
 	if !m.GetAll() {
 		fields := DelegationSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func DelegationSelectInit(q *ent.DelegationQuery, m *api.DelegationSelect) {
+// DelegationSelectInit is [DelegationSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func DelegationSelectInit(ctx context.Context, scope Scope, q *ent.DelegationQuery, m *api.DelegationSelect) error {
 	if m != nil {
-		DelegationSelect(q, m)
+		return DelegationSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s DelegationServiceServer) Patch(ctx context.Context, req *api.DelegationPatchRequest) (*api.Delegation, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(delegationOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -449,13 +486,6 @@ var delegationOrmEntity = ormpatch.MustEntityOf(api.File_shale_delegation_proto,
 var delegationPatchColumns = entpatch.Columns{
 	1: delegation.FieldId, 2: delegation.TenantColumn, 8: delegation.HolderColumn, 9: delegation.FieldApp, 10: delegation.FieldClientId, 11: delegation.FieldSecretHash, 12: delegation.FieldLive, 16: delegation.FieldRecordings, 17: delegation.FieldSets, 18: delegation.FieldSources, 19: delegation.FieldRecordingsFrom, 20: delegation.FieldRecordingsTo, 21: delegation.FieldDateEnds, 22: delegation.FieldDateRevoked, 23: delegation.FieldDateUsed, 13: delegation.FieldDateUpdated, 14: delegation.FieldDateErased, 15: delegation.FieldDateCreated}
 
-func (s DelegationServiceServer) Apply(ctx context.Context, req *api.DelegationApplyRequest) (*api.Delegation, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.DelegationService_Apply_FullMethodName)
-}
-
 func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationRef, doc *patchpb.Patch, by string) (*api.Delegation, error) {
 	plan := &ormpatch.Plan{Entity: delegationOrmEntity}
 	if doc != nil {
@@ -477,7 +507,7 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +528,7 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 	}
 
 	var previous *api.Delegation
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -567,7 +597,8 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Delegation",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -581,76 +612,6 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s DelegationServiceServer) Erase(ctx context.Context, req *api.DelegationRef) (*api.DelegationEraseResponse, error) {
-	p, err := DelegationPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.Delegation
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.DelegationService_Erase_FullMethodName)
-		var v *ent.Delegation
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.Delegation.Query().Where(p).Select(delegation.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.DelegationEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = delegation.And(p, delegation.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.Delegation.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.DelegationService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.DelegationEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // DelegationPick answers with the predicate this reference selects on,

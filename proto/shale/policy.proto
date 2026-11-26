@@ -56,7 +56,9 @@ message SigningKey {
   google.protobuf.Timestamp date_retired = 17 [(orm.field) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // Made and retired by Rotate and the leader (`server/core/keys.go`,
+    // `spin.go`); no Erase, which nothing asked of.
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"
@@ -127,7 +129,8 @@ message PlacementPolicy {
   google.protobuf.Timestamp date_activated = 16 [(orm.field) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // `add` is the operator's; `activate` is a Patch the core layer makes.
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"
@@ -223,7 +226,8 @@ message UploadPolicy {
   google.protobuf.Timestamp date_activated = 16 [(orm.field) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // `add` is the operator's; `activate` is a Patch the core layer makes.
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"
@@ -349,7 +353,9 @@ message AddressPolicy {
   DnsSync dns_sync = 17;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // No Apply: a patch document would store the TSIG secret as written
+    // (§34.10).
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"

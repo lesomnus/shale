@@ -19,12 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuditService_Add_FullMethodName   = "/shale.AuditService/Add"
-	AuditService_Get_FullMethodName   = "/shale.AuditService/Get"
-	AuditService_Patch_FullMethodName = "/shale.AuditService/Patch"
-	AuditService_Apply_FullMethodName = "/shale.AuditService/Apply"
-	AuditService_Erase_FullMethodName = "/shale.AuditService/Erase"
-	AuditService_List_FullMethodName  = "/shale.AuditService/List"
+	AuditService_Add_FullMethodName  = "/shale.AuditService/Add"
+	AuditService_Get_FullMethodName  = "/shale.AuditService/Get"
+	AuditService_List_FullMethodName = "/shale.AuditService/List"
 )
 
 // AuditServiceClient is the client API for AuditService service.
@@ -35,12 +32,6 @@ type AuditServiceClient interface {
 	Add(ctx context.Context, in *AuditAddRequest, opts ...grpc.CallOption) (*Audit, error)
 	// Get retrieves a Audit
 	Get(ctx context.Context, in *AuditGetRequest, opts ...grpc.CallOption) (*Audit, error)
-	// Patch updates an existing Audit
-	Patch(ctx context.Context, in *AuditPatchRequest, opts ...grpc.CallOption) (*Audit, error)
-	// Apply applies a patch document to an existing Audit
-	Apply(ctx context.Context, in *AuditApplyRequest, opts ...grpc.CallOption) (*Audit, error)
-	// Erase deletes a Audit
-	Erase(ctx context.Context, in *AuditRef, opts ...grpc.CallOption) (*AuditEraseResponse, error)
 	// List reads Audits a page at a time.
 	List(ctx context.Context, in *AuditListRequest, opts ...grpc.CallOption) (*AuditListResponse, error)
 }
@@ -73,36 +64,6 @@ func (c *auditServiceClient) Get(ctx context.Context, in *AuditGetRequest, opts 
 	return out, nil
 }
 
-func (c *auditServiceClient) Patch(ctx context.Context, in *AuditPatchRequest, opts ...grpc.CallOption) (*Audit, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Audit)
-	err := c.cc.Invoke(ctx, AuditService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *auditServiceClient) Apply(ctx context.Context, in *AuditApplyRequest, opts ...grpc.CallOption) (*Audit, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Audit)
-	err := c.cc.Invoke(ctx, AuditService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *auditServiceClient) Erase(ctx context.Context, in *AuditRef, opts ...grpc.CallOption) (*AuditEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuditEraseResponse)
-	err := c.cc.Invoke(ctx, AuditService_Erase_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *auditServiceClient) List(ctx context.Context, in *AuditListRequest, opts ...grpc.CallOption) (*AuditListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuditListResponse)
@@ -121,12 +82,6 @@ type AuditServiceServer interface {
 	Add(context.Context, *AuditAddRequest) (*Audit, error)
 	// Get retrieves a Audit
 	Get(context.Context, *AuditGetRequest) (*Audit, error)
-	// Patch updates an existing Audit
-	Patch(context.Context, *AuditPatchRequest) (*Audit, error)
-	// Apply applies a patch document to an existing Audit
-	Apply(context.Context, *AuditApplyRequest) (*Audit, error)
-	// Erase deletes a Audit
-	Erase(context.Context, *AuditRef) (*AuditEraseResponse, error)
 	// List reads Audits a page at a time.
 	List(context.Context, *AuditListRequest) (*AuditListResponse, error)
 	mustEmbedUnimplementedAuditServiceServer()
@@ -144,15 +99,6 @@ func (UnimplementedAuditServiceServer) Add(context.Context, *AuditAddRequest) (*
 }
 func (UnimplementedAuditServiceServer) Get(context.Context, *AuditGetRequest) (*Audit, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedAuditServiceServer) Patch(context.Context, *AuditPatchRequest) (*Audit, error) {
-	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedAuditServiceServer) Apply(context.Context, *AuditApplyRequest) (*Audit, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedAuditServiceServer) Erase(context.Context, *AuditRef) (*AuditEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedAuditServiceServer) List(context.Context, *AuditListRequest) (*AuditListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -214,60 +160,6 @@ func _AuditService_Get_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuditService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuditPatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuditServiceServer).Patch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuditService_Patch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuditServiceServer).Patch(ctx, req.(*AuditPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuditService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuditApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuditServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuditService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuditServiceServer).Apply(ctx, req.(*AuditApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuditService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuditRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuditServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuditService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuditServiceServer).Erase(ctx, req.(*AuditRef))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AuditService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AuditListRequest)
 	if err := dec(in); err != nil {
@@ -300,18 +192,6 @@ var AuditService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _AuditService_Get_Handler,
-		},
-		{
-			MethodName: "Patch",
-			Handler:    _AuditService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _AuditService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _AuditService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/dnsupdate/dnsupdatetest"
@@ -73,8 +74,8 @@ func TestDnsResolver(t *testing.T) {
 	for _, v := range all.GetItems() {
 		x.Empty(v.GetDnsTsigSecret())
 	}
-	_, err = pols.Apply(ctx, api.AddressPolicyApplyRequest_builder{Ref: ref}.Build())
-	x.Equal(codes.PermissionDenied, status.Code(err), "a patch document would store the secret unsealed")
+	err = conn.Invoke(ctx, "/shale.AddressPolicyService/Apply", &emptypb.Empty{}, &emptypb.Empty{})
+	x.Equal(codes.Unimplemented, status.Code(err), "there is no patch document to store the secret unsealed")
 
 	res, err := nodes.Resolve(ctx, api.NodeResolveRequest_builder{Ref: api.NodeRef_builder{Id: n.GetId()}.Build(), From: "203.0.113.9"}.Build())
 	x.NoError(err)

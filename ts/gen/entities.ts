@@ -66,7 +66,7 @@ export const Access = {
 	schema: AccessSchema,
 	domain: 6,
 	key: "id",
-	ids: ["id", "tenantId", "actorId", "actorTenantId"],
+	ids: ["id", "tenantId", "actorId", "actorTenantId", "subjects"],
 	service: AccessService,
 } as const satisfies EntityDesc
 
@@ -112,7 +112,7 @@ export const Audit = {
 	schema: AuditSchema,
 	domain: 3,
 	key: "id",
-	ids: ["id", "tenantId", "actorId", "objectId", "actorTenantId", "counterpartTenantId"],
+	ids: ["id", "tenantId", "actorId", "callerId", "callerTenantId", "objectId", "actorTenantId", "counterpartTenantId"],
 	service: AuditService,
 } as const satisfies EntityDesc
 
@@ -337,7 +337,7 @@ export const Owed = {
 	schema: OwedSchema,
 	domain: 254,
 	key: "id",
-	ids: ["id", "object"],
+	ids: ["id", "object", "heldBy"],
 	service: OwedService,
 } as const satisfies EntityDesc
 

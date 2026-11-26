@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
+import { file_orm } from "../orm_pb.js";
 import type { ReaderRef, ReaderSelect } from "./host_svc_pb.js";
 import { file_shale_host_svc_g } from "./host_svc_pb.js";
 import type { SiteMember, SiteMemberSchema } from "./member_pb.js";
@@ -24,7 +23,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/member_svc.g.proto.
  */
 export const file_shale_member_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhzaGFsZS9tZW1iZXJfc3ZjLmcucHJvdG8SBXNoYWxlItgBChRTaXRlTWVtYmVyQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYSIAoGaG9sZGVyGAggASgLMhAuc2hhbGUuSG9sZGVyUmVmEiAKBnJlYWRlchgJIAEoCzIQLnNoYWxlLlJlYWRlclJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImIKFFNpdGVNZW1iZXJHZXRSZXF1ZXN0EiEKA3JlZhgBIAEoCzIULnNoYWxlLlNpdGVNZW1iZXJSZWYSJwoGc2VsZWN0GAIgASgLMhcuc2hhbGUuU2l0ZU1lbWJlclNlbGVjdCIkCg1TaXRlTWVtYmVyUmVmEgwKAmlkGAEgASgMSABCBQoDa2V5ItsBChBTaXRlTWVtYmVyU2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSHwoEc2l0ZRgDIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QSIwoGaG9sZGVyGAggASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0EiMKBnJlYWRlchgJIAEoCzITLnNoYWxlLlJlYWRlclNlbGVjdBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIokBChZTaXRlTWVtYmVyUGF0Y2hSZXF1ZXN0EiEKA3JlZhgBIAEoCzIULnNoYWxlLlNpdGVNZW1iZXJSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWAoWU2l0ZU1lbWJlckFwcGx5UmVxdWVzdBIhCgNyZWYYASABKAsyFC5zaGFsZS5TaXRlTWVtYmVyUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXU2l0ZU1lbWJlckVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIoQBChVTaXRlTWVtYmVyTGlzdFJlcXVlc3QSKAoHZmlsdGVycxgBIAMoCzIXLnNoYWxlLlNpdGVNZW1iZXJGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCIk8KFlNpdGVNZW1iZXJMaXN0UmVzcG9uc2USIAoFaXRlbXMYASADKAsyES5zaGFsZS5TaXRlTWVtYmVyEhMKBG5leHQYAiABKAlCBaoBAggCIrkBChBTaXRlTWVtYmVyRmlsdGVyEiEKA3JlZhgBIAEoCzIULnNoYWxlLlNpdGVNZW1iZXJSZWYSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEhwKBHNpdGUYAyABKAsyDi5zaGFsZS5TaXRlUmVmEiAKBmhvbGRlchgEIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIgCgZyZWFkZXIYBSABKAsyEC5zaGFsZS5SZWFkZXJSZWYy+wIKEVNpdGVNZW1iZXJTZXJ2aWNlEjUKA0FkZBIbLnNoYWxlLlNpdGVNZW1iZXJBZGRSZXF1ZXN0GhEuc2hhbGUuU2l0ZU1lbWJlchI1CgNHZXQSGy5zaGFsZS5TaXRlTWVtYmVyR2V0UmVxdWVzdBoRLnNoYWxlLlNpdGVNZW1iZXISOQoFUGF0Y2gSHS5zaGFsZS5TaXRlTWVtYmVyUGF0Y2hSZXF1ZXN0GhEuc2hhbGUuU2l0ZU1lbWJlchI5CgVBcHBseRIdLnNoYWxlLlNpdGVNZW1iZXJBcHBseVJlcXVlc3QaES5zaGFsZS5TaXRlTWVtYmVyEj0KBUVyYXNlEhQuc2hhbGUuU2l0ZU1lbWJlclJlZhoeLnNoYWxlLlNpdGVNZW1iZXJFcmFzZVJlc3BvbnNlEkMKBExpc3QSHC5zaGFsZS5TaXRlTWVtYmVyTGlzdFJlcXVlc3QaHS5zaGFsZS5TaXRlTWVtYmVyTGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_shale_host_svc_g, file_shale_member, file_shale_payday_holder_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
+  fileDesc("ChhzaGFsZS9tZW1iZXJfc3ZjLmcucHJvdG8SBXNoYWxlIuABChRTaXRlTWVtYmVyQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhIgCgZob2xkZXIYCCABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSIAoGcmVhZGVyGAkgASgLMhAuc2hhbGUuUmVhZGVyUmVmEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYgoUU2l0ZU1lbWJlckdldFJlcXVlc3QSIQoDcmVmGAEgASgLMhQuc2hhbGUuU2l0ZU1lbWJlclJlZhInCgZzZWxlY3QYAiABKAsyFy5zaGFsZS5TaXRlTWVtYmVyU2VsZWN0IiwKDVNpdGVNZW1iZXJSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAQgUKA2tleSLbAQoQU2l0ZU1lbWJlclNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eh8KBHNpdGUYAyABKAsyES5zaGFsZS5TaXRlU2VsZWN0EiMKBmhvbGRlchgIIAEoCzITLnNoYWxlLkhvbGRlclNlbGVjdBIjCgZyZWFkZXIYCSABKAsyEy5zaGFsZS5SZWFkZXJTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCIpChdTaXRlTWVtYmVyRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgirQEKFVNpdGVNZW1iZXJMaXN0UmVxdWVzdBIoCgdmaWx0ZXJzGAEgAygLMhcuc2hhbGUuU2l0ZU1lbWJlckZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJwoGc2VsZWN0GAYgASgLMhcuc2hhbGUuU2l0ZU1lbWJlclNlbGVjdCJPChZTaXRlTWVtYmVyTGlzdFJlc3BvbnNlEiAKBWl0ZW1zGAEgAygLMhEuc2hhbGUuU2l0ZU1lbWJlchITCgRuZXh0GAIgASgJQgWqAQIIAiK5AQoQU2l0ZU1lbWJlckZpbHRlchIhCgNyZWYYASABKAsyFC5zaGFsZS5TaXRlTWVtYmVyUmVmEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhIgCgZob2xkZXIYBCABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSIAoGcmVhZGVyGAUgASgLMhAuc2hhbGUuUmVhZGVyUmVmMoUCChFTaXRlTWVtYmVyU2VydmljZRI1CgNBZGQSGy5zaGFsZS5TaXRlTWVtYmVyQWRkUmVxdWVzdBoRLnNoYWxlLlNpdGVNZW1iZXISNQoDR2V0Ehsuc2hhbGUuU2l0ZU1lbWJlckdldFJlcXVlc3QaES5zaGFsZS5TaXRlTWVtYmVyEj0KBUVyYXNlEhQuc2hhbGUuU2l0ZU1lbWJlclJlZhoeLnNoYWxlLlNpdGVNZW1iZXJFcmFzZVJlc3BvbnNlEkMKBExpc3QSHC5zaGFsZS5TaXRlTWVtYmVyTGlzdFJlcXVlc3QaHS5zaGFsZS5TaXRlTWVtYmVyTGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_shale_host_svc_g, file_shale_member, file_shale_payday_holder_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
 
 /**
  * @generated from message shale.SiteMemberAddRequest
@@ -161,69 +160,6 @@ export const SiteMemberSelectSchema: GenMessage<SiteMemberSelect> = /*@__PURE__*
   messageDesc(file_shale_member_svc_g, 3);
 
 /**
- * @generated from message shale.SiteMemberPatchRequest
- */
-export type SiteMemberPatchRequest = Message<"shale.SiteMemberPatchRequest"> & {
-  /**
-   * @generated from field: shale.SiteMemberRef ref = 1;
-   */
-  ref?: SiteMemberRef | undefined;
-
-  /**
-   * The version this update requires the stored date_updated to be.
-   * It is a precondition, not a write: the update applies only if the row
-   * still holds this value, and the server stamps the new version itself.
-   * Setting it together with date_updated_force is an error --
-   * the version is the token every client's compare-and-swap is measured
-   * against, so it is not the caller's to choose.
-   *
-   * @generated from field: google.protobuf.Timestamp date_updated = 26;
-   */
-  dateUpdated?: Timestamp | undefined;
-
-  /**
-   * Update whatever the stored date_updated is, with no precondition.
-   * The server still stamps a new version, so other clients' tokens are
-   * invalidated as usual; this declines the check for THIS update only.
-   * One of date_updated or this must be set. An omitted version is
-   * refused rather than assumed, because an unset field cannot be told
-   * apart from a caller who never considered locking at all.
-   *
-   * @generated from field: bool date_updated_force = 27;
-   */
-  dateUpdatedForce: boolean;
-};
-
-/**
- * Describes the message shale.SiteMemberPatchRequest.
- * Use `create(SiteMemberPatchRequestSchema)` to create a new message.
- */
-export const SiteMemberPatchRequestSchema: GenMessage<SiteMemberPatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_member_svc_g, 4);
-
-/**
- * @generated from message shale.SiteMemberApplyRequest
- */
-export type SiteMemberApplyRequest = Message<"shale.SiteMemberApplyRequest"> & {
-  /**
-   * @generated from field: shale.SiteMemberRef ref = 1;
-   */
-  ref?: SiteMemberRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.SiteMemberApplyRequest.
- * Use `create(SiteMemberApplyRequestSchema)` to create a new message.
- */
-export const SiteMemberApplyRequestSchema: GenMessage<SiteMemberApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_member_svc_g, 5);
-
-/**
  * @generated from message shale.SiteMemberEraseResponse
  */
 export type SiteMemberEraseResponse = Message<"shale.SiteMemberEraseResponse"> & {
@@ -244,7 +180,7 @@ export type SiteMemberEraseResponse = Message<"shale.SiteMemberEraseResponse"> &
  * Use `create(SiteMemberEraseResponseSchema)` to create a new message.
  */
 export const SiteMemberEraseResponseSchema: GenMessage<SiteMemberEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_member_svc_g, 6);
+  messageDesc(file_shale_member_svc_g, 4);
 
 /**
  * @generated from message shale.SiteMemberListRequest
@@ -286,6 +222,20 @@ export type SiteMemberListRequest = Message<"shale.SiteMemberListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.SiteMemberSelect select = 6;
+   */
+  select?: SiteMemberSelect | undefined;
 };
 
 /**
@@ -293,7 +243,7 @@ export type SiteMemberListRequest = Message<"shale.SiteMemberListRequest"> & {
  * Use `create(SiteMemberListRequestSchema)` to create a new message.
  */
 export const SiteMemberListRequestSchema: GenMessage<SiteMemberListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_member_svc_g, 7);
+  messageDesc(file_shale_member_svc_g, 5);
 
 /**
  * @generated from message shale.SiteMemberListResponse
@@ -323,7 +273,7 @@ export type SiteMemberListResponse = Message<"shale.SiteMemberListResponse"> & {
  * Use `create(SiteMemberListResponseSchema)` to create a new message.
  */
 export const SiteMemberListResponseSchema: GenMessage<SiteMemberListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_member_svc_g, 8);
+  messageDesc(file_shale_member_svc_g, 6);
 
 /**
  * @generated from message shale.SiteMemberFilter
@@ -360,7 +310,7 @@ export type SiteMemberFilter = Message<"shale.SiteMemberFilter"> & {
  * Use `create(SiteMemberFilterSchema)` to create a new message.
  */
 export const SiteMemberFilterSchema: GenMessage<SiteMemberFilter> = /*@__PURE__*/
-  messageDesc(file_shale_member_svc_g, 9);
+  messageDesc(file_shale_member_svc_g, 7);
 
 /**
  * @generated from service shale.SiteMemberService
@@ -384,26 +334,6 @@ export const SiteMemberService: GenService<{
   get: {
     methodKind: "unary";
     input: typeof SiteMemberGetRequestSchema;
-    output: typeof SiteMemberSchema;
-  },
-  /**
-   * Patch updates an existing SiteMember
-   *
-   * @generated from rpc shale.SiteMemberService.Patch
-   */
-  patch: {
-    methodKind: "unary";
-    input: typeof SiteMemberPatchRequestSchema;
-    output: typeof SiteMemberSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing SiteMember
-   *
-   * @generated from rpc shale.SiteMemberService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof SiteMemberApplyRequestSchema;
     output: typeof SiteMemberSchema;
   },
   /**

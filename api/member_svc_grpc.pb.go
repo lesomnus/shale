@@ -21,8 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	SiteMemberService_Add_FullMethodName   = "/shale.SiteMemberService/Add"
 	SiteMemberService_Get_FullMethodName   = "/shale.SiteMemberService/Get"
-	SiteMemberService_Patch_FullMethodName = "/shale.SiteMemberService/Patch"
-	SiteMemberService_Apply_FullMethodName = "/shale.SiteMemberService/Apply"
 	SiteMemberService_Erase_FullMethodName = "/shale.SiteMemberService/Erase"
 	SiteMemberService_List_FullMethodName  = "/shale.SiteMemberService/List"
 )
@@ -35,10 +33,6 @@ type SiteMemberServiceClient interface {
 	Add(ctx context.Context, in *SiteMemberAddRequest, opts ...grpc.CallOption) (*SiteMember, error)
 	// Get retrieves a SiteMember
 	Get(ctx context.Context, in *SiteMemberGetRequest, opts ...grpc.CallOption) (*SiteMember, error)
-	// Patch updates an existing SiteMember
-	Patch(ctx context.Context, in *SiteMemberPatchRequest, opts ...grpc.CallOption) (*SiteMember, error)
-	// Apply applies a patch document to an existing SiteMember
-	Apply(ctx context.Context, in *SiteMemberApplyRequest, opts ...grpc.CallOption) (*SiteMember, error)
 	// Erase deletes a SiteMember
 	Erase(ctx context.Context, in *SiteMemberRef, opts ...grpc.CallOption) (*SiteMemberEraseResponse, error)
 	// List reads SiteMembers a page at a time.
@@ -73,26 +67,6 @@ func (c *siteMemberServiceClient) Get(ctx context.Context, in *SiteMemberGetRequ
 	return out, nil
 }
 
-func (c *siteMemberServiceClient) Patch(ctx context.Context, in *SiteMemberPatchRequest, opts ...grpc.CallOption) (*SiteMember, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SiteMember)
-	err := c.cc.Invoke(ctx, SiteMemberService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *siteMemberServiceClient) Apply(ctx context.Context, in *SiteMemberApplyRequest, opts ...grpc.CallOption) (*SiteMember, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SiteMember)
-	err := c.cc.Invoke(ctx, SiteMemberService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *siteMemberServiceClient) Erase(ctx context.Context, in *SiteMemberRef, opts ...grpc.CallOption) (*SiteMemberEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SiteMemberEraseResponse)
@@ -121,10 +95,6 @@ type SiteMemberServiceServer interface {
 	Add(context.Context, *SiteMemberAddRequest) (*SiteMember, error)
 	// Get retrieves a SiteMember
 	Get(context.Context, *SiteMemberGetRequest) (*SiteMember, error)
-	// Patch updates an existing SiteMember
-	Patch(context.Context, *SiteMemberPatchRequest) (*SiteMember, error)
-	// Apply applies a patch document to an existing SiteMember
-	Apply(context.Context, *SiteMemberApplyRequest) (*SiteMember, error)
 	// Erase deletes a SiteMember
 	Erase(context.Context, *SiteMemberRef) (*SiteMemberEraseResponse, error)
 	// List reads SiteMembers a page at a time.
@@ -144,12 +114,6 @@ func (UnimplementedSiteMemberServiceServer) Add(context.Context, *SiteMemberAddR
 }
 func (UnimplementedSiteMemberServiceServer) Get(context.Context, *SiteMemberGetRequest) (*SiteMember, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedSiteMemberServiceServer) Patch(context.Context, *SiteMemberPatchRequest) (*SiteMember, error) {
-	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSiteMemberServiceServer) Apply(context.Context, *SiteMemberApplyRequest) (*SiteMember, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedSiteMemberServiceServer) Erase(context.Context, *SiteMemberRef) (*SiteMemberEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -214,42 +178,6 @@ func _SiteMemberService_Get_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SiteMemberService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SiteMemberPatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SiteMemberServiceServer).Patch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SiteMemberService_Patch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SiteMemberServiceServer).Patch(ctx, req.(*SiteMemberPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SiteMemberService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SiteMemberApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SiteMemberServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SiteMemberService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SiteMemberServiceServer).Apply(ctx, req.(*SiteMemberApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SiteMemberService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SiteMemberRef)
 	if err := dec(in); err != nil {
@@ -300,14 +228,6 @@ var SiteMemberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _SiteMemberService_Get_Handler,
-		},
-		{
-			MethodName: "Patch",
-			Handler:    _SiteMemberService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _SiteMemberService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

@@ -15,9 +15,6 @@ import (
 	reader "github.com/lesomnus/shale/internal/ent/reader"
 	relay "github.com/lesomnus/shale/internal/ent/relay"
 	satellite "github.com/lesomnus/shale/internal/ent/satellite"
-	set "github.com/lesomnus/shale/internal/ent/set"
-	site "github.com/lesomnus/shale/internal/ent/site"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -42,11 +39,14 @@ type NodeServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewNodeServiceServer(db *ent.Client, opts ...Option) api.NodeServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return NodeServiceServer{Store: s.Store}
 }
@@ -176,7 +176,10 @@ func (st NodeServiceServer) create(ctx context.Context, req *api.NodeAddRequest)
 }
 
 func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*api.Node, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +194,7 @@ func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*a
 	}
 
 	var stored *ent.Node
-	if snapshotOptions(s.Rec, api.NodeService_Add_FullMethodName).Value {
+	if s.images(api.NodeService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -217,10 +220,11 @@ func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*a
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.NodeService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Node",
+		By:     api.NodeService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -274,7 +278,9 @@ func (s NodeServiceServer) Get(ctx context.Context, req *api.NodeGetRequest) (*a
 	}
 
 	q := s.Db.Node.Query().Where(p)
-	NodeSelectInit(q, req.GetSelect())
+	if err := NodeSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -375,20 +381,31 @@ func NodeSelectedFields(m *api.NodeSelect) []string {
 	return vs
 }
 
-func NodeSelect(q *ent.NodeQuery, m *api.NodeSelect) {
+// NodeSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func NodeSelect(ctx context.Context, scope Scope, q *ent.NodeQuery, m *api.NodeSelect) error {
 	if !m.GetAll() {
 		fields := NodeSelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func NodeSelectInit(q *ent.NodeQuery, m *api.NodeSelect) {
+// NodeSelectInit is [NodeSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func NodeSelectInit(ctx context.Context, scope Scope, q *ent.NodeQuery, m *api.NodeSelect) error {
 	if m != nil {
-		NodeSelect(q, m)
+		return NodeSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s NodeServiceServer) Patch(ctx context.Context, req *api.NodePatchRequest) (*api.Node, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(nodeOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -437,13 +454,6 @@ var nodeOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Node")
 var nodePatchColumns = entpatch.Columns{
 	1: node.FieldId, 4: node.FieldAlias, 5: node.FieldName, 6: node.FieldDesc, 7: node.FieldLabels, 8: node.FieldHardwareId, 9: node.FieldHostname, 10: node.FieldState, 11: node.FieldCertSerial, 12: node.FieldJoin, 13: node.FieldDateUpdated, 14: node.FieldDateErased, 15: node.FieldDateCreated, 16: node.FieldDateAdopted, 17: node.FieldDateSeen, 18: node.FieldDateCertExpires, 19: node.FieldInterfaces, 20: node.FieldKeyIds, 21: node.FieldCaHash, 22: node.FieldVersion, 23: node.FieldControlAddress, 24: node.FieldDataAddress, 25: node.FieldStatus, 26: node.FieldFailureScore, 27: node.FieldDateScored}
 
-func (s NodeServiceServer) Apply(ctx context.Context, req *api.NodeApplyRequest) (*api.Node, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.NodeService_Apply_FullMethodName)
-}
-
 func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *patchpb.Patch, by string) (*api.Node, error) {
 	plan := &ormpatch.Plan{Entity: nodeOrmEntity}
 	if doc != nil {
@@ -465,7 +475,7 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -486,7 +496,7 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 	}
 
 	var previous *api.Node
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -555,7 +565,8 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Node",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -572,6 +583,9 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 }
 
 func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.NodeEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := NodePick(req)
 	if err != nil {
 		return nil, err
@@ -581,7 +595,7 @@ func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.No
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -592,8 +606,8 @@ func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.No
 
 	var k any
 	var previous *api.Node
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.NodeService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.NodeService_Erase_FullMethodName)
 		var v *ent.Node
 		var err error
 		if images.Previous {
@@ -624,7 +638,8 @@ func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.No
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Node",
 			By:       api.NodeService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -686,11 +701,14 @@ type RelayServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewRelayServiceServer(db *ent.Client, opts ...Option) api.RelayServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return RelayServiceServer{Store: s.Store}
 }
@@ -816,7 +834,10 @@ func (st RelayServiceServer) create(ctx context.Context, req *api.RelayAddReques
 }
 
 func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (*api.Relay, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -831,7 +852,7 @@ func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (
 	}
 
 	var stored *ent.Relay
-	if snapshotOptions(s.Rec, api.RelayService_Add_FullMethodName).Value {
+	if s.images(api.RelayService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -857,10 +878,11 @@ func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.RelayService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Relay",
+		By:     api.RelayService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -914,7 +936,9 @@ func (s RelayServiceServer) Get(ctx context.Context, req *api.RelayGetRequest) (
 	}
 
 	q := s.Db.Relay.Query().Where(p)
-	RelaySelectInit(q, req.GetSelect())
+	if err := RelaySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1009,20 +1033,31 @@ func RelaySelectedFields(m *api.RelaySelect) []string {
 	return vs
 }
 
-func RelaySelect(q *ent.RelayQuery, m *api.RelaySelect) {
+// RelaySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func RelaySelect(ctx context.Context, scope Scope, q *ent.RelayQuery, m *api.RelaySelect) error {
 	if !m.GetAll() {
 		fields := RelaySelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func RelaySelectInit(q *ent.RelayQuery, m *api.RelaySelect) {
+// RelaySelectInit is [RelaySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func RelaySelectInit(ctx context.Context, scope Scope, q *ent.RelayQuery, m *api.RelaySelect) error {
 	if m != nil {
-		RelaySelect(q, m)
+		return RelaySelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s RelayServiceServer) Patch(ctx context.Context, req *api.RelayPatchRequest) (*api.Relay, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(relayOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1071,13 +1106,6 @@ var relayOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Relay")
 var relayPatchColumns = entpatch.Columns{
 	1: relay.FieldId, 4: relay.FieldAlias, 5: relay.FieldName, 6: relay.FieldDesc, 7: relay.FieldLabels, 8: relay.FieldHardwareId, 9: relay.FieldHostname, 10: relay.FieldState, 11: relay.FieldCertSerial, 12: relay.FieldJoin, 13: relay.FieldDateUpdated, 14: relay.FieldDateErased, 15: relay.FieldDateCreated, 16: relay.FieldDateAdopted, 17: relay.FieldDateSeen, 18: relay.FieldDateCertExpires, 19: relay.FieldInterfaces, 20: relay.FieldKeyIds, 21: relay.FieldCaHash, 22: relay.FieldVersion, 23: relay.FieldIngestAddress, 24: relay.FieldWhepAddress, 25: relay.FieldStatus}
 
-func (s RelayServiceServer) Apply(ctx context.Context, req *api.RelayApplyRequest) (*api.Relay, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.RelayService_Apply_FullMethodName)
-}
-
 func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *patchpb.Patch, by string) (*api.Relay, error) {
 	plan := &ormpatch.Plan{Entity: relayOrmEntity}
 	if doc != nil {
@@ -1099,7 +1127,7 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1120,7 +1148,7 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 	}
 
 	var previous *api.Relay
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1189,7 +1217,8 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Relay",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1206,6 +1235,9 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 }
 
 func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.RelayEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := RelayPick(req)
 	if err != nil {
 		return nil, err
@@ -1215,7 +1247,7 @@ func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1226,8 +1258,8 @@ func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.
 
 	var k any
 	var previous *api.Relay
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.RelayService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.RelayService_Erase_FullMethodName)
 		var v *ent.Relay
 		var err error
 		if images.Previous {
@@ -1258,7 +1290,8 @@ func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Relay",
 			By:       api.RelayService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -1320,11 +1353,14 @@ type SatelliteServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewSatelliteServiceServer(db *ent.Client, opts ...Option) api.SatelliteServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return SatelliteServiceServer{Store: s.Store}
 }
@@ -1449,7 +1485,10 @@ func (st SatelliteServiceServer) create(ctx context.Context, req *api.SatelliteA
 }
 
 func (s SatelliteServiceServer) Add(ctx context.Context, req *api.SatelliteAddRequest) (*api.Satellite, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1464,7 +1503,7 @@ func (s SatelliteServiceServer) Add(ctx context.Context, req *api.SatelliteAddRe
 	}
 
 	var stored *ent.Satellite
-	if snapshotOptions(s.Rec, api.SatelliteService_Add_FullMethodName).Value {
+	if s.images(api.SatelliteService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1490,10 +1529,11 @@ func (s SatelliteServiceServer) Add(ctx context.Context, req *api.SatelliteAddRe
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.SatelliteService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Satellite",
+		By:     api.SatelliteService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1547,7 +1587,9 @@ func (s SatelliteServiceServer) Get(ctx context.Context, req *api.SatelliteGetRe
 	}
 
 	q := s.Db.Satellite.Query().Where(p)
-	SatelliteSelectInit(q, req.GetSelect())
+	if err := SatelliteSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1639,20 +1681,31 @@ func SatelliteSelectedFields(m *api.SatelliteSelect) []string {
 	return vs
 }
 
-func SatelliteSelect(q *ent.SatelliteQuery, m *api.SatelliteSelect) {
+// SatelliteSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SatelliteSelect(ctx context.Context, scope Scope, q *ent.SatelliteQuery, m *api.SatelliteSelect) error {
 	if !m.GetAll() {
 		fields := SatelliteSelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func SatelliteSelectInit(q *ent.SatelliteQuery, m *api.SatelliteSelect) {
+// SatelliteSelectInit is [SatelliteSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SatelliteSelectInit(ctx context.Context, scope Scope, q *ent.SatelliteQuery, m *api.SatelliteSelect) error {
 	if m != nil {
-		SatelliteSelect(q, m)
+		return SatelliteSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s SatelliteServiceServer) Patch(ctx context.Context, req *api.SatellitePatchRequest) (*api.Satellite, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(satelliteOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1701,13 +1754,6 @@ var satelliteOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Satel
 var satellitePatchColumns = entpatch.Columns{
 	1: satellite.FieldId, 4: satellite.FieldAlias, 5: satellite.FieldName, 6: satellite.FieldDesc, 7: satellite.FieldLabels, 8: satellite.FieldHardwareId, 9: satellite.FieldHostname, 10: satellite.FieldState, 11: satellite.FieldCertSerial, 12: satellite.FieldJoin, 13: satellite.FieldDateUpdated, 14: satellite.FieldDateErased, 15: satellite.FieldDateCreated, 16: satellite.FieldDateAdopted, 17: satellite.FieldDateSeen, 18: satellite.FieldDateCertExpires, 19: satellite.FieldInterfaces, 20: satellite.FieldKeyIds, 21: satellite.FieldCaHash, 22: satellite.FieldVersion, 23: satellite.FieldUploadAddress, 24: satellite.FieldStatus}
 
-func (s SatelliteServiceServer) Apply(ctx context.Context, req *api.SatelliteApplyRequest) (*api.Satellite, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.SatelliteService_Apply_FullMethodName)
-}
-
 func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef, doc *patchpb.Patch, by string) (*api.Satellite, error) {
 	plan := &ormpatch.Plan{Entity: satelliteOrmEntity}
 	if doc != nil {
@@ -1729,7 +1775,7 @@ func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1750,7 +1796,7 @@ func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef
 	}
 
 	var previous *api.Satellite
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1819,7 +1865,8 @@ func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Satellite",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1836,6 +1883,9 @@ func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef
 }
 
 func (s SatelliteServiceServer) Erase(ctx context.Context, req *api.SatelliteRef) (*api.SatelliteEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := SatellitePick(req)
 	if err != nil {
 		return nil, err
@@ -1845,7 +1895,7 @@ func (s SatelliteServiceServer) Erase(ctx context.Context, req *api.SatelliteRef
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1856,8 +1906,8 @@ func (s SatelliteServiceServer) Erase(ctx context.Context, req *api.SatelliteRef
 
 	var k any
 	var previous *api.Satellite
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.SatelliteService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.SatelliteService_Erase_FullMethodName)
 		var v *ent.Satellite
 		var err error
 		if images.Previous {
@@ -1888,7 +1938,8 @@ func (s SatelliteServiceServer) Erase(ctx context.Context, req *api.SatelliteRef
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Satellite",
 			By:       api.SatelliteService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -1950,11 +2001,14 @@ type ProducerServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewProducerServiceServer(db *ent.Client, opts ...Option) api.ProducerServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return ProducerServiceServer{Store: s.Store}
 }
@@ -2200,7 +2254,10 @@ func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAdd
 }
 
 func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequest) (*api.Producer, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2215,7 +2272,7 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 	}
 
 	var stored *ent.Producer
-	if snapshotOptions(s.Rec, api.ProducerService_Add_FullMethodName).Value {
+	if s.images(api.ProducerService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -2241,10 +2298,11 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.ProducerService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Producer",
+		By:     api.ProducerService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -2298,7 +2356,9 @@ func (s ProducerServiceServer) Get(ctx context.Context, req *api.ProducerGetRequ
 	}
 
 	q := s.Db.Producer.Query().Where(p)
-	ProducerSelectInit(q, req.GetSelect())
+	if err := ProducerSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -2384,49 +2444,106 @@ func ProducerSelectedFields(m *api.ProducerSelect) []string {
 	return vs
 }
 
-func ProducerSelect(q *ent.ProducerQuery, m *api.ProducerSelect) {
+// ProducerSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func ProducerSelect(ctx context.Context, scope Scope, q *ent.ProducerQuery, m *api.ProducerSelect) error {
 	if !m.GetAll() {
 		fields := ProducerSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSet() {
+		p, err := SetNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSet(func(q *ent.SetQuery) {
-			q.Where(set.DateErasedIsNil())
-			SetSelect(q, m.GetSet())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SetSelect(ctx, scope, q, m.GetSet())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasRelay() {
+		p, err := RelayNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithRelay(func(q *ent.RelayQuery) {
-			q.Where(relay.DateErasedIsNil())
-			RelaySelect(q, m.GetRelay())
+			if p != nil {
+				q.Where(p)
+			}
+			err = RelaySelect(ctx, scope, q, m.GetRelay())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSatellite() {
+		p, err := SatelliteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSatellite(func(q *ent.SatelliteQuery) {
-			q.Where(satellite.DateErasedIsNil())
-			SatelliteSelect(q, m.GetSatellite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SatelliteSelect(ctx, scope, q, m.GetSatellite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func ProducerSelectInit(q *ent.ProducerQuery, m *api.ProducerSelect) {
+// ProducerSelectInit is [ProducerSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func ProducerSelectInit(ctx context.Context, scope Scope, q *ent.ProducerQuery, m *api.ProducerSelect) error {
 	if m != nil {
-		ProducerSelect(q, m)
+		return ProducerSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s ProducerServiceServer) Patch(ctx context.Context, req *api.ProducerPatchRequest) (*api.Producer, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(producerOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 3:
@@ -2503,13 +2620,6 @@ var producerOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Produc
 var producerPatchColumns = entpatch.Columns{
 	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion, 23: producer.FieldLive, 24: producer.FieldCaHash, 25: producer.SatelliteColumn}
 
-func (s ProducerServiceServer) Apply(ctx context.Context, req *api.ProducerApplyRequest) (*api.Producer, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.ProducerService_Apply_FullMethodName)
-}
-
 func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, doc *patchpb.Patch, by string) (*api.Producer, error) {
 	plan := &ormpatch.Plan{Entity: producerOrmEntity}
 	if doc != nil {
@@ -2531,7 +2641,7 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2552,7 +2662,7 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 	}
 
 	var previous *api.Producer
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -2621,7 +2731,8 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Producer",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -2638,6 +2749,9 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 }
 
 func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) (*api.ProducerEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := ProducerPick(req)
 	if err != nil {
 		return nil, err
@@ -2647,7 +2761,7 @@ func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) 
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2658,8 +2772,8 @@ func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) 
 
 	var k any
 	var previous *api.Producer
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.ProducerService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.ProducerService_Erase_FullMethodName)
 		var v *ent.Producer
 		var err error
 		if images.Previous {
@@ -2690,7 +2804,8 @@ func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) 
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Producer",
 			By:       api.ProducerService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -2760,11 +2875,14 @@ type ReaderServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewReaderServiceServer(db *ent.Client, opts ...Option) api.ReaderServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return ReaderServiceServer{Store: s.Store}
 }
@@ -2907,7 +3025,10 @@ func (st ReaderServiceServer) create(ctx context.Context, req *api.ReaderAddRequ
 }
 
 func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest) (*api.Reader, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2922,7 +3043,7 @@ func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest)
 	}
 
 	var stored *ent.Reader
-	if snapshotOptions(s.Rec, api.ReaderService_Add_FullMethodName).Value {
+	if s.images(api.ReaderService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -2948,10 +3069,11 @@ func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest)
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.ReaderService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Reader",
+		By:     api.ReaderService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -3005,7 +3127,9 @@ func (s ReaderServiceServer) Get(ctx context.Context, req *api.ReaderGetRequest)
 	}
 
 	q := s.Db.Reader.Query().Where(p)
-	ReaderSelectInit(q, req.GetSelect())
+	if err := ReaderSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -3088,25 +3212,46 @@ func ReaderSelectedFields(m *api.ReaderSelect) []string {
 	return vs
 }
 
-func ReaderSelect(q *ent.ReaderQuery, m *api.ReaderSelect) {
+// ReaderSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func ReaderSelect(ctx context.Context, scope Scope, q *ent.ReaderQuery, m *api.ReaderSelect) error {
 	if !m.GetAll() {
 		fields := ReaderSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func ReaderSelectInit(q *ent.ReaderQuery, m *api.ReaderSelect) {
+// ReaderSelectInit is [ReaderSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func ReaderSelectInit(ctx context.Context, scope Scope, q *ent.ReaderQuery, m *api.ReaderSelect) error {
 	if m != nil {
-		ReaderSelect(q, m)
+		return ReaderSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s ReaderServiceServer) Patch(ctx context.Context, req *api.ReaderPatchRequest) (*api.Reader, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(readerOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -3155,13 +3300,6 @@ var readerOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Reader")
 var readerPatchColumns = entpatch.Columns{
 	1: reader.FieldId, 2: reader.TenantColumn, 4: reader.FieldAlias, 5: reader.FieldName, 6: reader.FieldDesc, 7: reader.FieldLabels, 8: reader.FieldHardwareId, 9: reader.FieldHostname, 10: reader.FieldState, 11: reader.FieldCertSerial, 12: reader.FieldJoin, 13: reader.FieldDateUpdated, 14: reader.FieldDateErased, 15: reader.FieldDateCreated, 16: reader.FieldDateAdopted, 17: reader.FieldDateSeen, 18: reader.FieldDateCertExpires, 19: reader.FieldVersion, 20: reader.FieldAllSites, 21: reader.FieldCaHash}
 
-func (s ReaderServiceServer) Apply(ctx context.Context, req *api.ReaderApplyRequest) (*api.Reader, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.ReaderService_Apply_FullMethodName)
-}
-
 func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc *patchpb.Patch, by string) (*api.Reader, error) {
 	plan := &ormpatch.Plan{Entity: readerOrmEntity}
 	if doc != nil {
@@ -3183,7 +3321,7 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3204,7 +3342,7 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 	}
 
 	var previous *api.Reader
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -3273,7 +3411,8 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Reader",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -3290,6 +3429,9 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 }
 
 func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*api.ReaderEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := ReaderPick(req)
 	if err != nil {
 		return nil, err
@@ -3299,7 +3441,7 @@ func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*ap
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3310,8 +3452,8 @@ func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*ap
 
 	var k any
 	var previous *api.Reader
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.ReaderService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.ReaderService_Erase_FullMethodName)
 		var v *ent.Reader
 		var err error
 		if images.Previous {
@@ -3342,7 +3484,8 @@ func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*ap
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Reader",
 			By:       api.ReaderService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

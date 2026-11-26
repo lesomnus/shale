@@ -13,6 +13,15 @@ func (e *Audit) Proto() *api.Audit {
 	x.SetId(e.Id[:])
 	x.SetTenantId(e.TenantId[:])
 	x.SetActorId(e.ActorId[:])
+	if e.CallerId != nil {
+		x.SetCallerId(e.CallerId[:])
+	}
+	if e.CallerTenantId != nil {
+		x.SetCallerTenantId(e.CallerTenantId[:])
+	}
+	if e.Presence != nil {
+		x.SetPresence(*e.Presence)
+	}
 	x.SetTraceId(e.TraceId)
 	x.SetAction(e.Action)
 	x.SetObjectId(e.ObjectId[:])

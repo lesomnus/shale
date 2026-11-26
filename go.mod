@@ -23,11 +23,11 @@ require (
 	github.com/lesomnus/mkot v0.0.0-20261102031530-c2e07a0dfebd
 	github.com/lesomnus/mkot/otlp v0.0.0-20261109051210-adf1656dc93b
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261111104036-eb198c8243d2
+	github.com/lesomnus/payday v0.0.0-20261126024335-5e45710b64ad
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
-	github.com/lesomnus/roster v0.1.2-0.20261111124554-c7bca4b8643c
+	github.com/lesomnus/roster v0.1.2-0.20261126031444-4675cdeeb7b7
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
-	github.com/lesomnus/xli/cfg v0.1.3
+	github.com/lesomnus/xli/cfg v0.1.4-0.20261123042429-3e6291b33598
 	github.com/lesomnus/z v0.0.0-20260907061127-c3858eb05878
 	github.com/miekg/dns v1.1.73
 	github.com/pion/interceptor v0.1.51
@@ -35,8 +35,8 @@ require (
 	github.com/pion/rtp v1.10.6
 	github.com/pion/webrtc/v4 v4.2.26
 	github.com/protobuf-orm/ent v0.0.0-20261024205432-0dd7dadc81bc
-	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017212716-3430237a8656
-	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260907034345-a9bdc5357d7d
+	github.com/protobuf-orm/protobuf-orm v0.0.0-20261125011452-a062a5dd25fc
+	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261125034236-6d3766bf5cdb
 	github.com/quic-go/quic-go v0.65.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/otel v1.47.0
@@ -45,9 +45,9 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/net v0.62.0
 	golang.org/x/oauth2 v0.37.0
-	golang.org/x/sync v0.24.0
-	golang.org/x/sys v0.49.0
-	golang.org/x/term v0.47.0
+	golang.org/x/sync v0.25.0
+	golang.org/x/sys v0.50.0
+	golang.org/x/term v0.48.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
@@ -113,10 +113,10 @@ require (
 	github.com/pion/stun/v4 v4.0.1 // indirect
 	github.com/pion/transport/v5 v5.1.4 // indirect
 	github.com/pion/turn/v5 v5.1.3 // indirect
-	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261021213534-6068959c562d // indirect
-	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
-	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261017215512-5234846ec2e4 // indirect
+	github.com/protobuf-orm/protobuf-merge v0.0.0-20261125032619-9acf880182c7 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261125130103-6f4d6f2c9d21 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261125034134-c681581d9964 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261125031855-95c68cb76ee6 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/tidwall/btree v1.8.1 // indirect
@@ -143,13 +143,13 @@ require (
 	go.opentelemetry.io/otel/sdk/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.1 // indirect
-	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
-	golang.org/x/image v0.47.0 // indirect
-	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.51.0 // indirect
+	golang.org/x/image v0.48.0 // indirect
+	golang.org/x/mod v0.42.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
+	golang.org/x/tools v0.52.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -2,7 +2,7 @@ edition = "2023";
 package shale;
 
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
+import "orm.proto";
 import "shale/delegation.proto";
 import "shale/lamina_svc.g.proto";
 import "shale/payday/holder_svc.g.proto";
@@ -19,10 +19,6 @@ service DelegationService {
   rpc Get(DelegationGetRequest) returns (Delegation);
   // Patch updates an existing Delegation
   rpc Patch(DelegationPatchRequest) returns (Delegation);
-  // Apply applies a patch document to an existing Delegation
-  rpc Apply(DelegationApplyRequest) returns (Delegation);
-  // Erase deletes a Delegation
-  rpc Erase(DelegationRef) returns (DelegationEraseResponse);
   // Start proves the person and the app together and answers a handle:
   // what the app renews with from then on, until `date_ends`.
   rpc Start(DelegationStartRequest) returns (DelegationStartResponse);
@@ -43,7 +39,7 @@ service DelegationService {
 }
 
 message DelegationAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   HolderRef holder = 8;
   bytes app = 9 [features.field_presence = IMPLICIT];
@@ -68,7 +64,7 @@ message DelegationGetRequest {
 
 message DelegationRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   }
 }
 
@@ -121,20 +117,6 @@ message DelegationPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message DelegationApplyRequest {
-  DelegationRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message DelegationEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
 }
 
 message DelegationStartRequest {

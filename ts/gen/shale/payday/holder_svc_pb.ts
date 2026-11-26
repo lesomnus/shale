@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../../patch/patch_pb.js";
-import { file_patch_patch } from "../../patch/patch_pb.js";
+import { file_orm } from "../../orm_pb.js";
 import type { Holder, HolderSchema } from "./holder_pb.js";
 import { file_shale_payday_holder } from "./holder_pb.js";
 import type { TenantRef, TenantSelect } from "./tenant_svc_pb.js";
@@ -18,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/payday/holder_svc.g.proto.
  */
 export const file_shale_payday_holder_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9wYXlkYXkvaG9sZGVyX3N2Yy5nLnByb3RvEgVzaGFsZSKwAgoQSG9sZGVyQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjMKBmxhYmVscxgHIAMoCzIjLnNoYWxlLkhvbGRlckFkZFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYCglhbGxfc2l0ZXMYCiABKAhCBaoBAggCGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiVgoQSG9sZGVyR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSIwoGc2VsZWN0GAIgASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0IkgKCUhvbGRlclJlZhIMCgJpZBgBIAEoDEgAEiYKBHNsdWcYBCABKAsyFi5zaGFsZS5Ib2xkZXJSZWZCeVNsdWdIAEIFCgNrZXkiQgoPSG9sZGVyUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZiLPAQoMSG9sZGVyU2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhEKCWFsbF9zaXRlcxgKIAEoCCKlAgoSSG9sZGVyUGF0Y2hSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNQoGbGFiZWxzGA4gAygLMiUuc2hhbGUuSG9sZGVyUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEhEKCWFsbF9zaXRlcxgUIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlAKEkhvbGRlckFwcGx5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIlChNIb2xkZXJFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJ8ChFIb2xkZXJMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMuc2hhbGUuSG9sZGVyRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJHChJIb2xkZXJMaXN0UmVzcG9uc2USHAoFaXRlbXMYASADKAsyDS5zaGFsZS5Ib2xkZXISEwoEbmV4dBgCIAEoCUIFqgECCAIirwEKDEhvbGRlckZpbHRlchIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEi8KBmxhYmVscxgDIAMoCzIfLnNoYWxlLkhvbGRlckZpbHRlci5MYWJlbHNFbnRyeRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlgKEkhvbGRlcldhdGNoUmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMuc2hhbGUuSG9sZGVyRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKE0hvbGRlcldhdGNoUmVzcG9uc2USJQoFaXRlbXMYASADKAsyFi5zaGFsZS5Ib2xkZXJXYXRjaEl0ZW0iUgoPSG9sZGVyV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0uc2hhbGUuSG9sZGVyEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiOwoaSG9sZGVySXNzdWVQYXNzd29yZFJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuSG9sZGVyUmVmIjYKG0hvbGRlcklzc3VlUGFzc3dvcmRSZXNwb25zZRIXCghwYXNzd29yZBgBIAEoCUIFqgECCAIy4QMKDUhvbGRlclNlcnZpY2USLQoDQWRkEhcuc2hhbGUuSG9sZGVyQWRkUmVxdWVzdBoNLnNoYWxlLkhvbGRlchItCgNHZXQSFy5zaGFsZS5Ib2xkZXJHZXRSZXF1ZXN0Gg0uc2hhbGUuSG9sZGVyEjEKBVBhdGNoEhkuc2hhbGUuSG9sZGVyUGF0Y2hSZXF1ZXN0Gg0uc2hhbGUuSG9sZGVyEjEKBUFwcGx5Ehkuc2hhbGUuSG9sZGVyQXBwbHlSZXF1ZXN0Gg0uc2hhbGUuSG9sZGVyEjUKBUVyYXNlEhAuc2hhbGUuSG9sZGVyUmVmGhouc2hhbGUuSG9sZGVyRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehguc2hhbGUuSG9sZGVyTGlzdFJlcXVlc3QaGS5zaGFsZS5Ib2xkZXJMaXN0UmVzcG9uc2USQAoFV2F0Y2gSGS5zaGFsZS5Ib2xkZXJXYXRjaFJlcXVlc3QaGi5zaGFsZS5Ib2xkZXJXYXRjaFJlc3BvbnNlMAESVgoNSXNzdWVQYXNzd29yZBIhLnNoYWxlLkhvbGRlcklzc3VlUGFzc3dvcmRSZXF1ZXN0GiIuc2hhbGUuSG9sZGVySXNzdWVQYXNzd29yZFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_shale_payday_holder, file_shale_payday_tenant_svc_g]);
+  fileDesc("Ch9zaGFsZS9wYXlkYXkvaG9sZGVyX3N2Yy5nLnByb3RvEgVzaGFsZSK4AgoQSG9sZGVyQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMwoGbGFiZWxzGAcgAygLMiMuc2hhbGUuSG9sZGVyQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWFsbF9zaXRlcxgKIAEoCEIFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJWChBIb2xkZXJHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5Ib2xkZXJTZWxlY3QiUAoJSG9sZGVyUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABImCgRzbHVnGAQgASgLMhYuc2hhbGUuSG9sZGVyUmVmQnlTbHVnSABCBQoDa2V5IkIKD0hvbGRlclJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYizwEKDEhvbGRlclNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIRCglhbGxfc2l0ZXMYCiABKAgipQIKEkhvbGRlclBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjUKBmxhYmVscxgOIAMoCzIlLnNoYWxlLkhvbGRlclBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIRCglhbGxfc2l0ZXMYFCABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIlChNIb2xkZXJFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKhAQoRSG9sZGVyTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnNoYWxlLkhvbGRlckZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0IkcKEkhvbGRlckxpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnNoYWxlLkhvbGRlchITCgRuZXh0GAIgASgJQgWqAQIIAiKvAQoMSG9sZGVyRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSLwoGbGFiZWxzGAMgAygLMh8uc2hhbGUuSG9sZGVyRmlsdGVyLkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5zaGFsZS5Ib2xkZXJGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiPAoTSG9sZGVyV2F0Y2hSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnNoYWxlLkhvbGRlcldhdGNoSXRlbSJSCg9Ib2xkZXJXYXRjaEl0ZW0SCgoCaWQYASABKAwSHAoFdmFsdWUYAiABKAsyDS5zaGFsZS5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiI7ChpIb2xkZXJJc3N1ZVBhc3N3b3JkUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYiNgobSG9sZGVySXNzdWVQYXNzd29yZFJlc3BvbnNlEhcKCHBhc3N3b3JkGAEgASgJQgWqAQIIAjKuAwoNSG9sZGVyU2VydmljZRItCgNBZGQSFy5zaGFsZS5Ib2xkZXJBZGRSZXF1ZXN0Gg0uc2hhbGUuSG9sZGVyEi0KA0dldBIXLnNoYWxlLkhvbGRlckdldFJlcXVlc3QaDS5zaGFsZS5Ib2xkZXISMQoFUGF0Y2gSGS5zaGFsZS5Ib2xkZXJQYXRjaFJlcXVlc3QaDS5zaGFsZS5Ib2xkZXISNQoFRXJhc2USEC5zaGFsZS5Ib2xkZXJSZWYaGi5zaGFsZS5Ib2xkZXJFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5zaGFsZS5Ib2xkZXJMaXN0UmVxdWVzdBoZLnNoYWxlLkhvbGRlckxpc3RSZXNwb25zZRJACgVXYXRjaBIZLnNoYWxlLkhvbGRlcldhdGNoUmVxdWVzdBoaLnNoYWxlLkhvbGRlcldhdGNoUmVzcG9uc2UwARJWCg1Jc3N1ZVBhc3N3b3JkEiEuc2hhbGUuSG9sZGVySXNzdWVQYXNzd29yZFJlcXVlc3QaIi5zaGFsZS5Ib2xkZXJJc3N1ZVBhc3N3b3JkUmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_shale_payday_holder, file_shale_payday_tenant_svc_g]);
 
 /**
  * @generated from message shale.HolderAddRequest
@@ -274,28 +273,6 @@ export const HolderPatchRequestSchema: GenMessage<HolderPatchRequest> = /*@__PUR
   messageDesc(file_shale_payday_holder_svc_g, 5);
 
 /**
- * @generated from message shale.HolderApplyRequest
- */
-export type HolderApplyRequest = Message<"shale.HolderApplyRequest"> & {
-  /**
-   * @generated from field: shale.HolderRef ref = 1;
-   */
-  ref?: HolderRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.HolderApplyRequest.
- * Use `create(HolderApplyRequestSchema)` to create a new message.
- */
-export const HolderApplyRequestSchema: GenMessage<HolderApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 6);
-
-/**
  * @generated from message shale.HolderEraseResponse
  */
 export type HolderEraseResponse = Message<"shale.HolderEraseResponse"> & {
@@ -316,7 +293,7 @@ export type HolderEraseResponse = Message<"shale.HolderEraseResponse"> & {
  * Use `create(HolderEraseResponseSchema)` to create a new message.
  */
 export const HolderEraseResponseSchema: GenMessage<HolderEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 7);
+  messageDesc(file_shale_payday_holder_svc_g, 6);
 
 /**
  * @generated from message shale.HolderListRequest
@@ -358,6 +335,20 @@ export type HolderListRequest = Message<"shale.HolderListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.HolderSelect select = 6;
+   */
+  select?: HolderSelect | undefined;
 };
 
 /**
@@ -365,7 +356,7 @@ export type HolderListRequest = Message<"shale.HolderListRequest"> & {
  * Use `create(HolderListRequestSchema)` to create a new message.
  */
 export const HolderListRequestSchema: GenMessage<HolderListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 8);
+  messageDesc(file_shale_payday_holder_svc_g, 7);
 
 /**
  * @generated from message shale.HolderListResponse
@@ -395,7 +386,7 @@ export type HolderListResponse = Message<"shale.HolderListResponse"> & {
  * Use `create(HolderListResponseSchema)` to create a new message.
  */
 export const HolderListResponseSchema: GenMessage<HolderListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 9);
+  messageDesc(file_shale_payday_holder_svc_g, 8);
 
 /**
  * @generated from message shale.HolderFilter
@@ -422,20 +413,22 @@ export type HolderFilter = Message<"shale.HolderFilter"> & {
  * Use `create(HolderFilterSchema)` to create a new message.
  */
 export const HolderFilterSchema: GenMessage<HolderFilter> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 10);
+  messageDesc(file_shale_payday_holder_svc_g, 9);
 
 /**
  * @generated from message shale.HolderWatchRequest
  */
 export type HolderWatchRequest = Message<"shale.HolderWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated shale.HolderFilter filters = 1;
    */
@@ -458,7 +451,7 @@ export type HolderWatchRequest = Message<"shale.HolderWatchRequest"> & {
  * Use `create(HolderWatchRequestSchema)` to create a new message.
  */
 export const HolderWatchRequestSchema: GenMessage<HolderWatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 11);
+  messageDesc(file_shale_payday_holder_svc_g, 10);
 
 /**
  * @generated from message shale.HolderWatchResponse
@@ -477,7 +470,7 @@ export type HolderWatchResponse = Message<"shale.HolderWatchResponse"> & {
  * Use `create(HolderWatchResponseSchema)` to create a new message.
  */
 export const HolderWatchResponseSchema: GenMessage<HolderWatchResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 12);
+  messageDesc(file_shale_payday_holder_svc_g, 11);
 
 /**
  * @generated from message shale.HolderWatchItem
@@ -492,7 +485,7 @@ export type HolderWatchItem = Message<"shale.HolderWatchItem"> & {
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -500,7 +493,8 @@ export type HolderWatchItem = Message<"shale.HolderWatchItem"> & {
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: shale.Holder value = 2;
    */
@@ -524,7 +518,7 @@ export type HolderWatchItem = Message<"shale.HolderWatchItem"> & {
  * Use `create(HolderWatchItemSchema)` to create a new message.
  */
 export const HolderWatchItemSchema: GenMessage<HolderWatchItem> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 13);
+  messageDesc(file_shale_payday_holder_svc_g, 12);
 
 /**
  * @generated from message shale.HolderIssuePasswordRequest
@@ -541,7 +535,7 @@ export type HolderIssuePasswordRequest = Message<"shale.HolderIssuePasswordReque
  * Use `create(HolderIssuePasswordRequestSchema)` to create a new message.
  */
 export const HolderIssuePasswordRequestSchema: GenMessage<HolderIssuePasswordRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 14);
+  messageDesc(file_shale_payday_holder_svc_g, 13);
 
 /**
  * @generated from message shale.HolderIssuePasswordResponse
@@ -558,7 +552,7 @@ export type HolderIssuePasswordResponse = Message<"shale.HolderIssuePasswordResp
  * Use `create(HolderIssuePasswordResponseSchema)` to create a new message.
  */
 export const HolderIssuePasswordResponseSchema: GenMessage<HolderIssuePasswordResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_holder_svc_g, 15);
+  messageDesc(file_shale_payday_holder_svc_g, 14);
 
 /**
  * @generated from service shale.HolderService
@@ -595,16 +589,6 @@ export const HolderService: GenService<{
     output: typeof HolderSchema;
   },
   /**
-   * Apply applies a patch document to an existing Holder
-   *
-   * @generated from rpc shale.HolderService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof HolderApplyRequestSchema;
-    output: typeof HolderSchema;
-  },
-  /**
    * Erase deletes a Holder
    *
    * @generated from rpc shale.HolderService.Erase
@@ -627,15 +611,23 @@ export const HolderService: GenService<{
   /**
    * Watch the Holders this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc shale.HolderService.Watch
    */

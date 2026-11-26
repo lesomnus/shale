@@ -15,6 +15,12 @@ const (
 	FieldTenantId = "tenant_id"
 	// FieldActorId holds the string denoting the actor_id field in the database.
 	FieldActorId = "actor_id"
+	// FieldCallerId holds the string denoting the caller_id field in the database.
+	FieldCallerId = "caller_id"
+	// FieldCallerTenantId holds the string denoting the caller_tenant_id field in the database.
+	FieldCallerTenantId = "caller_tenant_id"
+	// FieldPresence holds the string denoting the presence field in the database.
+	FieldPresence = "presence"
 	// FieldTraceId holds the string denoting the trace_id field in the database.
 	FieldTraceId = "trace_id"
 	// FieldAction holds the string denoting the action field in the database.
@@ -48,6 +54,9 @@ var Columns = []string{
 	FieldId,
 	FieldTenantId,
 	FieldActorId,
+	FieldCallerId,
+	FieldCallerTenantId,
+	FieldPresence,
 	FieldTraceId,
 	FieldAction,
 	FieldObjectId,
@@ -93,6 +102,21 @@ func ByTenantId(opts ...sql.OrderTermOption) OrderOption {
 // ByActorId orders the results by the actor_id field.
 func ByActorId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActorId, opts...).ToFunc()
+}
+
+// ByCallerId orders the results by the caller_id field.
+func ByCallerId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallerId, opts...).ToFunc()
+}
+
+// ByCallerTenantId orders the results by the caller_tenant_id field.
+func ByCallerTenantId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallerTenantId, opts...).ToFunc()
+}
+
+// ByPresence orders the results by the presence field.
+func ByPresence(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPresence, opts...).ToFunc()
 }
 
 // ByAction orders the results by the action field.

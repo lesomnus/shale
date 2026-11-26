@@ -31,9 +31,6 @@ func TestVersionGeneratedResponsesAreMetadataOnly(t *testing.T) {
 		"patch": func() (*api.CameraCredentialVersion, error) {
 			return public.Patch(ctx, &api.CameraCredentialVersionPatchRequest{})
 		},
-		"apply": func() (*api.CameraCredentialVersion, error) {
-			return public.Apply(ctx, &api.CameraCredentialVersionApplyRequest{})
-		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			got, err := call()
@@ -97,9 +94,6 @@ func (s *versionRows) Add(context.Context, *api.CameraCredentialVersionAddReques
 	return s.value(), nil
 }
 func (s *versionRows) Patch(context.Context, *api.CameraCredentialVersionPatchRequest) (*api.CameraCredentialVersion, error) {
-	return s.value(), nil
-}
-func (s *versionRows) Apply(context.Context, *api.CameraCredentialVersionApplyRequest) (*api.CameraCredentialVersion, error) {
 	return s.value(), nil
 }
 func (s *versionRows) List(context.Context, *api.CameraCredentialVersionListRequest) (*api.CameraCredentialVersionListResponse, error) {

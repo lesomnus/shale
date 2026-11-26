@@ -75,7 +75,8 @@ message Device {
   google.protobuf.Timestamp date_seen = 22 [(orm.field) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // Written by the system and the custom verbs of §32; none is served.
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"
@@ -176,7 +177,8 @@ message Sink {
   int64 laminae = 26;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // Written by the system and the custom verbs of §32; none is served.
+    rpc: {add: {}, get: {}, patch: {}}
     indexes: [
       {
         name: "page"

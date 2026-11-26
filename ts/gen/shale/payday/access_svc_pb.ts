@@ -4,6 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { file_orm } from "../../orm_pb.js";
 import type { Access, AccessSchema } from "./access_pb.js";
 import { file_shale_payday_access } from "./access_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/payday/access_svc.g.proto.
  */
 export const file_shale_payday_access_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9wYXlkYXkvYWNjZXNzX3N2Yy5nLnByb3RvEgVzaGFsZSJWChBBY2Nlc3NHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkFjY2Vzc1JlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5BY2Nlc3NTZWxlY3QiIAoJQWNjZXNzUmVmEgwKAmlkGAEgASgMSABCBQoDa2V5IvcBCgxBY2Nlc3NTZWxlY3QSCwoDYWxsGAEgASgIEhEKCXRlbmFudF9pZBgCIAEoCBIQCghhY3Rvcl9pZBgIIAEoCBIQCgh0cmFjZV9pZBgJIAEoCBIOCgZhY3Rpb24YCiABKAgSDAoEa2luZBgLIAEoCBIOCgZyZXN1bHQYDCABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhcKD2FjdG9yX3RlbmFudF9pZBgQIAEoCBINCgV2YWx1ZRgRIAEoCBIOCgZkb21haW4YEyABKAgSEAoIc3ViamVjdHMYFCABKAgSFQoNc3ViamVjdF9jb3VudBgVIAEoCCJ8ChFBY2Nlc3NMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMuc2hhbGUuQWNjZXNzRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJHChJBY2Nlc3NMaXN0UmVzcG9uc2USHAoFaXRlbXMYASADKAsyDS5zaGFsZS5BY2Nlc3MSEwoEbmV4dBgCIAEoCUIFqgECCAIiWgoMQWNjZXNzRmlsdGVyEhAKCGFjdG9yX2lkGAEgASgMEhEKCXRlbmFudF9pZBgCIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYAyABKAwSDAoEa2luZBgEIAEoCTJ7Cg1BY2Nlc3NTZXJ2aWNlEi0KA0dldBIXLnNoYWxlLkFjY2Vzc0dldFJlcXVlc3QaDS5zaGFsZS5BY2Nlc3MSOwoETGlzdBIYLnNoYWxlLkFjY2Vzc0xpc3RSZXF1ZXN0Ghkuc2hhbGUuQWNjZXNzTGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_shale_payday_access]);
+  fileDesc("Ch9zaGFsZS9wYXlkYXkvYWNjZXNzX3N2Yy5nLnByb3RvEgVzaGFsZSJWChBBY2Nlc3NHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkFjY2Vzc1JlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5BY2Nlc3NTZWxlY3QiKAoJQWNjZXNzUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIAEIFCgNrZXki9wEKDEFjY2Vzc1NlbGVjdBILCgNhbGwYASABKAgSEQoJdGVuYW50X2lkGAIgASgIEhAKCGFjdG9yX2lkGAggASgIEhAKCHRyYWNlX2lkGAkgASgIEg4KBmFjdGlvbhgKIAEoCBIMCgRraW5kGAsgASgIEg4KBnJlc3VsdBgMIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFwoPYWN0b3JfdGVuYW50X2lkGBAgASgIEg0KBXZhbHVlGBEgASgIEg4KBmRvbWFpbhgTIAEoCBIQCghzdWJqZWN0cxgUIAEoCBIVCg1zdWJqZWN0X2NvdW50GBUgASgIIqEBChFBY2Nlc3NMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMuc2hhbGUuQWNjZXNzRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIjCgZzZWxlY3QYBiABKAsyEy5zaGFsZS5BY2Nlc3NTZWxlY3QiRwoSQWNjZXNzTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0uc2hhbGUuQWNjZXNzEhMKBG5leHQYAiABKAlCBaoBAggCInIKDEFjY2Vzc0ZpbHRlchIYCghhY3Rvcl9pZBgBIAEoDEIG6oIWAhBAEhkKCXRlbmFudF9pZBgCIAEoDEIG6oIWAhBAEh8KD2FjdG9yX3RlbmFudF9pZBgDIAEoDEIG6oIWAhBAEgwKBGtpbmQYBCABKAkyewoNQWNjZXNzU2VydmljZRItCgNHZXQSFy5zaGFsZS5BY2Nlc3NHZXRSZXF1ZXN0Gg0uc2hhbGUuQWNjZXNzEjsKBExpc3QSGC5zaGFsZS5BY2Nlc3NMaXN0UmVxdWVzdBoZLnNoYWxlLkFjY2Vzc0xpc3RSZXNwb25zZUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_orm, file_shale_payday_access]);
 
 /**
  * @generated from message shale.AccessGetRequest
@@ -176,6 +177,20 @@ export type AccessListRequest = Message<"shale.AccessListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.AccessSelect select = 6;
+   */
+  select?: AccessSelect | undefined;
 };
 
 /**

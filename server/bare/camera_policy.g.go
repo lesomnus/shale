@@ -5,21 +5,13 @@ package bare
 
 import (
 	context "context"
-	errors "errors"
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
-	cameranetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
 	camerapolicy "github.com/lesomnus/shale/internal/ent/camerapolicy"
-	camerapreset "github.com/lesomnus/shale/internal/ent/camerapreset"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	site "github.com/lesomnus/shale/internal/ent/site"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
-	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -38,11 +30,14 @@ type CameraPolicyServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraPolicyServiceServer(db *ent.Client, opts ...Option) api.CameraPolicyServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraPolicyServiceServer{Store: s.Store}
 }
@@ -235,7 +230,10 @@ func (st CameraPolicyServiceServer) create(ctx context.Context, req *api.CameraP
 }
 
 func (s CameraPolicyServiceServer) Add(ctx context.Context, req *api.CameraPolicyAddRequest) (*api.CameraPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +248,7 @@ func (s CameraPolicyServiceServer) Add(ctx context.Context, req *api.CameraPolic
 	}
 
 	var stored *ent.CameraPolicy
-	if snapshotOptions(s.Rec, api.CameraPolicyService_Add_FullMethodName).Value {
+	if s.images(api.CameraPolicyService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -276,10 +274,11 @@ func (s CameraPolicyServiceServer) Add(ctx context.Context, req *api.CameraPolic
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraPolicyService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraPolicy",
+		By:     api.CameraPolicyService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -333,7 +332,9 @@ func (s CameraPolicyServiceServer) Get(ctx context.Context, req *api.CameraPolic
 	}
 
 	q := s.Db.CameraPolicy.Query().Where(p)
-	CameraPolicySelectInit(q, req.GetSelect())
+	if err := CameraPolicySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -392,293 +393,85 @@ func CameraPolicySelectedFields(m *api.CameraPolicySelect) []string {
 	return vs
 }
 
-func CameraPolicySelect(q *ent.CameraPolicyQuery, m *api.CameraPolicySelect) {
+// CameraPolicySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraPolicySelect(ctx context.Context, scope Scope, q *ent.CameraPolicyQuery, m *api.CameraPolicySelect) error {
 	if !m.GetAll() {
 		fields := CameraPolicySelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasNetwork() {
+		p, err := CameraNetworkNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithNetwork(func(q *ent.CameraNetworkQuery) {
-			q.Where(cameranetwork.DateErasedIsNil())
-			CameraNetworkSelect(q, m.GetNetwork())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraNetworkSelect(ctx, scope, q, m.GetNetwork())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasPreset() {
+		p, err := CameraPresetNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithPreset(func(q *ent.CameraPresetQuery) {
-			q.Where(camerapreset.DateErasedIsNil())
-			CameraPresetSelect(q, m.GetPreset())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraPresetSelect(ctx, scope, q, m.GetPreset())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraPolicySelectInit(q *ent.CameraPolicyQuery, m *api.CameraPolicySelect) {
+// CameraPolicySelectInit is [CameraPolicySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraPolicySelectInit(ctx context.Context, scope Scope, q *ent.CameraPolicyQuery, m *api.CameraPolicySelect) error {
 	if m != nil {
-		CameraPolicySelect(q, m)
+		return CameraPolicySelect(ctx, scope, q, m)
 	}
-}
-
-func (s CameraPolicyServiceServer) Patch(ctx context.Context, req *api.CameraPolicyPatchRequest) (*api.CameraPolicy, error) {
-	doc, err := ormpatch.FromPatchRequest(cameraPolicyOrmEntity, req.ProtoReflect(), nil)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return nil, err
-		}
-		if errors.Is(err, ormpatch.ErrRequestLayout) {
-			return nil, status.Errorf(codes.Internal, "%s", err)
-		}
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-
-	return s.apply(ctx, req.GetRef(), doc, api.CameraPolicyService_Patch_FullMethodName)
-}
-
-func CameraPolicyGetKey(ctx context.Context, db *ent.Client, ref *api.CameraPolicyRef) (uuid.UUID, error) {
-	var z uuid.UUID
-	if ref.HasId() {
-		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
-			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
-		} else {
-			return v, nil
-		}
-	}
-
-	p, err := CameraPolicyPick(ref)
-	if err != nil {
-		return z, err
-	}
-
-	v, err := db.CameraPolicy.Query().Where(p).OnlyId(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return z, status.Error(codes.NotFound, "CameraPolicy not found")
-		}
-		return z, err
-	}
-
-	return v, nil
-}
-
-var cameraPolicyOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_policy_proto, "CameraPolicy")
-
-var cameraPolicyPatchColumns = entpatch.Columns{
-	1: camerapolicy.FieldId, 2: camerapolicy.TenantColumn, 3: camerapolicy.SiteColumn, 4: camerapolicy.FieldAlias, 5: camerapolicy.FieldName, 6: camerapolicy.FieldDesc, 7: camerapolicy.FieldLabels, 8: camerapolicy.NetworkColumn, 9: camerapolicy.FieldPolicyKey, 10: camerapolicy.FieldRevision, 11: camerapolicy.PresetColumn, 12: camerapolicy.FieldEnrollment, 13: camerapolicy.FieldDateUpdated, 14: camerapolicy.FieldDateErased, 15: camerapolicy.FieldDateCreated}
-
-func (s CameraPolicyServiceServer) Apply(ctx context.Context, req *api.CameraPolicyApplyRequest) (*api.CameraPolicy, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraPolicyService_Apply_FullMethodName)
-}
-
-func (s CameraPolicyServiceServer) apply(ctx context.Context, ref *api.CameraPolicyRef, doc *patchpb.Patch, by string) (*api.CameraPolicy, error) {
-	plan := &ormpatch.Plan{Entity: cameraPolicyOrmEntity}
-	if doc != nil {
-		v, err := ormpatch.Compile(cameraPolicyOrmEntity, doc)
-		if err != nil {
-			if errors.Is(err, ormpatch.ErrUnsupported) {
-				return nil, status.Errorf(codes.Unimplemented, "%s", err)
-			}
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		plan = v
-	}
-
-	pred, mod, err := entpatch.Build(plan, cameraPolicyPatchColumns, s.Db.Dialect())
-	if err != nil {
-		if errors.Is(err, entpatch.ErrValue) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		return nil, status.Errorf(codes.Internal, "%s", err)
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	k, err := CameraPolicyGetKey(ctx, st.Db, ref)
-	if err != nil {
-		return nil, err
-	}
-	at := &api.CameraPolicyRef{}
-	at.SetId(k[:])
-	p, err := s.narrow(ctx, camerapolicy.IdEQ(k))
-	if err != nil {
-		return nil, err
-	}
-
-	var previous *api.CameraPolicy
-	images := snapshotOptions(s.Rec, by)
-	if images.Previous && mod != nil {
-		u, err := st.snapshot(ctx, p, true)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return nil, status.Error(codes.NotFound, "resource not found")
-			}
-			return nil, err
-		}
-		previous = s.image(u.Proto())
-	}
-	if mod == nil {
-		q := st.Db.CameraPolicy.Query().Where(p)
-		if pred != nil {
-			q.Where(predicate.CameraPolicy(pred))
-		}
-		if ok, err := q.Exist(ctx); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, func() error {
-				if ok, err := st.Db.CameraPolicy.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "CameraPolicy not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	} else {
-		q := st.Db.CameraPolicy.Update().Where(p)
-		if pred != nil {
-			q.Where(predicate.CameraPolicy(pred))
-		}
-		q.Modify(mod)
-		if !plan.WritesTo(13) {
-			q.SetDateUpdated(st.now())
-		}
-		tx.Writing()
-		if n, err := q.Save(ctx); err != nil {
-			if err, ok := err.(*ent.ConstraintError); ok {
-				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Error(codes.AlreadyExists, "CameraPolicy already exists")
-				}
-				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Error(codes.NotFound, "CameraPolicy: referenced entity not found")
-				}
-			}
-			return nil, err
-		} else if n == 0 {
-			return nil, func() error {
-				if ok, err := st.Db.CameraPolicy.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "CameraPolicy not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	}
-
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
-	if mod != nil {
-		var value *api.CameraPolicy
-		if images.Value {
-			value = s.image(out)
-		}
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       by,
-			Key:      k,
-			Patch:    doc,
-			Previous: previous, Value: value,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (s CameraPolicyServiceServer) Erase(ctx context.Context, req *api.CameraPolicyRef) (*api.CameraPolicyEraseResponse, error) {
-	p, err := CameraPolicyPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraPolicy
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraPolicyService_Erase_FullMethodName)
-		var v *ent.CameraPolicy
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraPolicy.Query().Where(p).Select(camerapolicy.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraPolicyEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = camerapolicy.And(p, camerapolicy.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraPolicy.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraPolicyService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraPolicyEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
+	return nil
 }
 
 // CameraPolicyPick answers with the predicate this reference selects on,

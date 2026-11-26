@@ -7,6 +7,7 @@
 package api
 
 import (
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -680,6 +681,7 @@ type AccessListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *AccessSelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -739,6 +741,13 @@ func (x *AccessListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *AccessListRequest) GetSelect() *AccessSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *AccessListRequest) SetFilters(v []*AccessFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -753,6 +762,21 @@ func (x *AccessListRequest) SetAfter(v string) {
 
 func (x *AccessListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *AccessListRequest) SetSelect(v *AccessSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *AccessListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *AccessListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type AccessListRequest_builder struct {
@@ -775,6 +799,15 @@ type AccessListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *AccessSelect
 }
 
 func (b0 AccessListRequest_builder) Build() *AccessListRequest {
@@ -785,6 +818,7 @@ func (b0 AccessListRequest_builder) Build() *AccessListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1049,12 +1083,12 @@ var File_shale_payday_access_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_payday_access_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/payday/access_svc.g.proto\x12\x05shale\x1a\x19shale/payday/access.proto\"c\n" +
+	"\x1fshale/payday/access_svc.g.proto\x12\x05shale\x1a\torm.proto\x1a\x19shale/payday/access.proto\"c\n" +
 	"\x10AccessGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.AccessRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.shale.AccessSelectR\x06select\"$\n" +
-	"\tAccessRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.shale.AccessSelectR\x06select\",\n" +
+	"\tAccessRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02idB\x05\n" +
 	"\x03key\"\xf1\x02\n" +
 	"\fAccessSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x1b\n" +
@@ -1070,19 +1104,20 @@ const file_shale_payday_access_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x11 \x01(\bR\x05value\x12\x16\n" +
 	"\x06domain\x18\x13 \x01(\bR\x06domain\x12\x1a\n" +
 	"\bsubjects\x18\x14 \x01(\bR\bsubjects\x12#\n" +
-	"\rsubject_count\x18\x15 \x01(\bR\fsubjectCount\"\x9b\x01\n" +
+	"\rsubject_count\x18\x15 \x01(\bR\fsubjectCount\"\xc8\x01\n" +
 	"\x11AccessListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.shale.AccessFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"T\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.shale.AccessSelectR\x06select\"T\n" +
 	"\x12AccessListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.shale.AccessR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x82\x01\n" +
-	"\fAccessFilter\x12\x19\n" +
-	"\bactor_id\x18\x01 \x01(\fR\aactorId\x12\x1b\n" +
-	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12&\n" +
-	"\x0factor_tenant_id\x18\x03 \x01(\fR\ractorTenantId\x12\x12\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x9a\x01\n" +
+	"\fAccessFilter\x12!\n" +
+	"\bactor_id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\aactorId\x12#\n" +
+	"\ttenant_id\x18\x02 \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12.\n" +
+	"\x0factor_tenant_id\x18\x03 \x01(\fB\x06\xea\x82\x16\x02\x10@R\ractorTenantId\x12\x12\n" +
 	"\x04kind\x18\x04 \x01(\tR\x04kind2{\n" +
 	"\rAccessService\x12-\n" +
 	"\x03Get\x12\x17.shale.AccessGetRequest\x1a\r.shale.Access\x12;\n" +
@@ -1102,16 +1137,17 @@ var file_shale_payday_access_svc_g_proto_depIdxs = []int32{
 	1, // 0: shale.AccessGetRequest.ref:type_name -> shale.AccessRef
 	2, // 1: shale.AccessGetRequest.select:type_name -> shale.AccessSelect
 	5, // 2: shale.AccessListRequest.filters:type_name -> shale.AccessFilter
-	6, // 3: shale.AccessListResponse.items:type_name -> shale.Access
-	0, // 4: shale.AccessService.Get:input_type -> shale.AccessGetRequest
-	3, // 5: shale.AccessService.List:input_type -> shale.AccessListRequest
-	6, // 6: shale.AccessService.Get:output_type -> shale.Access
-	4, // 7: shale.AccessService.List:output_type -> shale.AccessListResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 3: shale.AccessListRequest.select:type_name -> shale.AccessSelect
+	6, // 4: shale.AccessListResponse.items:type_name -> shale.Access
+	0, // 5: shale.AccessService.Get:input_type -> shale.AccessGetRequest
+	3, // 6: shale.AccessService.List:input_type -> shale.AccessListRequest
+	6, // 7: shale.AccessService.Get:output_type -> shale.Access
+	4, // 8: shale.AccessService.List:output_type -> shale.AccessListResponse
+	7, // [7:9] is the sub-list for method output_type
+	5, // [5:7] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_shale_payday_access_svc_g_proto_init() }

@@ -378,7 +378,7 @@ shale serve control|cluster|storage|producer|reader|relay|all [--dev <dir>]
 shale serve producer --demo 3              # three cameras ffmpeg draws for itself (§38.1)
 shale login [--cluster] [--password p] @tenant/alias # sign in as a person; keeps a session
 shale holder issue-password <holder>       # a fresh password, shown once; roster in this process only
-shale identity migrate                     # once, after upgrading a deployment that predates roster (§33.1)
+shale identity migrate                     # once, after upgrading a deployment that predates roster (§33.1); another roster: §32.1
 
 # Every entity has the generated verbs the schema declares: get|ls|watch|add|
 # patch|erase. Flags come before arguments. A custom verb takes a REF where
@@ -434,3 +434,89 @@ shale lamina reschedule ... --delete-now --reason <text>   # both dates to now (
 shale lamina timeline '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","size":n,"after":"<cursor>"}'
 shale live [--for d] <set>               # a WebRTC viewer per source, for a look (§39.4)
 ```
+
+### 32.1 Moving to another roster
+
+Shale keeps a tenant and a person by roster's identifier: `Tenant.id` is
+roster's tenant, `Holder.id` roster's holder and the `sub` of every token,
+and every row of a tenant hangs off its identifier
+([§33.1](10-security.md#331-trust-model)). Pointing a deployment at
+another roster -- a new instance, or one whose database was made again --
+keeps all of it only where that roster names the same tenant and the same
+people by the same identifiers. Both are written by roster's operator,
+before anybody signs in:
+
+```sh
+shale tenant ls                                  # each tenant's id, as this deployment has it (cluster API)
+roster --as <operator> tenant add @acme '{"id": "<that id>"}'
+shale holder ls                                  # each person's id, in their tenant
+roster --as <operator> holder add @acme/bob '{"id": "<that id>"}'
+```
+
+and then Shale is installed in the tenant as on any roster
+([§33.1](10-security.md#331-trust-model)).
+
+- **The tenant, by its identifier.** A sign-in for a tenant this
+  deployment has under another identifier than roster gives it is refused,
+  saying so and what to do, and logged once, at ERROR, with both
+  identifiers; nothing is made, and nothing is moved onto the new one. The
+  browser's and the command line's sign-in pages say it; the password form
+  answers 401, as it answers any sign-in that failed, and the reason is in
+  the log. roster's declared rows (the file
+  `roster serve` applies) cannot say a tenant's identifier, so a tenant
+  declared there is made with a new one unless it was added as above first.
+- **People, by theirs.** A person made with their old identifier is who
+  they were: their sites (`all_sites`, their site memberships) and the
+  delegations apps started for them are theirs. A person roster names by
+  another identifier than the row of their alias has is refused at sign-in
+  the same way, saying so and what to do, and logged once, at ERROR, with
+  both identifiers: roster's operator makes them again with the identifier
+  `shale holder ls` prints, or an administrator erases the row here
+  (`shale holder erase`). Erased, the person arrives as a new holder at
+  their next sign-in, and what was the old row's is not theirs: their site
+  memberships, an `all_sites` an administrator gave them, and a delegation
+  an app started for them. An administrator gives it again -- every site
+  with `shale holder patch` and `all_sites`, some with `shale site-member
+  add` -- where the new row does not have it already: with
+  `auth.operators` every new person reads the whole tenant, and without it
+  nobody but a tenant's first sees a site until given one. What they may
+  do at Shale is what roster grants the new holder
+  ([§33.1](10-security.md#331-trust-model)).
+- `shale identity migrate` writes a deployment's tenants and people into
+  the roster in this process with their identifiers; it does not reach a
+  roster elsewhere.
+### 32.2 Upgrading past roster's v0.2.0 freeze, with roster in this process
+
+roster keeps nothing for an earlier roster until it is released, and the
+roster this build links reads no database an earlier one made. A
+deployment whose roster runs in the control plane's process (no
+`auth.roster.addr`) cannot carry its `roster.db` across: this build
+refuses to start on it, with roster's own words about its columns and
+then Shale's, naming this section. Shale's own database is read as it
+was. What it takes:
+
+```sh
+mv /var/lib/shale/control/roster.db /var/lib/shale/control/roster.db.before   # and its -wal and -shm
+shale identity migrate      # every tenant and person of Shale's, under their identifiers; a password each, printed once
+shale serve …
+```
+
+`identity migrate` makes again, from Shale's own rows, each tenant (its
+identifier, alias and name) and each person (identifier, alias, name),
+binds whoever sees every site to the role that administers the tenant at
+roster, and issues every person a new password. Nothing else of the old
+file comes across:
+
+- **the passwords**: every person signs in with the one printed;
+- **what roster bound** besides that one role: the operators' role
+  (`auth.operators`) and any role or binding a tenant administrator wrote
+  there, which are written again;
+- **people roster had and Shale had not met** (nobody who never signed in
+  has a row here), who are made again at roster;
+- whatever else that roster kept of anybody: addresses, second factors,
+  keys, and its own trail and access record.
+
+Shale's holder in each tenant, its role and the binding are written again
+on their own the first time Shale asks roster anything there. Where
+`auth.roster.db` names a database of its own, it is that database which is
+moved aside or emptied.

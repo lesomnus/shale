@@ -2,7 +2,7 @@ edition = "2023";
 package shale;
 
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
+import "orm.proto";
 import "shale/common.proto";
 import "shale/host.proto";
 import "shale/payday/tenant_svc.g.proto";
@@ -19,23 +19,29 @@ service NodeService {
   rpc Get(NodeGetRequest) returns (Node);
   // Patch updates an existing Node
   rpc Patch(NodePatchRequest) returns (Node);
-  // Apply applies a patch document to an existing Node
-  rpc Apply(NodeApplyRequest) returns (Node);
   // Erase deletes a Node
   rpc Erase(NodeRef) returns (NodeEraseResponse);
   // List reads Nodes a page at a time.
   rpc List(NodeListRequest) returns (NodeListResponse);
   // Watch the Nodes this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(NodeWatchRequest) returns (stream NodeWatchResponse);
   // Hardware identity, hostname, interfaces, sinks, and CSR in; polled until
   // adopted; node_id, certificate, CA bundle, and key set out (§33.4).
@@ -61,23 +67,29 @@ service RelayService {
   rpc Get(RelayGetRequest) returns (Relay);
   // Patch updates an existing Relay
   rpc Patch(RelayPatchRequest) returns (Relay);
-  // Apply applies a patch document to an existing Relay
-  rpc Apply(RelayApplyRequest) returns (Relay);
   // Erase deletes a Relay
   rpc Erase(RelayRef) returns (RelayEraseResponse);
   // List reads Relays a page at a time.
   rpc List(RelayListRequest) returns (RelayListResponse);
   // Watch the Relays this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(RelayWatchRequest) returns (stream RelayWatchResponse);
   rpc Join(RelayJoinRequest) returns (RelayJoinResponse);
   rpc Adopt(RelayAdoptRequest) returns (Relay);
@@ -95,23 +107,29 @@ service SatelliteService {
   rpc Get(SatelliteGetRequest) returns (Satellite);
   // Patch updates an existing Satellite
   rpc Patch(SatellitePatchRequest) returns (Satellite);
-  // Apply applies a patch document to an existing Satellite
-  rpc Apply(SatelliteApplyRequest) returns (Satellite);
   // Erase deletes a Satellite
   rpc Erase(SatelliteRef) returns (SatelliteEraseResponse);
   // List reads Satellites a page at a time.
   rpc List(SatelliteListRequest) returns (SatelliteListResponse);
   // Watch the Satellites this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(SatelliteWatchRequest) returns (stream SatelliteWatchResponse);
   rpc Join(SatelliteJoinRequest) returns (SatelliteJoinResponse);
   rpc Adopt(SatelliteAdoptRequest) returns (Satellite);
@@ -140,23 +158,29 @@ service ProducerService {
   rpc Get(ProducerGetRequest) returns (Producer);
   // Patch updates an existing Producer
   rpc Patch(ProducerPatchRequest) returns (Producer);
-  // Apply applies a patch document to an existing Producer
-  rpc Apply(ProducerApplyRequest) returns (Producer);
   // Erase deletes a Producer
   rpc Erase(ProducerRef) returns (ProducerEraseResponse);
   // List reads Producers a page at a time.
   rpc List(ProducerListRequest) returns (ProducerListResponse);
   // Watch the Producers this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(ProducerWatchRequest) returns (stream ProducerWatchResponse);
   // Called without a credential by a host on its first run, and polled until
   // an admin adopts it: hardware identity, hostname, and CSR in; certificate
@@ -180,23 +204,29 @@ service ReaderService {
   rpc Get(ReaderGetRequest) returns (Reader);
   // Patch updates an existing Reader
   rpc Patch(ReaderPatchRequest) returns (Reader);
-  // Apply applies a patch document to an existing Reader
-  rpc Apply(ReaderApplyRequest) returns (Reader);
   // Erase deletes a Reader
   rpc Erase(ReaderRef) returns (ReaderEraseResponse);
   // List reads Readers a page at a time.
   rpc List(ReaderListRequest) returns (ReaderListResponse);
   // Watch the Readers this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(ReaderWatchRequest) returns (stream ReaderWatchResponse);
   rpc Join(ReaderJoinRequest) returns (ReaderJoinResponse);
   rpc Adopt(ReaderAdoptRequest) returns (Reader);
@@ -206,7 +236,7 @@ service ReaderService {
 }
 
 message NodeAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
@@ -238,7 +268,7 @@ message NodeGetRequest {
 
 message NodeRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     string alias = 4;
   }
 }
@@ -340,11 +370,6 @@ message NodePatchRequest {
   bool date_scored_null = 55;
 }
 
-message NodeApplyRequest {
-  NodeRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message NodeEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -375,6 +400,16 @@ message NodeListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  NodeSelect select = 6;
 }
 
 message NodeListResponse {
@@ -396,13 +431,15 @@ message NodeFilter {
 }
 
 message NodeWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated NodeFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -423,7 +460,7 @@ message NodeWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -431,7 +468,8 @@ message NodeWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   Node value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -539,7 +577,7 @@ message NodeResolveResponse {
 }
 
 message RelayAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
@@ -569,7 +607,7 @@ message RelayGetRequest {
 
 message RelayRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     string alias = 4;
   }
 }
@@ -662,11 +700,6 @@ message RelayPatchRequest {
   bool status_null = 51;
 }
 
-message RelayApplyRequest {
-  RelayRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message RelayEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -697,6 +730,16 @@ message RelayListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  RelaySelect select = 6;
 }
 
 message RelayListResponse {
@@ -718,13 +761,15 @@ message RelayFilter {
 }
 
 message RelayWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated RelayFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -745,7 +790,7 @@ message RelayWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -753,7 +798,8 @@ message RelayWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   Relay value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -813,7 +859,7 @@ message RelayAssignRequest {
 
 message ProducerRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     ProducerRefBySlug slug = 4;
   }
 }
@@ -824,7 +870,7 @@ message ProducerRefBySlug {
 }
 
 message SatelliteAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
@@ -853,7 +899,7 @@ message SatelliteGetRequest {
 
 message SatelliteRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     string alias = 4;
   }
 }
@@ -944,11 +990,6 @@ message SatellitePatchRequest {
   bool status_null = 49;
 }
 
-message SatelliteApplyRequest {
-  SatelliteRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message SatelliteEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -979,6 +1020,16 @@ message SatelliteListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  SatelliteSelect select = 6;
 }
 
 message SatelliteListResponse {
@@ -1000,13 +1051,15 @@ message SatelliteFilter {
 }
 
 message SatelliteWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated SatelliteFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -1027,7 +1080,7 @@ message SatelliteWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -1035,7 +1088,8 @@ message SatelliteWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   Satellite value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -1126,7 +1180,7 @@ message SatelliteAcceptResponse {
 }
 
 message ProducerAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -1267,11 +1321,6 @@ message ProducerPatchRequest {
   bool satellite_null = 51;
 }
 
-message ProducerApplyRequest {
-  ProducerRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message ProducerEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -1302,6 +1351,16 @@ message ProducerListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  ProducerSelect select = 6;
 }
 
 message ProducerListResponse {
@@ -1326,13 +1385,15 @@ message ProducerFilter {
 }
 
 message ProducerWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated ProducerFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -1353,7 +1414,7 @@ message ProducerWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -1361,7 +1422,8 @@ message ProducerWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   Producer value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -1447,7 +1509,7 @@ message ProducerRelayResponse {
 }
 
 message ReaderAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
@@ -1474,7 +1536,7 @@ message ReaderGetRequest {
 
 message ReaderRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     ReaderRefBySlug slug = 4;
   }
 }
@@ -1560,11 +1622,6 @@ message ReaderPatchRequest {
   string ca_hash = 42;
 }
 
-message ReaderApplyRequest {
-  ReaderRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message ReaderEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -1595,6 +1652,16 @@ message ReaderListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  ReaderSelect select = 6;
 }
 
 message ReaderListResponse {
@@ -1617,13 +1684,15 @@ message ReaderFilter {
 }
 
 message ReaderWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated ReaderFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -1644,7 +1713,7 @@ message ReaderWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -1652,7 +1721,8 @@ message ReaderWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   Reader value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the

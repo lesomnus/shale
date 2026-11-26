@@ -77,7 +77,7 @@ message Node {
   google.protobuf.Timestamp date_scored = 27 [(orm.field) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"
@@ -152,7 +152,7 @@ message Relay {
   RelayStatus status = 25;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"
@@ -235,7 +235,7 @@ message Satellite {
   SatelliteStatus status = 24;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"
@@ -325,7 +325,7 @@ message Producer {
   Satellite satellite = 25 [(orm.edge) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"
@@ -411,7 +411,7 @@ message Reader {
   string ca_hash = 21 [(orm.field) = {default: ""}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"

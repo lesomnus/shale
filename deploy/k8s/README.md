@@ -332,17 +332,21 @@ in front (§33.1), Shale runs no roster of its own and takes no password:
    installs Shale in each tenant it serves:
 
    ```sh
-   roster control key add --allow /roster.NominationService/List shale
-   roster app install --tenant <tenant> \
-     --role /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get \
+   roster --as <operator> control key add --allow /roster.NominationService/List shale
+   roster --as <operator> app install --tenant <tenant> \
+     --allow /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get,/payday.TokenService/Introspect \
+     --serves '/shale.*/*' --administer <people> \
      shale
    ```
 
    The key holds one method as itself -- listing the tenants that
-   nominated it -- and is answered in each of them as the holder that
-   tenant nominated (roster's `docs/apps.md`). Then a role naming
+   nominated it, and `/roster.SyncService/Watch` beside it where apps view
+   on people's behalf -- and is answered in each of them as
+   the holder that tenant nominated (roster's `docs/apps.md`). Then a role
+   **of Shale's** (`"app"` the holder `shale` of the tenant) naming
    `/shale.*/*` (all of Shale) or the services somebody looks after, bound
-   to the operators or to a group they are in; `Host` rows for the two
+   to the operators or to a group of Shale's
+   ([§33.1](../../docs/10-security.md#331-trust-model)); `Host` rows for the two
    names below; and two OAuth clients -- the console's (confidential,
    authorization code, both callbacks) and the CLI's (public, device
    grant).

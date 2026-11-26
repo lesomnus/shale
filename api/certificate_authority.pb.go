@@ -423,7 +423,7 @@ var File_shale_certificate_authority_proto protoreflect.FileDescriptor
 
 const file_shale_certificate_authority_proto_rawDesc = "" +
 	"\n" +
-	"!shale/certificate_authority.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb6\a\n" +
+	"!shale/certificate_authority.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc0\a\n" +
 	"\x14CertificateAuthority\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -446,7 +446,7 @@ const file_shale_certificate_authority_proto_rawDesc = "" +
 	"\fdate_retired\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateRetired\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:_\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:i\xca\xfc\x150\x12\f\x82\x01\x00\x8a\x01\x00\x92\x01\x00\x9a\x01\x00\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x161\b*\x12\x02ca2%\n" +
 	"\x10\n" +

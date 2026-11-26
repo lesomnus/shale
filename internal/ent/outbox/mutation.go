@@ -25,6 +25,8 @@ type Mutation struct {
 	patch         *[]byte
 	date_created  *time.Time
 	event         *[]byte
+	routes        *[]byte
+	signal        *[]byte
 	clearedFields map[string]struct{}
 	exprs         map[string]sql.Querier
 	predicates    []predicate.Outbox
@@ -239,6 +241,78 @@ func (m *Mutation) ResetEvent() {
 	delete(m.exprs, FieldEvent)
 }
 
+// SetRoutes sets the "routes" field.
+func (m *Mutation) SetRoutes(b []byte) {
+	m.routes = &b
+	delete(m.clearedFields, FieldRoutes)
+	delete(m.exprs, FieldRoutes)
+}
+
+// Routes returns the value of the "routes" field in the mutation.
+func (m *Mutation) Routes() (r []byte, exists bool) {
+	v := m.routes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRoutes clears the value of the "routes" field.
+func (m *Mutation) ClearRoutes() {
+	m.routes = nil
+	delete(m.exprs, FieldRoutes)
+	m.clearedFields[FieldRoutes] = struct{}{}
+}
+
+// RoutesCleared returns if the "routes" field was cleared in this mutation.
+func (m *Mutation) RoutesCleared() bool {
+	_, ok := m.clearedFields[FieldRoutes]
+	return ok
+}
+
+// ResetRoutes resets all changes to the "routes" field.
+func (m *Mutation) ResetRoutes() {
+	m.routes = nil
+	delete(m.clearedFields, FieldRoutes)
+	delete(m.exprs, FieldRoutes)
+}
+
+// SetSignal sets the "signal" field.
+func (m *Mutation) SetSignal(b []byte) {
+	m.signal = &b
+	delete(m.clearedFields, FieldSignal)
+	delete(m.exprs, FieldSignal)
+}
+
+// Signal returns the value of the "signal" field in the mutation.
+func (m *Mutation) Signal() (r []byte, exists bool) {
+	v := m.signal
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSignal clears the value of the "signal" field.
+func (m *Mutation) ClearSignal() {
+	m.signal = nil
+	delete(m.exprs, FieldSignal)
+	m.clearedFields[FieldSignal] = struct{}{}
+}
+
+// SignalCleared returns if the "signal" field was cleared in this mutation.
+func (m *Mutation) SignalCleared() bool {
+	_, ok := m.clearedFields[FieldSignal]
+	return ok
+}
+
+// ResetSignal resets all changes to the "signal" field.
+func (m *Mutation) ResetSignal() {
+	m.signal = nil
+	delete(m.clearedFields, FieldSignal)
+	delete(m.exprs, FieldSignal)
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Outbox) {
 	m.predicates = append(m.predicates, ps...)
@@ -273,7 +347,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 10)
 	if m.tenant_id != nil || m.exprs[FieldTenantId] != nil {
 		fields = append(fields, FieldTenantId)
 	}
@@ -297,6 +371,12 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.event != nil || m.exprs[FieldEvent] != nil {
 		fields = append(fields, FieldEvent)
+	}
+	if m.routes != nil || m.exprs[FieldRoutes] != nil {
+		fields = append(fields, FieldRoutes)
+	}
+	if m.signal != nil || m.exprs[FieldSignal] != nil {
+		fields = append(fields, FieldSignal)
 	}
 	return fields
 }
@@ -328,6 +408,10 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldEvent:
 		return m.Event()
+	case FieldRoutes:
+		return m.Routes()
+	case FieldSignal:
+		return m.Signal()
 	}
 	return nil, false
 }
@@ -427,6 +511,26 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEvent(v)
 		return nil
+	case FieldRoutes:
+		v, ok := value.([]byte)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoutes(v)
+		return nil
+	case FieldSignal:
+		v, ok := value.([]byte)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSignal(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Outbox field %s", name)
 }
@@ -465,6 +569,10 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldEvent:
 		m.ResetEvent()
+	case FieldRoutes:
+		m.ResetRoutes()
+	case FieldSignal:
+		m.ResetSignal()
 	default:
 		return fmt.Errorf("unknown Outbox field %s", name)
 	}
@@ -507,6 +615,12 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldEvent]; ok {
 		fields = append(fields, FieldEvent)
 	}
+	if _, ok := m.exprs[FieldRoutes]; ok {
+		fields = append(fields, FieldRoutes)
+	}
+	if _, ok := m.exprs[FieldSignal]; ok {
+		fields = append(fields, FieldSignal)
+	}
 	return fields
 }
 
@@ -542,6 +656,12 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldEvent) {
 		fields = append(fields, FieldEvent)
 	}
+	if m.FieldCleared(FieldRoutes) {
+		fields = append(fields, FieldRoutes)
+	}
+	if m.FieldCleared(FieldSignal) {
+		fields = append(fields, FieldSignal)
+	}
 	return fields
 }
 
@@ -561,6 +681,12 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldEvent:
 		m.ClearEvent()
+		return nil
+	case FieldRoutes:
+		m.ClearRoutes()
+		return nil
+	case FieldSignal:
+		m.ClearSignal()
 		return nil
 	}
 	return fmt.Errorf("unknown Outbox nullable field %s", name)
@@ -593,6 +719,12 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldEvent:
 		m.ResetEvent()
+		return nil
+	case FieldRoutes:
+		m.ResetRoutes()
+		return nil
+	case FieldSignal:
+		m.ResetSignal()
 		return nil
 	}
 	return fmt.Errorf("unknown Outbox field %s", name)

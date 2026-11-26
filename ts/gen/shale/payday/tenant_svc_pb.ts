@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../../patch/patch_pb.js";
-import { file_patch_patch } from "../../patch/patch_pb.js";
+import { file_orm } from "../../orm_pb.js";
 import type { Tenant, TenantSchema } from "./tenant_pb.js";
 import { file_shale_payday_tenant } from "./tenant_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -16,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/payday/tenant_svc.g.proto.
  */
 export const file_shale_payday_tenant_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9wYXlkYXkvdGVuYW50X3N2Yy5nLnByb3RvEgVzaGFsZSKwAgoQVGVuYW50QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMwoGbGFiZWxzGAcgAygLMiMuc2hhbGUuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh0KDmNhcGFjaXR5X3NoYXJlGAggASgBQgWqAQIIAhIbCgxzdG9yZWRfYnl0ZXMYCSABKANCBaoBAggCGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiVgoQVGVuYW50R2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5UZW5hbnRSZWYSIwoGc2VsZWN0GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0IjEKCVRlbmFudFJlZhIMCgJpZBgBIAEoDEgAEg8KBWFsaWFzGAQgASgJSABCBQoDa2V5IrABCgxUZW5hbnRTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIWCg5jYXBhY2l0eV9zaGFyZRgIIAEoCBIUCgxzdG9yZWRfYnl0ZXMYCSABKAgiwAIKElRlbmFudFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5UZW5hbnRSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjUKBmxhYmVscxgOIAMoCzIlLnNoYWxlLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIWCg5jYXBhY2l0eV9zaGFyZRgQIAEoARIUCgxzdG9yZWRfYnl0ZXMYEiABKAMaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJQChJUZW5hbnRBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuVGVuYW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTVGVuYW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgifAoRVGVuYW50TGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnNoYWxlLlRlbmFudEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRwoSVGVuYW50TGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0uc2hhbGUuVGVuYW50EhMKBG5leHQYAiABKAlCBaoBAggCIi0KDFRlbmFudEZpbHRlchIdCgNyZWYYASABKAsyEC5zaGFsZS5UZW5hbnRSZWYyxwIKDVRlbmFudFNlcnZpY2USLQoDQWRkEhcuc2hhbGUuVGVuYW50QWRkUmVxdWVzdBoNLnNoYWxlLlRlbmFudBItCgNHZXQSFy5zaGFsZS5UZW5hbnRHZXRSZXF1ZXN0Gg0uc2hhbGUuVGVuYW50EjEKBVBhdGNoEhkuc2hhbGUuVGVuYW50UGF0Y2hSZXF1ZXN0Gg0uc2hhbGUuVGVuYW50EjEKBUFwcGx5Ehkuc2hhbGUuVGVuYW50QXBwbHlSZXF1ZXN0Gg0uc2hhbGUuVGVuYW50EjUKBUVyYXNlEhAuc2hhbGUuVGVuYW50UmVmGhouc2hhbGUuVGVuYW50RXJhc2VSZXNwb25zZRI7CgRMaXN0Ehguc2hhbGUuVGVuYW50TGlzdFJlcXVlc3QaGS5zaGFsZS5UZW5hbnRMaXN0UmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_payday_tenant]);
+  fileDesc("Ch9zaGFsZS9wYXlkYXkvdGVuYW50X3N2Yy5nLnByb3RvEgVzaGFsZSK4AgoQVGVuYW50QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIzCgZsYWJlbHMYByADKAsyIy5zaGFsZS5UZW5hbnRBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoOY2FwYWNpdHlfc2hhcmUYCCABKAFCBaoBAggCEhsKDHN0b3JlZF9ieXRlcxgJIAEoA0IFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJWChBUZW5hbnRHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QiOQoJVGVuYW50UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIPCgVhbGlhcxgEIAEoCUgAQgUKA2tleSKwAQoMVGVuYW50U2VsZWN0EgsKA2FsbBgBIAEoCBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFgoOY2FwYWNpdHlfc2hhcmUYCCABKAgSFAoMc3RvcmVkX2J5dGVzGAkgASgIIsACChJUZW5hbnRQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuVGVuYW50UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRI1CgZsYWJlbHMYDiADKAsyJS5zaGFsZS5UZW5hbnRQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSFgoOY2FwYWNpdHlfc2hhcmUYECABKAESFAoMc3RvcmVkX2J5dGVzGBIgASgDGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiJQoTVGVuYW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgioQEKEVRlbmFudExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5zaGFsZS5UZW5hbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiMKBnNlbGVjdBgGIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdCJHChJUZW5hbnRMaXN0UmVzcG9uc2USHAoFaXRlbXMYASADKAsyDS5zaGFsZS5UZW5hbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLQoMVGVuYW50RmlsdGVyEh0KA3JlZhgBIAEoCzIQLnNoYWxlLlRlbmFudFJlZjKUAgoNVGVuYW50U2VydmljZRItCgNBZGQSFy5zaGFsZS5UZW5hbnRBZGRSZXF1ZXN0Gg0uc2hhbGUuVGVuYW50Ei0KA0dldBIXLnNoYWxlLlRlbmFudEdldFJlcXVlc3QaDS5zaGFsZS5UZW5hbnQSMQoFUGF0Y2gSGS5zaGFsZS5UZW5hbnRQYXRjaFJlcXVlc3QaDS5zaGFsZS5UZW5hbnQSNQoFRXJhc2USEC5zaGFsZS5UZW5hbnRSZWYaGi5zaGFsZS5UZW5hbnRFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5zaGFsZS5UZW5hbnRMaXN0UmVxdWVzdBoZLnNoYWxlLlRlbmFudExpc3RSZXNwb25zZUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_shale_payday_tenant]);
 
 /**
  * @generated from message shale.TenantAddRequest
@@ -250,28 +249,6 @@ export const TenantPatchRequestSchema: GenMessage<TenantPatchRequest> = /*@__PUR
   messageDesc(file_shale_payday_tenant_svc_g, 4);
 
 /**
- * @generated from message shale.TenantApplyRequest
- */
-export type TenantApplyRequest = Message<"shale.TenantApplyRequest"> & {
-  /**
-   * @generated from field: shale.TenantRef ref = 1;
-   */
-  ref?: TenantRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.TenantApplyRequest.
- * Use `create(TenantApplyRequestSchema)` to create a new message.
- */
-export const TenantApplyRequestSchema: GenMessage<TenantApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_tenant_svc_g, 5);
-
-/**
  * @generated from message shale.TenantEraseResponse
  */
 export type TenantEraseResponse = Message<"shale.TenantEraseResponse"> & {
@@ -292,7 +269,7 @@ export type TenantEraseResponse = Message<"shale.TenantEraseResponse"> & {
  * Use `create(TenantEraseResponseSchema)` to create a new message.
  */
 export const TenantEraseResponseSchema: GenMessage<TenantEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_tenant_svc_g, 6);
+  messageDesc(file_shale_payday_tenant_svc_g, 5);
 
 /**
  * @generated from message shale.TenantListRequest
@@ -334,6 +311,20 @@ export type TenantListRequest = Message<"shale.TenantListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.TenantSelect select = 6;
+   */
+  select?: TenantSelect | undefined;
 };
 
 /**
@@ -341,7 +332,7 @@ export type TenantListRequest = Message<"shale.TenantListRequest"> & {
  * Use `create(TenantListRequestSchema)` to create a new message.
  */
 export const TenantListRequestSchema: GenMessage<TenantListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_payday_tenant_svc_g, 7);
+  messageDesc(file_shale_payday_tenant_svc_g, 6);
 
 /**
  * @generated from message shale.TenantListResponse
@@ -371,7 +362,7 @@ export type TenantListResponse = Message<"shale.TenantListResponse"> & {
  * Use `create(TenantListResponseSchema)` to create a new message.
  */
 export const TenantListResponseSchema: GenMessage<TenantListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_payday_tenant_svc_g, 8);
+  messageDesc(file_shale_payday_tenant_svc_g, 7);
 
 /**
  * @generated from message shale.TenantFilter
@@ -388,7 +379,7 @@ export type TenantFilter = Message<"shale.TenantFilter"> & {
  * Use `create(TenantFilterSchema)` to create a new message.
  */
 export const TenantFilterSchema: GenMessage<TenantFilter> = /*@__PURE__*/
-  messageDesc(file_shale_payday_tenant_svc_g, 9);
+  messageDesc(file_shale_payday_tenant_svc_g, 8);
 
 /**
  * @generated from service shale.TenantService
@@ -422,16 +413,6 @@ export const TenantService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof TenantPatchRequestSchema;
-    output: typeof TenantSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Tenant
-   *
-   * @generated from rpc shale.TenantService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof TenantApplyRequestSchema;
     output: typeof TenantSchema;
   },
   /**

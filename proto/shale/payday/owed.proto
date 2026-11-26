@@ -51,7 +51,7 @@ message Owed {
   // The tenants whose legal holds kept part of its erasure when it was last
   // paid, and nothing until then: what an operator reads to see what is owed
   // under a hold.
-  repeated bytes held_by = 9;
+  repeated bytes held_by = 9 [(orm.field) = {type: TYPE_UUID}];
 
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
     immutable: true

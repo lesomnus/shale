@@ -15,11 +15,6 @@ import (
 	camerajob "github.com/lesomnus/shale/internal/ent/camerajob"
 	cameranetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	producer "github.com/lesomnus/shale/internal/ent/producer"
-	set "github.com/lesomnus/shale/internal/ent/set"
-	site "github.com/lesomnus/shale/internal/ent/site"
-	source "github.com/lesomnus/shale/internal/ent/source"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -44,11 +39,14 @@ type CameraNetworkServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraNetworkServiceServer(db *ent.Client, opts ...Option) api.CameraNetworkServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraNetworkServiceServer{Store: s.Store}
 }
@@ -208,7 +206,10 @@ func (st CameraNetworkServiceServer) create(ctx context.Context, req *api.Camera
 }
 
 func (s CameraNetworkServiceServer) Add(ctx context.Context, req *api.CameraNetworkAddRequest) (*api.CameraNetwork, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +224,7 @@ func (s CameraNetworkServiceServer) Add(ctx context.Context, req *api.CameraNetw
 	}
 
 	var stored *ent.CameraNetwork
-	if snapshotOptions(s.Rec, api.CameraNetworkService_Add_FullMethodName).Value {
+	if s.images(api.CameraNetworkService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -249,10 +250,11 @@ func (s CameraNetworkServiceServer) Add(ctx context.Context, req *api.CameraNetw
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraNetworkService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraNetwork",
+		By:     api.CameraNetworkService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -306,7 +308,9 @@ func (s CameraNetworkServiceServer) Get(ctx context.Context, req *api.CameraNetw
 	}
 
 	q := s.Db.CameraNetwork.Query().Where(p)
-	CameraNetworkSelectInit(q, req.GetSelect())
+	if err := CameraNetworkSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -374,31 +378,61 @@ func CameraNetworkSelectedFields(m *api.CameraNetworkSelect) []string {
 	return vs
 }
 
-func CameraNetworkSelect(q *ent.CameraNetworkQuery, m *api.CameraNetworkSelect) {
+// CameraNetworkSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraNetworkSelect(ctx context.Context, scope Scope, q *ent.CameraNetworkQuery, m *api.CameraNetworkSelect) error {
 	if !m.GetAll() {
 		fields := CameraNetworkSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraNetworkSelectInit(q *ent.CameraNetworkQuery, m *api.CameraNetworkSelect) {
+// CameraNetworkSelectInit is [CameraNetworkSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraNetworkSelectInit(ctx context.Context, scope Scope, q *ent.CameraNetworkQuery, m *api.CameraNetworkSelect) error {
 	if m != nil {
-		CameraNetworkSelect(q, m)
+		return CameraNetworkSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CameraNetworkServiceServer) Patch(ctx context.Context, req *api.CameraNetworkPatchRequest) (*api.CameraNetwork, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(cameraNetworkOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -447,13 +481,6 @@ var cameraNetworkOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, 
 var cameraNetworkPatchColumns = entpatch.Columns{
 	1: cameranetwork.FieldId, 2: cameranetwork.TenantColumn, 3: cameranetwork.SiteColumn, 4: cameranetwork.FieldAlias, 5: cameranetwork.FieldName, 6: cameranetwork.FieldDesc, 7: cameranetwork.FieldLabels, 8: cameranetwork.FieldCidrs, 9: cameranetwork.FieldMulticast, 10: cameranetwork.FieldSeeds, 11: cameranetwork.FieldInterfaceHint, 12: cameranetwork.FieldRevision, 16: cameranetwork.FieldActivePolicyId, 13: cameranetwork.FieldDateUpdated, 14: cameranetwork.FieldDateErased, 15: cameranetwork.FieldDateCreated}
 
-func (s CameraNetworkServiceServer) Apply(ctx context.Context, req *api.CameraNetworkApplyRequest) (*api.CameraNetwork, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraNetworkService_Apply_FullMethodName)
-}
-
 func (s CameraNetworkServiceServer) apply(ctx context.Context, ref *api.CameraNetworkRef, doc *patchpb.Patch, by string) (*api.CameraNetwork, error) {
 	plan := &ormpatch.Plan{Entity: cameraNetworkOrmEntity}
 	if doc != nil {
@@ -475,7 +502,7 @@ func (s CameraNetworkServiceServer) apply(ctx context.Context, ref *api.CameraNe
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +523,7 @@ func (s CameraNetworkServiceServer) apply(ctx context.Context, ref *api.CameraNe
 	}
 
 	var previous *api.CameraNetwork
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -565,7 +592,8 @@ func (s CameraNetworkServiceServer) apply(ctx context.Context, ref *api.CameraNe
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraNetwork",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -579,76 +607,6 @@ func (s CameraNetworkServiceServer) apply(ctx context.Context, ref *api.CameraNe
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s CameraNetworkServiceServer) Erase(ctx context.Context, req *api.CameraNetworkRef) (*api.CameraNetworkEraseResponse, error) {
-	p, err := CameraNetworkPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraNetwork
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraNetworkService_Erase_FullMethodName)
-		var v *ent.CameraNetwork
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraNetwork.Query().Where(p).Select(cameranetwork.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraNetworkEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = cameranetwork.And(p, cameranetwork.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraNetwork.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraNetworkService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraNetworkEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // CameraNetworkPick answers with the predicate this reference selects on,
@@ -694,11 +652,14 @@ type CameraDeviceServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraDeviceServiceServer(db *ent.Client, opts ...Option) api.CameraDeviceServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraDeviceServiceServer{Store: s.Store}
 }
@@ -895,7 +856,10 @@ func (st CameraDeviceServiceServer) create(ctx context.Context, req *api.CameraD
 }
 
 func (s CameraDeviceServiceServer) Add(ctx context.Context, req *api.CameraDeviceAddRequest) (*api.CameraDevice, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -910,7 +874,7 @@ func (s CameraDeviceServiceServer) Add(ctx context.Context, req *api.CameraDevic
 	}
 
 	var stored *ent.CameraDevice
-	if snapshotOptions(s.Rec, api.CameraDeviceService_Add_FullMethodName).Value {
+	if s.images(api.CameraDeviceService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -936,10 +900,11 @@ func (s CameraDeviceServiceServer) Add(ctx context.Context, req *api.CameraDevic
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraDeviceService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraDevice",
+		By:     api.CameraDeviceService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -993,7 +958,9 @@ func (s CameraDeviceServiceServer) Get(ctx context.Context, req *api.CameraDevic
 	}
 
 	q := s.Db.CameraDevice.Query().Where(p)
-	CameraDeviceSelectInit(q, req.GetSelect())
+	if err := CameraDeviceSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1076,37 +1043,76 @@ func CameraDeviceSelectedFields(m *api.CameraDeviceSelect) []string {
 	return vs
 }
 
-func CameraDeviceSelect(q *ent.CameraDeviceQuery, m *api.CameraDeviceSelect) {
+// CameraDeviceSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraDeviceSelect(ctx context.Context, scope Scope, q *ent.CameraDeviceQuery, m *api.CameraDeviceSelect) error {
 	if !m.GetAll() {
 		fields := CameraDeviceSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasNetwork() {
+		p, err := CameraNetworkNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithNetwork(func(q *ent.CameraNetworkQuery) {
-			q.Where(cameranetwork.DateErasedIsNil())
-			CameraNetworkSelect(q, m.GetNetwork())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraNetworkSelect(ctx, scope, q, m.GetNetwork())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraDeviceSelectInit(q *ent.CameraDeviceQuery, m *api.CameraDeviceSelect) {
+// CameraDeviceSelectInit is [CameraDeviceSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraDeviceSelectInit(ctx context.Context, scope Scope, q *ent.CameraDeviceQuery, m *api.CameraDeviceSelect) error {
 	if m != nil {
-		CameraDeviceSelect(q, m)
+		return CameraDeviceSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CameraDeviceServiceServer) Patch(ctx context.Context, req *api.CameraDevicePatchRequest) (*api.CameraDevice, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(cameraDeviceOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1155,13 +1161,6 @@ var cameraDeviceOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "
 var cameraDevicePatchColumns = entpatch.Columns{
 	1: cameradevice.FieldId, 2: cameradevice.TenantColumn, 3: cameradevice.SiteColumn, 4: cameradevice.FieldAlias, 5: cameradevice.FieldName, 6: cameradevice.FieldDesc, 7: cameradevice.FieldLabels, 8: cameradevice.NetworkColumn, 9: cameradevice.FieldDeviceKey, 10: cameradevice.FieldIdentity, 11: cameradevice.FieldEndpoints, 12: cameradevice.FieldObservationRevision, 16: cameradevice.FieldActiveJobId, 17: cameradevice.FieldClaimGeneration, 18: cameradevice.FieldEnrollment, 19: cameradevice.FieldFactoryTls, 20: cameradevice.FieldFirmwareTls, 21: cameradevice.FieldTransport, 22: cameradevice.FieldClock, 13: cameradevice.FieldDateUpdated, 14: cameradevice.FieldDateErased, 15: cameradevice.FieldDateCreated}
 
-func (s CameraDeviceServiceServer) Apply(ctx context.Context, req *api.CameraDeviceApplyRequest) (*api.CameraDevice, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraDeviceService_Apply_FullMethodName)
-}
-
 func (s CameraDeviceServiceServer) apply(ctx context.Context, ref *api.CameraDeviceRef, doc *patchpb.Patch, by string) (*api.CameraDevice, error) {
 	plan := &ormpatch.Plan{Entity: cameraDeviceOrmEntity}
 	if doc != nil {
@@ -1183,7 +1182,7 @@ func (s CameraDeviceServiceServer) apply(ctx context.Context, ref *api.CameraDev
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1204,7 +1203,7 @@ func (s CameraDeviceServiceServer) apply(ctx context.Context, ref *api.CameraDev
 	}
 
 	var previous *api.CameraDevice
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1273,7 +1272,8 @@ func (s CameraDeviceServiceServer) apply(ctx context.Context, ref *api.CameraDev
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraDevice",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1287,76 +1287,6 @@ func (s CameraDeviceServiceServer) apply(ctx context.Context, ref *api.CameraDev
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s CameraDeviceServiceServer) Erase(ctx context.Context, req *api.CameraDeviceRef) (*api.CameraDeviceEraseResponse, error) {
-	p, err := CameraDevicePick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraDevice
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraDeviceService_Erase_FullMethodName)
-		var v *ent.CameraDevice
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraDevice.Query().Where(p).Select(cameradevice.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraDeviceEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = cameradevice.And(p, cameradevice.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraDevice.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraDeviceService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraDeviceEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // CameraDevicePick answers with the predicate this reference selects on,
@@ -1412,11 +1342,14 @@ type CameraAssignmentServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraAssignmentServiceServer(db *ent.Client, opts ...Option) api.CameraAssignmentServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraAssignmentServiceServer{Store: s.Store}
 }
@@ -1636,7 +1569,10 @@ func (st CameraAssignmentServiceServer) create(ctx context.Context, req *api.Cam
 }
 
 func (s CameraAssignmentServiceServer) Add(ctx context.Context, req *api.CameraAssignmentAddRequest) (*api.CameraAssignment, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1651,7 +1587,7 @@ func (s CameraAssignmentServiceServer) Add(ctx context.Context, req *api.CameraA
 	}
 
 	var stored *ent.CameraAssignment
-	if snapshotOptions(s.Rec, api.CameraAssignmentService_Add_FullMethodName).Value {
+	if s.images(api.CameraAssignmentService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1677,10 +1613,11 @@ func (s CameraAssignmentServiceServer) Add(ctx context.Context, req *api.CameraA
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraAssignmentService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraAssignment",
+		By:     api.CameraAssignmentService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1734,7 +1671,9 @@ func (s CameraAssignmentServiceServer) Get(ctx context.Context, req *api.CameraA
 	}
 
 	q := s.Db.CameraAssignment.Query().Where(p)
-	CameraAssignmentSelectInit(q, req.GetSelect())
+	if err := CameraAssignmentSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1796,49 +1735,106 @@ func CameraAssignmentSelectedFields(m *api.CameraAssignmentSelect) []string {
 	return vs
 }
 
-func CameraAssignmentSelect(q *ent.CameraAssignmentQuery, m *api.CameraAssignmentSelect) {
+// CameraAssignmentSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraAssignmentSelect(ctx context.Context, scope Scope, q *ent.CameraAssignmentQuery, m *api.CameraAssignmentSelect) error {
 	if !m.GetAll() {
 		fields := CameraAssignmentSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasNetwork() {
+		p, err := CameraNetworkNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithNetwork(func(q *ent.CameraNetworkQuery) {
-			q.Where(cameranetwork.DateErasedIsNil())
-			CameraNetworkSelect(q, m.GetNetwork())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraNetworkSelect(ctx, scope, q, m.GetNetwork())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSet() {
+		p, err := SetNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSet(func(q *ent.SetQuery) {
-			q.Where(set.DateErasedIsNil())
-			SetSelect(q, m.GetSet())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SetSelect(ctx, scope, q, m.GetSet())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasProducer() {
+		p, err := ProducerNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithProducer(func(q *ent.ProducerQuery) {
-			q.Where(producer.DateErasedIsNil())
-			ProducerSelect(q, m.GetProducer())
+			if p != nil {
+				q.Where(p)
+			}
+			err = ProducerSelect(ctx, scope, q, m.GetProducer())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraAssignmentSelectInit(q *ent.CameraAssignmentQuery, m *api.CameraAssignmentSelect) {
+// CameraAssignmentSelectInit is [CameraAssignmentSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraAssignmentSelectInit(ctx context.Context, scope Scope, q *ent.CameraAssignmentQuery, m *api.CameraAssignmentSelect) error {
 	if m != nil {
-		CameraAssignmentSelect(q, m)
+		return CameraAssignmentSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CameraAssignmentServiceServer) Patch(ctx context.Context, req *api.CameraAssignmentPatchRequest) (*api.CameraAssignment, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(cameraAssignmentOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 10:
@@ -1897,13 +1893,6 @@ var cameraAssignmentOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_prot
 var cameraAssignmentPatchColumns = entpatch.Columns{
 	1: cameraassignment.FieldId, 2: cameraassignment.TenantColumn, 3: cameraassignment.SiteColumn, 4: cameraassignment.FieldAlias, 5: cameraassignment.FieldName, 6: cameraassignment.FieldDesc, 7: cameraassignment.FieldLabels, 8: cameraassignment.NetworkColumn, 9: cameraassignment.SetColumn, 10: cameraassignment.ProducerColumn, 11: cameraassignment.FieldWorkerSlot, 12: cameraassignment.FieldWorkerId, 16: cameraassignment.FieldGeneration, 17: cameraassignment.FieldCatalogRevision, 13: cameraassignment.FieldDateUpdated, 14: cameraassignment.FieldDateErased, 15: cameraassignment.FieldDateCreated}
 
-func (s CameraAssignmentServiceServer) Apply(ctx context.Context, req *api.CameraAssignmentApplyRequest) (*api.CameraAssignment, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraAssignmentService_Apply_FullMethodName)
-}
-
 func (s CameraAssignmentServiceServer) apply(ctx context.Context, ref *api.CameraAssignmentRef, doc *patchpb.Patch, by string) (*api.CameraAssignment, error) {
 	plan := &ormpatch.Plan{Entity: cameraAssignmentOrmEntity}
 	if doc != nil {
@@ -1925,7 +1914,7 @@ func (s CameraAssignmentServiceServer) apply(ctx context.Context, ref *api.Camer
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1946,7 +1935,7 @@ func (s CameraAssignmentServiceServer) apply(ctx context.Context, ref *api.Camer
 	}
 
 	var previous *api.CameraAssignment
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -2015,7 +2004,8 @@ func (s CameraAssignmentServiceServer) apply(ctx context.Context, ref *api.Camer
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraAssignment",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -2029,76 +2019,6 @@ func (s CameraAssignmentServiceServer) apply(ctx context.Context, ref *api.Camer
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s CameraAssignmentServiceServer) Erase(ctx context.Context, req *api.CameraAssignmentRef) (*api.CameraAssignmentEraseResponse, error) {
-	p, err := CameraAssignmentPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraAssignment
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraAssignmentService_Erase_FullMethodName)
-		var v *ent.CameraAssignment
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraAssignment.Query().Where(p).Select(cameraassignment.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraAssignmentEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = cameraassignment.And(p, cameraassignment.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraAssignment.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraAssignmentService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraAssignmentEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // CameraAssignmentPick answers with the predicate this reference selects on,
@@ -2153,11 +2073,14 @@ type CameraBindingServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraBindingServiceServer(db *ent.Client, opts ...Option) api.CameraBindingServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraBindingServiceServer{Store: s.Store}
 }
@@ -2388,7 +2311,10 @@ func (st CameraBindingServiceServer) create(ctx context.Context, req *api.Camera
 }
 
 func (s CameraBindingServiceServer) Add(ctx context.Context, req *api.CameraBindingAddRequest) (*api.CameraBinding, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2403,7 +2329,7 @@ func (s CameraBindingServiceServer) Add(ctx context.Context, req *api.CameraBind
 	}
 
 	var stored *ent.CameraBinding
-	if snapshotOptions(s.Rec, api.CameraBindingService_Add_FullMethodName).Value {
+	if s.images(api.CameraBindingService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -2429,10 +2355,11 @@ func (s CameraBindingServiceServer) Add(ctx context.Context, req *api.CameraBind
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraBindingService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraBinding",
+		By:     api.CameraBindingService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -2486,7 +2413,9 @@ func (s CameraBindingServiceServer) Get(ctx context.Context, req *api.CameraBind
 	}
 
 	q := s.Db.CameraBinding.Query().Where(p)
-	CameraBindingSelectInit(q, req.GetSelect())
+	if err := CameraBindingSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -2569,49 +2498,106 @@ func CameraBindingSelectedFields(m *api.CameraBindingSelect) []string {
 	return vs
 }
 
-func CameraBindingSelect(q *ent.CameraBindingQuery, m *api.CameraBindingSelect) {
+// CameraBindingSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraBindingSelect(ctx context.Context, scope Scope, q *ent.CameraBindingQuery, m *api.CameraBindingSelect) error {
 	if !m.GetAll() {
 		fields := CameraBindingSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasAssignment() {
+		p, err := CameraAssignmentNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithAssignment(func(q *ent.CameraAssignmentQuery) {
-			q.Where(cameraassignment.DateErasedIsNil())
-			CameraAssignmentSelect(q, m.GetAssignment())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraAssignmentSelect(ctx, scope, q, m.GetAssignment())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasDevice() {
+		p, err := CameraDeviceNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithDevice(func(q *ent.CameraDeviceQuery) {
-			q.Where(cameradevice.DateErasedIsNil())
-			CameraDeviceSelect(q, m.GetDevice())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraDeviceSelect(ctx, scope, q, m.GetDevice())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSource() {
+		p, err := SourceNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSource(func(q *ent.SourceQuery) {
-			q.Where(source.DateErasedIsNil())
-			SourceSelect(q, m.GetSource())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SourceSelect(ctx, scope, q, m.GetSource())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraBindingSelectInit(q *ent.CameraBindingQuery, m *api.CameraBindingSelect) {
+// CameraBindingSelectInit is [CameraBindingSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraBindingSelectInit(ctx context.Context, scope Scope, q *ent.CameraBindingQuery, m *api.CameraBindingSelect) error {
 	if m != nil {
-		CameraBindingSelect(q, m)
+		return CameraBindingSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CameraBindingServiceServer) Patch(ctx context.Context, req *api.CameraBindingPatchRequest) (*api.CameraBinding, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(cameraBindingOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -2660,13 +2646,6 @@ var cameraBindingOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, 
 var cameraBindingPatchColumns = entpatch.Columns{
 	1: camerabinding.FieldId, 2: camerabinding.TenantColumn, 3: camerabinding.SiteColumn, 4: camerabinding.FieldAlias, 5: camerabinding.FieldName, 6: camerabinding.FieldDesc, 7: camerabinding.FieldLabels, 8: camerabinding.AssignmentColumn, 9: camerabinding.DeviceColumn, 10: camerabinding.SourceColumn, 11: camerabinding.FieldLogicalKey, 12: camerabinding.FieldSourceAlias, 16: camerabinding.FieldDesired, 17: camerabinding.FieldObserved, 18: camerabinding.FieldAppliedRevision, 19: camerabinding.FieldCollect, 20: camerabinding.FieldStartingApplication, 21: camerabinding.FieldAppliedApplication, 22: camerabinding.FieldPreviousApplications, 23: camerabinding.FieldAdmittedSpecRevision, 24: camerabinding.FieldAdmittedAssignmentGeneration, 13: camerabinding.FieldDateUpdated, 14: camerabinding.FieldDateErased, 15: camerabinding.FieldDateCreated}
 
-func (s CameraBindingServiceServer) Apply(ctx context.Context, req *api.CameraBindingApplyRequest) (*api.CameraBinding, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraBindingService_Apply_FullMethodName)
-}
-
 func (s CameraBindingServiceServer) apply(ctx context.Context, ref *api.CameraBindingRef, doc *patchpb.Patch, by string) (*api.CameraBinding, error) {
 	plan := &ormpatch.Plan{Entity: cameraBindingOrmEntity}
 	if doc != nil {
@@ -2688,7 +2667,7 @@ func (s CameraBindingServiceServer) apply(ctx context.Context, ref *api.CameraBi
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2709,7 +2688,7 @@ func (s CameraBindingServiceServer) apply(ctx context.Context, ref *api.CameraBi
 	}
 
 	var previous *api.CameraBinding
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -2778,7 +2757,8 @@ func (s CameraBindingServiceServer) apply(ctx context.Context, ref *api.CameraBi
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraBinding",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -2792,76 +2772,6 @@ func (s CameraBindingServiceServer) apply(ctx context.Context, ref *api.CameraBi
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s CameraBindingServiceServer) Erase(ctx context.Context, req *api.CameraBindingRef) (*api.CameraBindingEraseResponse, error) {
-	p, err := CameraBindingPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraBinding
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraBindingService_Erase_FullMethodName)
-		var v *ent.CameraBinding
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraBinding.Query().Where(p).Select(camerabinding.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraBindingEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = camerabinding.And(p, camerabinding.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraBinding.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraBindingService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraBindingEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // CameraBindingPick answers with the predicate this reference selects on,
@@ -2926,11 +2836,14 @@ type CameraJobServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCameraJobServiceServer(db *ent.Client, opts ...Option) api.CameraJobServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CameraJobServiceServer{Store: s.Store}
 }
@@ -3150,7 +3063,10 @@ func (st CameraJobServiceServer) create(ctx context.Context, req *api.CameraJobA
 }
 
 func (s CameraJobServiceServer) Add(ctx context.Context, req *api.CameraJobAddRequest) (*api.CameraJob, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3165,7 +3081,7 @@ func (s CameraJobServiceServer) Add(ctx context.Context, req *api.CameraJobAddRe
 	}
 
 	var stored *ent.CameraJob
-	if snapshotOptions(s.Rec, api.CameraJobService_Add_FullMethodName).Value {
+	if s.images(api.CameraJobService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -3191,10 +3107,11 @@ func (s CameraJobServiceServer) Add(ctx context.Context, req *api.CameraJobAddRe
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CameraJobService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CameraJob",
+		By:     api.CameraJobService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -3248,7 +3165,9 @@ func (s CameraJobServiceServer) Get(ctx context.Context, req *api.CameraJobGetRe
 	}
 
 	q := s.Db.CameraJob.Query().Where(p)
-	CameraJobSelectInit(q, req.GetSelect())
+	if err := CameraJobSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -3340,43 +3259,91 @@ func CameraJobSelectedFields(m *api.CameraJobSelect) []string {
 	return vs
 }
 
-func CameraJobSelect(q *ent.CameraJobQuery, m *api.CameraJobSelect) {
+// CameraJobSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CameraJobSelect(ctx context.Context, scope Scope, q *ent.CameraJobQuery, m *api.CameraJobSelect) error {
 	if !m.GetAll() {
 		fields := CameraJobSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasBinding() {
+		p, err := CameraBindingNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithBinding(func(q *ent.CameraBindingQuery) {
-			q.Where(camerabinding.DateErasedIsNil())
-			CameraBindingSelect(q, m.GetBinding())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraBindingSelect(ctx, scope, q, m.GetBinding())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasAssignment() {
+		p, err := CameraAssignmentNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithAssignment(func(q *ent.CameraAssignmentQuery) {
-			q.Where(cameraassignment.DateErasedIsNil())
-			CameraAssignmentSelect(q, m.GetAssignment())
+			if p != nil {
+				q.Where(p)
+			}
+			err = CameraAssignmentSelect(ctx, scope, q, m.GetAssignment())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CameraJobSelectInit(q *ent.CameraJobQuery, m *api.CameraJobSelect) {
+// CameraJobSelectInit is [CameraJobSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CameraJobSelectInit(ctx context.Context, scope Scope, q *ent.CameraJobQuery, m *api.CameraJobSelect) error {
 	if m != nil {
-		CameraJobSelect(q, m)
+		return CameraJobSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CameraJobServiceServer) Patch(ctx context.Context, req *api.CameraJobPatchRequest) (*api.CameraJob, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(cameraJobOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -3425,13 +3392,6 @@ var cameraJobOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "Cam
 var cameraJobPatchColumns = entpatch.Columns{
 	1: camerajob.FieldId, 2: camerajob.TenantColumn, 3: camerajob.SiteColumn, 4: camerajob.FieldAlias, 5: camerajob.FieldName, 6: camerajob.FieldDesc, 7: camerajob.FieldLabels, 8: camerajob.BindingColumn, 9: camerajob.AssignmentColumn, 10: camerajob.FieldRequestKey, 11: camerajob.FieldRequestHash, 12: camerajob.FieldStage, 16: camerajob.FieldLeaseGeneration, 17: camerajob.FieldAssignmentGeneration, 18: camerajob.FieldLeaseOwner, 19: camerajob.FieldLeaseExpires, 20: camerajob.FieldInputs, 21: camerajob.FieldObserved, 22: camerajob.FieldPublishedRevision, 23: camerajob.FieldDatePublished, 24: camerajob.FieldLastOperationKey, 25: camerajob.FieldLastOperationHash, 26: camerajob.FieldPinnedPreset, 13: camerajob.FieldDateUpdated, 14: camerajob.FieldDateErased, 15: camerajob.FieldDateCreated}
 
-func (s CameraJobServiceServer) Apply(ctx context.Context, req *api.CameraJobApplyRequest) (*api.CameraJob, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CameraJobService_Apply_FullMethodName)
-}
-
 func (s CameraJobServiceServer) apply(ctx context.Context, ref *api.CameraJobRef, doc *patchpb.Patch, by string) (*api.CameraJob, error) {
 	plan := &ormpatch.Plan{Entity: cameraJobOrmEntity}
 	if doc != nil {
@@ -3453,7 +3413,7 @@ func (s CameraJobServiceServer) apply(ctx context.Context, ref *api.CameraJobRef
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3474,7 +3434,7 @@ func (s CameraJobServiceServer) apply(ctx context.Context, ref *api.CameraJobRef
 	}
 
 	var previous *api.CameraJob
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -3543,7 +3503,8 @@ func (s CameraJobServiceServer) apply(ctx context.Context, ref *api.CameraJobRef
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CameraJob",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -3557,76 +3518,6 @@ func (s CameraJobServiceServer) apply(ctx context.Context, ref *api.CameraJobRef
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s CameraJobServiceServer) Erase(ctx context.Context, req *api.CameraJobRef) (*api.CameraJobEraseResponse, error) {
-	p, err := CameraJobPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.CameraJob
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CameraJobService_Erase_FullMethodName)
-		var v *ent.CameraJob
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.CameraJob.Query().Where(p).Select(camerajob.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.CameraJobEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = camerajob.And(p, camerajob.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.CameraJob.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.CameraJobService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.CameraJobEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // CameraJobPick answers with the predicate this reference selects on,

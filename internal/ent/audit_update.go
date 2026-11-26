@@ -58,6 +58,66 @@ func (_u *AuditUpdate) SetNillableActorId(v *uuid.UUID) *AuditUpdate {
 	return _u
 }
 
+// SetCallerId sets the "caller_id" field.
+func (_u *AuditUpdate) SetCallerId(v uuid.UUID) *AuditUpdate {
+	_u.mutation.SetCallerId(v)
+	return _u
+}
+
+// SetNillableCallerId sets the "caller_id" field if the given value is not nil.
+func (_u *AuditUpdate) SetNillableCallerId(v *uuid.UUID) *AuditUpdate {
+	if v != nil {
+		_u.SetCallerId(*v)
+	}
+	return _u
+}
+
+// ClearCallerId clears the value of the "caller_id" field.
+func (_u *AuditUpdate) ClearCallerId() *AuditUpdate {
+	_u.mutation.ClearCallerId()
+	return _u
+}
+
+// SetCallerTenantId sets the "caller_tenant_id" field.
+func (_u *AuditUpdate) SetCallerTenantId(v uuid.UUID) *AuditUpdate {
+	_u.mutation.SetCallerTenantId(v)
+	return _u
+}
+
+// SetNillableCallerTenantId sets the "caller_tenant_id" field if the given value is not nil.
+func (_u *AuditUpdate) SetNillableCallerTenantId(v *uuid.UUID) *AuditUpdate {
+	if v != nil {
+		_u.SetCallerTenantId(*v)
+	}
+	return _u
+}
+
+// ClearCallerTenantId clears the value of the "caller_tenant_id" field.
+func (_u *AuditUpdate) ClearCallerTenantId() *AuditUpdate {
+	_u.mutation.ClearCallerTenantId()
+	return _u
+}
+
+// SetPresence sets the "presence" field.
+func (_u *AuditUpdate) SetPresence(v string) *AuditUpdate {
+	_u.mutation.SetPresence(v)
+	return _u
+}
+
+// SetNillablePresence sets the "presence" field if the given value is not nil.
+func (_u *AuditUpdate) SetNillablePresence(v *string) *AuditUpdate {
+	if v != nil {
+		_u.SetPresence(*v)
+	}
+	return _u
+}
+
+// ClearPresence clears the value of the "presence" field.
+func (_u *AuditUpdate) ClearPresence() *AuditUpdate {
+	_u.mutation.ClearPresence()
+	return _u
+}
+
 // SetTraceId sets the "trace_id" field.
 func (_u *AuditUpdate) SetTraceId(v []byte) *AuditUpdate {
 	_u.mutation.SetTraceId(v)
@@ -272,6 +332,33 @@ func (_u *AuditUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if e, ok := _u.mutation.FieldExpr(audit.FieldActorId); ok {
 		_spec.SetField(audit.FieldActorId, field.TypeUuid, e)
 	}
+	if value, ok := _u.mutation.CallerId(); ok {
+		_spec.SetField(audit.FieldCallerId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldCallerId); ok {
+		_spec.SetField(audit.FieldCallerId, field.TypeUuid, e)
+	}
+	if _u.mutation.CallerIdCleared() {
+		_spec.ClearField(audit.FieldCallerId, field.TypeUuid)
+	}
+	if value, ok := _u.mutation.CallerTenantId(); ok {
+		_spec.SetField(audit.FieldCallerTenantId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldCallerTenantId); ok {
+		_spec.SetField(audit.FieldCallerTenantId, field.TypeUuid, e)
+	}
+	if _u.mutation.CallerTenantIdCleared() {
+		_spec.ClearField(audit.FieldCallerTenantId, field.TypeUuid)
+	}
+	if value, ok := _u.mutation.Presence(); ok {
+		_spec.SetField(audit.FieldPresence, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldPresence); ok {
+		_spec.SetField(audit.FieldPresence, field.TypeString, e)
+	}
+	if _u.mutation.PresenceCleared() {
+		_spec.ClearField(audit.FieldPresence, field.TypeString)
+	}
 	if value, ok := _u.mutation.TraceId(); ok {
 		_spec.SetField(audit.FieldTraceId, field.TypeBytes, value)
 	}
@@ -416,6 +503,66 @@ func (_u *AuditUpdateOne) SetNillableActorId(v *uuid.UUID) *AuditUpdateOne {
 	if v != nil {
 		_u.SetActorId(*v)
 	}
+	return _u
+}
+
+// SetCallerId sets the "caller_id" field.
+func (_u *AuditUpdateOne) SetCallerId(v uuid.UUID) *AuditUpdateOne {
+	_u.mutation.SetCallerId(v)
+	return _u
+}
+
+// SetNillableCallerId sets the "caller_id" field if the given value is not nil.
+func (_u *AuditUpdateOne) SetNillableCallerId(v *uuid.UUID) *AuditUpdateOne {
+	if v != nil {
+		_u.SetCallerId(*v)
+	}
+	return _u
+}
+
+// ClearCallerId clears the value of the "caller_id" field.
+func (_u *AuditUpdateOne) ClearCallerId() *AuditUpdateOne {
+	_u.mutation.ClearCallerId()
+	return _u
+}
+
+// SetCallerTenantId sets the "caller_tenant_id" field.
+func (_u *AuditUpdateOne) SetCallerTenantId(v uuid.UUID) *AuditUpdateOne {
+	_u.mutation.SetCallerTenantId(v)
+	return _u
+}
+
+// SetNillableCallerTenantId sets the "caller_tenant_id" field if the given value is not nil.
+func (_u *AuditUpdateOne) SetNillableCallerTenantId(v *uuid.UUID) *AuditUpdateOne {
+	if v != nil {
+		_u.SetCallerTenantId(*v)
+	}
+	return _u
+}
+
+// ClearCallerTenantId clears the value of the "caller_tenant_id" field.
+func (_u *AuditUpdateOne) ClearCallerTenantId() *AuditUpdateOne {
+	_u.mutation.ClearCallerTenantId()
+	return _u
+}
+
+// SetPresence sets the "presence" field.
+func (_u *AuditUpdateOne) SetPresence(v string) *AuditUpdateOne {
+	_u.mutation.SetPresence(v)
+	return _u
+}
+
+// SetNillablePresence sets the "presence" field if the given value is not nil.
+func (_u *AuditUpdateOne) SetNillablePresence(v *string) *AuditUpdateOne {
+	if v != nil {
+		_u.SetPresence(*v)
+	}
+	return _u
+}
+
+// ClearPresence clears the value of the "presence" field.
+func (_u *AuditUpdateOne) ClearPresence() *AuditUpdateOne {
+	_u.mutation.ClearPresence()
 	return _u
 }
 
@@ -662,6 +809,33 @@ func (_u *AuditUpdateOne) sqlSave(ctx context.Context) (_node *Audit, err error)
 	}
 	if e, ok := _u.mutation.FieldExpr(audit.FieldActorId); ok {
 		_spec.SetField(audit.FieldActorId, field.TypeUuid, e)
+	}
+	if value, ok := _u.mutation.CallerId(); ok {
+		_spec.SetField(audit.FieldCallerId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldCallerId); ok {
+		_spec.SetField(audit.FieldCallerId, field.TypeUuid, e)
+	}
+	if _u.mutation.CallerIdCleared() {
+		_spec.ClearField(audit.FieldCallerId, field.TypeUuid)
+	}
+	if value, ok := _u.mutation.CallerTenantId(); ok {
+		_spec.SetField(audit.FieldCallerTenantId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldCallerTenantId); ok {
+		_spec.SetField(audit.FieldCallerTenantId, field.TypeUuid, e)
+	}
+	if _u.mutation.CallerTenantIdCleared() {
+		_spec.ClearField(audit.FieldCallerTenantId, field.TypeUuid)
+	}
+	if value, ok := _u.mutation.Presence(); ok {
+		_spec.SetField(audit.FieldPresence, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldPresence); ok {
+		_spec.SetField(audit.FieldPresence, field.TypeString, e)
+	}
+	if _u.mutation.PresenceCleared() {
+		_spec.ClearField(audit.FieldPresence, field.TypeString)
 	}
 	if value, ok := _u.mutation.TraceId(); ok {
 		_spec.SetField(audit.FieldTraceId, field.TypeBytes, value)

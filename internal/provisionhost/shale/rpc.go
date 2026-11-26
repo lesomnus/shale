@@ -165,9 +165,12 @@ func retryableReadiness(err error) bool {
 	// These operations only observe state (Live also issues a short-lived
 	// token). A temporary CP outage, busy database or server-side cancellation
 	// must not discard a deployed binding. Ownership/policy/validation failures
-	// are returned immediately and never treated as readiness.
+	// are returned immediately and never treated as readiness. A CP answers a
+	// failure that carried no status as Internal (a busy SQLite among them)
+	// or Unavailable, where it once answered Unknown; Unknown is still what a
+	// local error or an older CP is.
 	switch status.Code(err) {
-	case codes.DeadlineExceeded, codes.Unavailable, codes.Aborted, codes.ResourceExhausted, codes.Unknown, codes.Canceled:
+	case codes.DeadlineExceeded, codes.Unavailable, codes.Aborted, codes.ResourceExhausted, codes.Unknown, codes.Internal, codes.Canceled:
 		return true
 	}
 	return false

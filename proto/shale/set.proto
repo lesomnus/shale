@@ -83,7 +83,7 @@ message Set {
   int64 profile_version = 17;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"
@@ -173,7 +173,7 @@ message Source {
   bool live_capable = 18 [(orm.field) = {default: ""}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"

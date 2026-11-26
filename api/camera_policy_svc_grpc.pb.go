@@ -21,9 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	CameraPolicyService_Add_FullMethodName             = "/shale.CameraPolicyService/Add"
 	CameraPolicyService_Get_FullMethodName             = "/shale.CameraPolicyService/Get"
-	CameraPolicyService_Patch_FullMethodName           = "/shale.CameraPolicyService/Patch"
-	CameraPolicyService_Apply_FullMethodName           = "/shale.CameraPolicyService/Apply"
-	CameraPolicyService_Erase_FullMethodName           = "/shale.CameraPolicyService/Erase"
 	CameraPolicyService_List_FullMethodName            = "/shale.CameraPolicyService/List"
 	CameraPolicyService_Watch_FullMethodName           = "/shale.CameraPolicyService/Watch"
 	CameraPolicyService_Create_FullMethodName          = "/shale.CameraPolicyService/Create"
@@ -44,25 +41,27 @@ type CameraPolicyServiceClient interface {
 	Add(ctx context.Context, in *CameraPolicyAddRequest, opts ...grpc.CallOption) (*CameraPolicy, error)
 	// Get retrieves a CameraPolicy
 	Get(ctx context.Context, in *CameraPolicyGetRequest, opts ...grpc.CallOption) (*CameraPolicy, error)
-	// Patch updates an existing CameraPolicy
-	Patch(ctx context.Context, in *CameraPolicyPatchRequest, opts ...grpc.CallOption) (*CameraPolicy, error)
-	// Apply applies a patch document to an existing CameraPolicy
-	Apply(ctx context.Context, in *CameraPolicyApplyRequest, opts ...grpc.CallOption) (*CameraPolicy, error)
-	// Erase deletes a CameraPolicy
-	Erase(ctx context.Context, in *CameraPolicyRef, opts ...grpc.CallOption) (*CameraPolicyEraseResponse, error)
 	// List reads CameraPolicys a page at a time.
 	List(ctx context.Context, in *CameraPolicyListRequest, opts ...grpc.CallOption) (*CameraPolicyListResponse, error)
 	// Watch the CameraPolicys this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraPolicyWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraPolicyWatchResponse], error)
 	Create(ctx context.Context, in *CameraPolicyCreateRequest, opts ...grpc.CallOption) (*CameraPolicy, error)
 	Activate(ctx context.Context, in *CameraPolicyActivateRequest, opts ...grpc.CallOption) (*CameraNetwork, error)
@@ -106,36 +105,6 @@ func (c *cameraPolicyServiceClient) Get(ctx context.Context, in *CameraPolicyGet
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraPolicy)
 	err := c.cc.Invoke(ctx, CameraPolicyService_Get_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraPolicyServiceClient) Patch(ctx context.Context, in *CameraPolicyPatchRequest, opts ...grpc.CallOption) (*CameraPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraPolicy)
-	err := c.cc.Invoke(ctx, CameraPolicyService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraPolicyServiceClient) Apply(ctx context.Context, in *CameraPolicyApplyRequest, opts ...grpc.CallOption) (*CameraPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraPolicy)
-	err := c.cc.Invoke(ctx, CameraPolicyService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraPolicyServiceClient) Erase(ctx context.Context, in *CameraPolicyRef, opts ...grpc.CallOption) (*CameraPolicyEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraPolicyEraseResponse)
-	err := c.cc.Invoke(ctx, CameraPolicyService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -259,25 +228,27 @@ type CameraPolicyServiceServer interface {
 	Add(context.Context, *CameraPolicyAddRequest) (*CameraPolicy, error)
 	// Get retrieves a CameraPolicy
 	Get(context.Context, *CameraPolicyGetRequest) (*CameraPolicy, error)
-	// Patch updates an existing CameraPolicy
-	Patch(context.Context, *CameraPolicyPatchRequest) (*CameraPolicy, error)
-	// Apply applies a patch document to an existing CameraPolicy
-	Apply(context.Context, *CameraPolicyApplyRequest) (*CameraPolicy, error)
-	// Erase deletes a CameraPolicy
-	Erase(context.Context, *CameraPolicyRef) (*CameraPolicyEraseResponse, error)
 	// List reads CameraPolicys a page at a time.
 	List(context.Context, *CameraPolicyListRequest) (*CameraPolicyListResponse, error)
 	// Watch the CameraPolicys this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraPolicyWatchRequest, grpc.ServerStreamingServer[CameraPolicyWatchResponse]) error
 	Create(context.Context, *CameraPolicyCreateRequest) (*CameraPolicy, error)
 	Activate(context.Context, *CameraPolicyActivateRequest) (*CameraNetwork, error)
@@ -312,15 +283,6 @@ func (UnimplementedCameraPolicyServiceServer) Add(context.Context, *CameraPolicy
 }
 func (UnimplementedCameraPolicyServiceServer) Get(context.Context, *CameraPolicyGetRequest) (*CameraPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedCameraPolicyServiceServer) Patch(context.Context, *CameraPolicyPatchRequest) (*CameraPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraPolicyServiceServer) Apply(context.Context, *CameraPolicyApplyRequest) (*CameraPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraPolicyServiceServer) Erase(context.Context, *CameraPolicyRef) (*CameraPolicyEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraPolicyServiceServer) List(context.Context, *CameraPolicyListRequest) (*CameraPolicyListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -405,60 +367,6 @@ func _CameraPolicyService_Get_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraPolicyServiceServer).Get(ctx, req.(*CameraPolicyGetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraPolicyService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraPolicyPatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraPolicyServiceServer).Patch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraPolicyService_Patch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraPolicyServiceServer).Patch(ctx, req.(*CameraPolicyPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraPolicyService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraPolicyApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraPolicyServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraPolicyService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraPolicyServiceServer).Apply(ctx, req.(*CameraPolicyApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraPolicyService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraPolicyRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraPolicyServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraPolicyService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraPolicyServiceServer).Erase(ctx, req.(*CameraPolicyRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -650,18 +558,6 @@ var CameraPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _CameraPolicyService_Get_Handler,
-		},
-		{
-			MethodName: "Patch",
-			Handler:    _CameraPolicyService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _CameraPolicyService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraPolicyService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

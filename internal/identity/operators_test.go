@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/z"
 )
 
 // Operators by what roster grants (§33.1), at an external roster: one held
@@ -198,4 +200,89 @@ func TestById(t *testing.T) {
 	_, err = s.ById(c, pdid.Id(alice).String())
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrNoPerson)
+}
+
+// roster's gate reads roster's roles alone, and Reaches asked with no `at`
+// is answered of the asking app's roles (#321): Shale is installed in the
+// tenant as an app, as `roster app install --serves '/shale.*/*'` does it,
+// and what Grant writes naming Shale's methods is a role **of the app
+// Shale**, bound to the person. A role of roster's makes nobody an
+// operator; somebody bound nothing reaches nothing, so reads nothing
+// where reads are granted; and another app's holder bound a role of
+// Shale's naming the delegation's methods reaches them, where one not
+// bound reaches nothing.
+func TestShalesRolesAreTheApps(t *testing.T) {
+	c, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s, err := Open(c, Config{}, t.TempDir(), nil)
+	require.NoError(t, err)
+	defer s.Close()
+	go s.Run(c)
+
+	admin, _, err := s.Seed(c, "acme", "admin")
+	require.NoError(t, err)
+	nobody, err := s.AddPerson(c, "acme", "nobody", "Nobody")
+	require.NoError(t, err)
+	portal, err := s.AddPerson(c, "acme", "portal", "Portal")
+	require.NoError(t, err)
+	kiosk, err := s.AddPerson(c, "acme", "kiosk", "Kiosk")
+	require.NoError(t, err)
+
+	o, err := NewOperators(s, OperatorsConfig{Tenant: "acme", Reads: ReadsGranted}, nil)
+	require.NoError(t, err)
+
+	// The tenant's administrator at roster holds `/roster.*/*`, which is
+	// nothing at Shale.
+	is, err := o.Operates(c, admin.Tenant, admin.Id)
+	require.NoError(t, err)
+	require.False(t, is, "a role of roster's is nothing at Shale")
+
+	// Granted all of Shale: a role of the app Shale, bound to the person.
+	_, err = s.Grant(c, "acme", OperatorRole, []string{Everything}, admin.Id)
+	require.NoError(t, err)
+	o.Forget(admin.Id)
+	is, err = o.Operates(c, admin.Tenant, admin.Id)
+	require.NoError(t, err)
+	require.True(t, is)
+	app, err := s.roleApp(c, "acme", OperatorRole)
+	require.NoError(t, err)
+	shale, err := s.Lookup(c, "acme", Agent)
+	require.NoError(t, err)
+	require.Equal(t, shale.Id, app, "the role is the app Shale's")
+
+	// Bound nothing, reaching nothing: not a read of the console's.
+	may, err := o.May(c, nobody.Tenant, nobody.Id, "/shale.SetService/List")
+	require.NoError(t, err)
+	require.False(t, may)
+
+	// Another app bound a role of Shale's naming the delegation's methods
+	// reaches them, and one not bound does not.
+	_, err = s.Grant(c, "acme", "portal-delegation", []string{"/shale.DelegationService/Live", "/shale.DelegationService/Timeline"}, portal.Id)
+	require.NoError(t, err)
+	held, err := s.Reaches(c, portal.Tenant, portal.Id)
+	require.NoError(t, err)
+	require.True(t, covers(held, "/shale.DelegationService/Live"))
+	require.True(t, covers(held, "/shale.DelegationService/Timeline"))
+	held, err = s.Reaches(c, kiosk.Tenant, kiosk.Id)
+	require.NoError(t, err)
+	require.Empty(t, held)
+}
+
+// roleApp is the app a role of a tenant of the embedded roster is of: its
+// `app`, the nil identifier for a role of roster's.
+func (s *Store) roleApp(ctx context.Context, tenant, role string) (pdid.Id, error) {
+	ctx, cancel := unframed(ctx)
+	defer cancel()
+	r, err := s.em.rs.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref:    rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(role), Tenant: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build()}.Build(),
+		Select: rstr.RoleSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if len(r.GetApp().GetId()) == 0 {
+		return pdid.Nil, nil
+	}
+
+	return pdid.From(r.GetApp().GetId())
 }

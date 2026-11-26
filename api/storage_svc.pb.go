@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -2194,192 +2194,20 @@ func (b0 DevicePatchRequest_builder) Build() *DevicePatchRequest {
 	return m0
 }
 
-type DeviceApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *DeviceRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *DeviceApplyRequest) Reset() {
-	*x = DeviceApplyRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeviceApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeviceApplyRequest) ProtoMessage() {}
-
-func (x *DeviceApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *DeviceApplyRequest) GetRef() *DeviceRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *DeviceApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *DeviceApplyRequest) SetRef(v *DeviceRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *DeviceApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *DeviceApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *DeviceApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *DeviceApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *DeviceApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type DeviceApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *DeviceRef
-	Patch *patchpb.Patch
-}
-
-func (b0 DeviceApplyRequest_builder) Build() *DeviceApplyRequest {
-	m0 := &DeviceApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type DeviceEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *DeviceEraseResponse) Reset() {
-	*x = DeviceEraseResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeviceEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeviceEraseResponse) ProtoMessage() {}
-
-func (x *DeviceEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *DeviceEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *DeviceEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *DeviceEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *DeviceEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type DeviceEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 DeviceEraseResponse_builder) Build() *DeviceEraseResponse {
-	m0 := &DeviceEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type DeviceListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*DeviceFilter       `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *DeviceSelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *DeviceListRequest) Reset() {
 	*x = DeviceListRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[7]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2391,7 +2219,7 @@ func (x *DeviceListRequest) String() string {
 func (*DeviceListRequest) ProtoMessage() {}
 
 func (x *DeviceListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[7]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2432,6 +2260,13 @@ func (x *DeviceListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *DeviceListRequest) GetSelect() *DeviceSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *DeviceListRequest) SetFilters(v []*DeviceFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2446,6 +2281,21 @@ func (x *DeviceListRequest) SetAfter(v string) {
 
 func (x *DeviceListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *DeviceListRequest) SetSelect(v *DeviceSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *DeviceListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *DeviceListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type DeviceListRequest_builder struct {
@@ -2468,6 +2318,15 @@ type DeviceListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *DeviceSelect
 }
 
 func (b0 DeviceListRequest_builder) Build() *DeviceListRequest {
@@ -2478,6 +2337,7 @@ func (b0 DeviceListRequest_builder) Build() *DeviceListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2491,7 +2351,7 @@ type DeviceListResponse struct {
 
 func (x *DeviceListResponse) Reset() {
 	*x = DeviceListResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[8]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2503,7 +2363,7 @@ func (x *DeviceListResponse) String() string {
 func (*DeviceListResponse) ProtoMessage() {}
 
 func (x *DeviceListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[8]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2571,7 +2431,7 @@ type DeviceFilter struct {
 
 func (x *DeviceFilter) Reset() {
 	*x = DeviceFilter{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[9]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2583,7 +2443,7 @@ func (x *DeviceFilter) String() string {
 func (*DeviceFilter) ProtoMessage() {}
 
 func (x *DeviceFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[9]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2664,7 +2524,7 @@ type DeviceWatchRequest struct {
 
 func (x *DeviceWatchRequest) Reset() {
 	*x = DeviceWatchRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[10]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2676,7 +2536,7 @@ func (x *DeviceWatchRequest) String() string {
 func (*DeviceWatchRequest) ProtoMessage() {}
 
 func (x *DeviceWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[10]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2714,13 +2574,15 @@ func (x *DeviceWatchRequest) SetSkipSnapshot(v bool) {
 type DeviceWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*DeviceFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2748,7 +2610,7 @@ type DeviceWatchResponse struct {
 
 func (x *DeviceWatchResponse) Reset() {
 	*x = DeviceWatchResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[11]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2760,7 +2622,7 @@ func (x *DeviceWatchResponse) String() string {
 func (*DeviceWatchResponse) ProtoMessage() {}
 
 func (x *DeviceWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[11]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2812,7 +2674,7 @@ type DeviceWatchItem struct {
 
 func (x *DeviceWatchItem) Reset() {
 	*x = DeviceWatchItem{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[12]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2824,7 +2686,7 @@ func (x *DeviceWatchItem) String() string {
 func (*DeviceWatchItem) ProtoMessage() {}
 
 func (x *DeviceWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[12]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2901,7 +2763,7 @@ type DeviceWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2909,7 +2771,8 @@ type DeviceWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Device
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2943,7 +2806,7 @@ type DeviceQuarantineRequest struct {
 
 func (x *DeviceQuarantineRequest) Reset() {
 	*x = DeviceQuarantineRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[13]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2955,7 +2818,7 @@ func (x *DeviceQuarantineRequest) String() string {
 func (*DeviceQuarantineRequest) ProtoMessage() {}
 
 func (x *DeviceQuarantineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[13]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3025,7 +2888,7 @@ type DeviceReleaseRequest struct {
 
 func (x *DeviceReleaseRequest) Reset() {
 	*x = DeviceReleaseRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[14]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3037,7 +2900,7 @@ func (x *DeviceReleaseRequest) String() string {
 func (*DeviceReleaseRequest) ProtoMessage() {}
 
 func (x *DeviceReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[14]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3107,7 +2970,7 @@ type DeviceRetireRequest struct {
 
 func (x *DeviceRetireRequest) Reset() {
 	*x = DeviceRetireRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[15]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3119,7 +2982,7 @@ func (x *DeviceRetireRequest) String() string {
 func (*DeviceRetireRequest) ProtoMessage() {}
 
 func (x *DeviceRetireRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[15]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3189,7 +3052,7 @@ type DeviceDeclareDeadRequest struct {
 
 func (x *DeviceDeclareDeadRequest) Reset() {
 	*x = DeviceDeclareDeadRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[16]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3201,7 +3064,7 @@ func (x *DeviceDeclareDeadRequest) String() string {
 func (*DeviceDeclareDeadRequest) ProtoMessage() {}
 
 func (x *DeviceDeclareDeadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[16]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3271,7 +3134,7 @@ type DeviceLocateRequest struct {
 
 func (x *DeviceLocateRequest) Reset() {
 	*x = DeviceLocateRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[17]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3283,7 +3146,7 @@ func (x *DeviceLocateRequest) String() string {
 func (*DeviceLocateRequest) ProtoMessage() {}
 
 func (x *DeviceLocateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[17]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3375,7 +3238,7 @@ type SinkAddRequest struct {
 
 func (x *SinkAddRequest) Reset() {
 	*x = SinkAddRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[18]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3387,7 +3250,7 @@ func (x *SinkAddRequest) String() string {
 func (*SinkAddRequest) ProtoMessage() {}
 
 func (x *SinkAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[18]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3810,7 +3673,7 @@ type SinkGetRequest struct {
 
 func (x *SinkGetRequest) Reset() {
 	*x = SinkGetRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[19]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3822,7 +3685,7 @@ func (x *SinkGetRequest) String() string {
 func (*SinkGetRequest) ProtoMessage() {}
 
 func (x *SinkGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[19]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3902,7 +3765,7 @@ type SinkRef struct {
 
 func (x *SinkRef) Reset() {
 	*x = SinkRef{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[20]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3914,7 +3777,7 @@ func (x *SinkRef) String() string {
 func (*SinkRef) ProtoMessage() {}
 
 func (x *SinkRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[20]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4036,7 +3899,7 @@ func (b0 SinkRef_builder) Build() *SinkRef {
 type case_SinkRef_Key protoreflect.FieldNumber
 
 func (x case_SinkRef_Key) String() string {
-	md := file_shale_storage_svc_g_proto_msgTypes[20].Descriptor()
+	md := file_shale_storage_svc_g_proto_msgTypes[18].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -4093,7 +3956,7 @@ type SinkSelect struct {
 
 func (x *SinkSelect) Reset() {
 	*x = SinkSelect{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[21]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4105,7 +3968,7 @@ func (x *SinkSelect) String() string {
 func (*SinkSelect) ProtoMessage() {}
 
 func (x *SinkSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[21]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4851,7 +4714,7 @@ type SinkPatchRequest struct {
 
 func (x *SinkPatchRequest) Reset() {
 	*x = SinkPatchRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[22]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4863,7 +4726,7 @@ func (x *SinkPatchRequest) String() string {
 func (*SinkPatchRequest) ProtoMessage() {}
 
 func (x *SinkPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[22]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5658,192 +5521,20 @@ func (b0 SinkPatchRequest_builder) Build() *SinkPatchRequest {
 	return m0
 }
 
-type SinkApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *SinkRef               `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SinkApplyRequest) Reset() {
-	*x = SinkApplyRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[23]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SinkApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SinkApplyRequest) ProtoMessage() {}
-
-func (x *SinkApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[23]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SinkApplyRequest) GetRef() *SinkRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *SinkApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *SinkApplyRequest) SetRef(v *SinkRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *SinkApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *SinkApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *SinkApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *SinkApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *SinkApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type SinkApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *SinkRef
-	Patch *patchpb.Patch
-}
-
-func (b0 SinkApplyRequest_builder) Build() *SinkApplyRequest {
-	m0 := &SinkApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type SinkEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *SinkEraseResponse) Reset() {
-	*x = SinkEraseResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SinkEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SinkEraseResponse) ProtoMessage() {}
-
-func (x *SinkEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SinkEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *SinkEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *SinkEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *SinkEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type SinkEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 SinkEraseResponse_builder) Build() *SinkEraseResponse {
-	m0 := &SinkEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type SinkListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*SinkFilter         `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *SinkSelect            `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SinkListRequest) Reset() {
 	*x = SinkListRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[25]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5855,7 +5546,7 @@ func (x *SinkListRequest) String() string {
 func (*SinkListRequest) ProtoMessage() {}
 
 func (x *SinkListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[25]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5896,6 +5587,13 @@ func (x *SinkListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *SinkListRequest) GetSelect() *SinkSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *SinkListRequest) SetFilters(v []*SinkFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -5910,6 +5608,21 @@ func (x *SinkListRequest) SetAfter(v string) {
 
 func (x *SinkListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *SinkListRequest) SetSelect(v *SinkSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SinkListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SinkListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type SinkListRequest_builder struct {
@@ -5932,6 +5645,15 @@ type SinkListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *SinkSelect
 }
 
 func (b0 SinkListRequest_builder) Build() *SinkListRequest {
@@ -5942,6 +5664,7 @@ func (b0 SinkListRequest_builder) Build() *SinkListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -5955,7 +5678,7 @@ type SinkListResponse struct {
 
 func (x *SinkListResponse) Reset() {
 	*x = SinkListResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[26]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5967,7 +5690,7 @@ func (x *SinkListResponse) String() string {
 func (*SinkListResponse) ProtoMessage() {}
 
 func (x *SinkListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[26]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6036,7 +5759,7 @@ type SinkFilter struct {
 
 func (x *SinkFilter) Reset() {
 	*x = SinkFilter{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[27]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6048,7 +5771,7 @@ func (x *SinkFilter) String() string {
 func (*SinkFilter) ProtoMessage() {}
 
 func (x *SinkFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[27]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6153,7 +5876,7 @@ type SinkWatchRequest struct {
 
 func (x *SinkWatchRequest) Reset() {
 	*x = SinkWatchRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[28]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6165,7 +5888,7 @@ func (x *SinkWatchRequest) String() string {
 func (*SinkWatchRequest) ProtoMessage() {}
 
 func (x *SinkWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[28]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6203,13 +5926,15 @@ func (x *SinkWatchRequest) SetSkipSnapshot(v bool) {
 type SinkWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*SinkFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -6237,7 +5962,7 @@ type SinkWatchResponse struct {
 
 func (x *SinkWatchResponse) Reset() {
 	*x = SinkWatchResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[29]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6249,7 +5974,7 @@ func (x *SinkWatchResponse) String() string {
 func (*SinkWatchResponse) ProtoMessage() {}
 
 func (x *SinkWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[29]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6301,7 +6026,7 @@ type SinkWatchItem struct {
 
 func (x *SinkWatchItem) Reset() {
 	*x = SinkWatchItem{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[30]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6313,7 +6038,7 @@ func (x *SinkWatchItem) String() string {
 func (*SinkWatchItem) ProtoMessage() {}
 
 func (x *SinkWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[30]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6390,7 +6115,7 @@ type SinkWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -6398,7 +6123,8 @@ type SinkWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Sink
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -6434,7 +6160,7 @@ type SinkProposeGcRequest struct {
 
 func (x *SinkProposeGcRequest) Reset() {
 	*x = SinkProposeGcRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[31]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6446,7 +6172,7 @@ func (x *SinkProposeGcRequest) String() string {
 func (*SinkProposeGcRequest) ProtoMessage() {}
 
 func (x *SinkProposeGcRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[31]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6544,7 +6270,7 @@ type SinkProposeGcResponse struct {
 
 func (x *SinkProposeGcResponse) Reset() {
 	*x = SinkProposeGcResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[32]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6556,7 +6282,7 @@ func (x *SinkProposeGcResponse) String() string {
 func (*SinkProposeGcResponse) ProtoMessage() {}
 
 func (x *SinkProposeGcResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[32]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6623,7 +6349,7 @@ type GcCandidate struct {
 
 func (x *GcCandidate) Reset() {
 	*x = GcCandidate{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[33]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6635,7 +6361,7 @@ func (x *GcCandidate) String() string {
 func (*GcCandidate) ProtoMessage() {}
 
 func (x *GcCandidate) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[33]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6792,7 +6518,7 @@ type GcDecision struct {
 
 func (x *GcDecision) Reset() {
 	*x = GcDecision{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[34]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6804,7 +6530,7 @@ func (x *GcDecision) String() string {
 func (*GcDecision) ProtoMessage() {}
 
 func (x *GcDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[34]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6913,7 +6639,7 @@ type SinkAdoptRequest struct {
 
 func (x *SinkAdoptRequest) Reset() {
 	*x = SinkAdoptRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[35]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6925,7 +6651,7 @@ func (x *SinkAdoptRequest) String() string {
 func (*SinkAdoptRequest) ProtoMessage() {}
 
 func (x *SinkAdoptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[35]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7006,7 +6732,7 @@ type SinkRetireRequest struct {
 
 func (x *SinkRetireRequest) Reset() {
 	*x = SinkRetireRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[36]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7018,7 +6744,7 @@ func (x *SinkRetireRequest) String() string {
 func (*SinkRetireRequest) ProtoMessage() {}
 
 func (x *SinkRetireRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[36]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7088,7 +6814,7 @@ type SinkReconcileRequest struct {
 
 func (x *SinkReconcileRequest) Reset() {
 	*x = SinkReconcileRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[37]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7100,7 +6826,7 @@ func (x *SinkReconcileRequest) String() string {
 func (*SinkReconcileRequest) ProtoMessage() {}
 
 func (x *SinkReconcileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[37]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7169,7 +6895,7 @@ type SinkReconcileResponse struct {
 
 func (x *SinkReconcileResponse) Reset() {
 	*x = SinkReconcileResponse{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[38]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7181,7 +6907,7 @@ func (x *SinkReconcileResponse) String() string {
 func (*SinkReconcileResponse) ProtoMessage() {}
 
 func (x *SinkReconcileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[38]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7226,7 +6952,7 @@ type SinkGcRequest struct {
 
 func (x *SinkGcRequest) Reset() {
 	*x = SinkGcRequest{}
-	mi := &file_shale_storage_svc_g_proto_msgTypes[39]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7238,7 +6964,7 @@ func (x *SinkGcRequest) String() string {
 func (*SinkGcRequest) ProtoMessage() {}
 
 func (x *SinkGcRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_storage_svc_g_proto_msgTypes[39]
+	mi := &file_shale_storage_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7289,9 +7015,9 @@ var File_shale_storage_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/storage_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x13shale/storage.proto\"\xba\x06\n" +
-	"\x10DeviceAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x19shale/storage_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x13shale/storage.proto\"\xc2\x06\n" +
+	"\x10DeviceAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12;\n" +
@@ -7319,9 +7045,9 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"c\n" +
 	"\x10DeviceGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.DeviceRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.shale.DeviceSelectR\x06select\"_\n" +
-	"\tDeviceRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.shale.DeviceSelectR\x06select\"g\n" +
+	"\tDeviceRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12!\n" +
 	"\vhardware_id\x18\t \x01(\tH\x00R\n" +
 	"hardwareIdB\x05\n" +
@@ -7388,17 +7114,13 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x0edate_seen_null\x18- \x01(\bR\fdateSeenNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
-	"\x12DeviceApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.DeviceRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
-	"\x13DeviceEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9b\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc8\x01\n" +
 	"\x11DeviceListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.shale.DeviceFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"T\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.shale.DeviceSelectR\x06select\"T\n" +
 	"\x12DeviceListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.shale.DeviceR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"V\n" +
@@ -7428,9 +7150,9 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\"R\n" +
 	"\x13DeviceLocateRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.DeviceRefR\x03ref\x12\x17\n" +
-	"\x03off\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\x03off\"\xeb\a\n" +
-	"\x0eSinkAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x03off\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\x03off\"\xfb\a\n" +
+	"\x0eSinkAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x129\n" +
@@ -7450,8 +7172,8 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\raccept_writes\x18\x13 \x01(\bB\x05\xaa\x01\x02\b\x02R\facceptWrites\x127\n" +
 	"\tdate_seen\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\bdateSeen\x121\n" +
 	"\x11uploads_in_flight\x18\x15 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fuploadsInFlight\x12C\n" +
-	"\x0fdate_reconciled\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\x0edateReconciled\x12\x1f\n" +
-	"\vreported_by\x18\x17 \x01(\fR\n" +
+	"\x0fdate_reconciled\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\x0edateReconciled\x12'\n" +
+	"\vreported_by\x18\x17 \x01(\fB\x06\xea\x82\x16\x02\x10@R\n" +
 	"reportedBy\x12\x1a\n" +
 	"\bwarnings\x18\x18 \x03(\tR\bwarnings\x120\n" +
 	"\x10capacity_clamped\x18\x19 \x01(\bB\x05\xaa\x01\x02\b\x02R\x0fcapacityClamped\x12\x1f\n" +
@@ -7461,9 +7183,9 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
 	"\x0eSinkGetRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref\x12)\n" +
-	"\x06select\x18\x02 \x01(\v2\x11.shale.SinkSelectR\x06select\":\n" +
-	"\aSinkRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x11.shale.SinkSelectR\x06select\"B\n" +
+	"\aSinkRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
 	"\x03key\"\xec\x05\n" +
 	"\n" +
@@ -7496,7 +7218,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"reportedBy\x12\x1a\n" +
 	"\bwarnings\x18\x18 \x01(\bR\bwarnings\x12)\n" +
 	"\x10capacity_clamped\x18\x19 \x01(\bR\x0fcapacityClamped\x12\x18\n" +
-	"\alaminae\x18\x1a \x01(\bR\alaminae\"\xfd\b\n" +
+	"\alaminae\x18\x1a \x01(\bR\alaminae\"\x85\t\n" +
 	"\x10SinkPatchRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -7522,8 +7244,8 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x0edate_seen_null\x18) \x01(\bR\fdateSeenNull\x12*\n" +
 	"\x11uploads_in_flight\x18* \x01(\x03R\x0fuploadsInFlight\x12C\n" +
 	"\x0fdate_reconciled\x18, \x01(\v2\x1a.google.protobuf.TimestampR\x0edateReconciled\x120\n" +
-	"\x14date_reconciled_null\x18- \x01(\bR\x12dateReconciledNull\x12\x1f\n" +
-	"\vreported_by\x18. \x01(\fR\n" +
+	"\x14date_reconciled_null\x18- \x01(\bR\x12dateReconciledNull\x12'\n" +
+	"\vreported_by\x18. \x01(\fB\x06\xea\x82\x16\x02\x10@R\n" +
 	"reportedBy\x12(\n" +
 	"\x10reported_by_null\x18/ \x01(\bR\x0ereportedByNull\x12\x1a\n" +
 	"\bwarnings\x180 \x03(\tR\bwarnings\x12)\n" +
@@ -7531,17 +7253,13 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\alaminae\x184 \x01(\x03R\alaminae\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
-	"\x10SinkApplyRequest\x12 \n" +
-	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
-	"\x11SinkEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x97\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc2\x01\n" +
 	"\x0fSinkListRequest\x12+\n" +
 	"\afilters\x18\x01 \x03(\v2\x11.shale.SinkFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"P\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12)\n" +
+	"\x06select\x18\x06 \x01(\v2\x11.shale.SinkSelectR\x06select\"P\n" +
 	"\x10SinkListResponse\x12!\n" +
 	"\x05items\x18\x01 \x03(\v2\v.shale.SinkR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"|\n" +
@@ -7602,13 +7320,11 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\bGcReason\x12\x19\n" +
 	"\x15GC_REASON_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12GC_REASON_PRESSURE\x10\x01\x12\x13\n" +
-	"\x0fGC_REASON_SWEEP\x10\x022\xa6\x05\n" +
+	"\x0fGC_REASON_SWEEP\x10\x022\xbc\x04\n" +
 	"\rDeviceService\x12-\n" +
 	"\x03Add\x12\x17.shale.DeviceAddRequest\x1a\r.shale.Device\x12-\n" +
 	"\x03Get\x12\x17.shale.DeviceGetRequest\x1a\r.shale.Device\x121\n" +
-	"\x05Patch\x12\x19.shale.DevicePatchRequest\x1a\r.shale.Device\x121\n" +
-	"\x05Apply\x12\x19.shale.DeviceApplyRequest\x1a\r.shale.Device\x125\n" +
-	"\x05Erase\x12\x10.shale.DeviceRef\x1a\x1a.shale.DeviceEraseResponse\x12;\n" +
+	"\x05Patch\x12\x19.shale.DevicePatchRequest\x1a\r.shale.Device\x12;\n" +
 	"\x04List\x12\x18.shale.DeviceListRequest\x1a\x19.shale.DeviceListResponse\x12@\n" +
 	"\x05Watch\x12\x19.shale.DeviceWatchRequest\x1a\x1a.shale.DeviceWatchResponse0\x01\x12;\n" +
 	"\n" +
@@ -7616,13 +7332,11 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\aRelease\x12\x1b.shale.DeviceReleaseRequest\x1a\r.shale.Device\x123\n" +
 	"\x06Retire\x12\x1a.shale.DeviceRetireRequest\x1a\r.shale.Device\x12=\n" +
 	"\vDeclareDead\x12\x1f.shale.DeviceDeclareDeadRequest\x1a\r.shale.Device\x123\n" +
-	"\x06Locate\x12\x1a.shale.DeviceLocateRequest\x1a\r.shale.Device2\x84\x05\n" +
+	"\x06Locate\x12\x1a.shale.DeviceLocateRequest\x1a\r.shale.Device2\xa2\x04\n" +
 	"\vSinkService\x12)\n" +
 	"\x03Add\x12\x15.shale.SinkAddRequest\x1a\v.shale.Sink\x12)\n" +
 	"\x03Get\x12\x15.shale.SinkGetRequest\x1a\v.shale.Sink\x12-\n" +
-	"\x05Patch\x12\x17.shale.SinkPatchRequest\x1a\v.shale.Sink\x12-\n" +
-	"\x05Apply\x12\x17.shale.SinkApplyRequest\x1a\v.shale.Sink\x121\n" +
-	"\x05Erase\x12\x0e.shale.SinkRef\x1a\x18.shale.SinkEraseResponse\x127\n" +
+	"\x05Patch\x12\x17.shale.SinkPatchRequest\x1a\v.shale.Sink\x127\n" +
 	"\x04List\x12\x16.shale.SinkListRequest\x1a\x17.shale.SinkListResponse\x12<\n" +
 	"\x05Watch\x12\x17.shale.SinkWatchRequest\x1a\x18.shale.SinkWatchResponse0\x01\x12F\n" +
 	"\tProposeGc\x12\x1b.shale.SinkProposeGcRequest\x1a\x1c.shale.SinkProposeGcResponse\x12-\n" +
@@ -7632,7 +7346,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x02Gc\x12\x14.shale.SinkGcRequest\x1a\v.shale.SinkB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
 var file_shale_storage_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_shale_storage_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
+var file_shale_storage_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
 var file_shale_storage_svc_g_proto_goTypes = []any{
 	(GcReason)(0),                    // 0: shale.GcReason
 	(*DeviceAddRequest)(nil),         // 1: shale.DeviceAddRequest
@@ -7640,194 +7354,179 @@ var file_shale_storage_svc_g_proto_goTypes = []any{
 	(*DeviceRef)(nil),                // 3: shale.DeviceRef
 	(*DeviceSelect)(nil),             // 4: shale.DeviceSelect
 	(*DevicePatchRequest)(nil),       // 5: shale.DevicePatchRequest
-	(*DeviceApplyRequest)(nil),       // 6: shale.DeviceApplyRequest
-	(*DeviceEraseResponse)(nil),      // 7: shale.DeviceEraseResponse
-	(*DeviceListRequest)(nil),        // 8: shale.DeviceListRequest
-	(*DeviceListResponse)(nil),       // 9: shale.DeviceListResponse
-	(*DeviceFilter)(nil),             // 10: shale.DeviceFilter
-	(*DeviceWatchRequest)(nil),       // 11: shale.DeviceWatchRequest
-	(*DeviceWatchResponse)(nil),      // 12: shale.DeviceWatchResponse
-	(*DeviceWatchItem)(nil),          // 13: shale.DeviceWatchItem
-	(*DeviceQuarantineRequest)(nil),  // 14: shale.DeviceQuarantineRequest
-	(*DeviceReleaseRequest)(nil),     // 15: shale.DeviceReleaseRequest
-	(*DeviceRetireRequest)(nil),      // 16: shale.DeviceRetireRequest
-	(*DeviceDeclareDeadRequest)(nil), // 17: shale.DeviceDeclareDeadRequest
-	(*DeviceLocateRequest)(nil),      // 18: shale.DeviceLocateRequest
-	(*SinkAddRequest)(nil),           // 19: shale.SinkAddRequest
-	(*SinkGetRequest)(nil),           // 20: shale.SinkGetRequest
-	(*SinkRef)(nil),                  // 21: shale.SinkRef
-	(*SinkSelect)(nil),               // 22: shale.SinkSelect
-	(*SinkPatchRequest)(nil),         // 23: shale.SinkPatchRequest
-	(*SinkApplyRequest)(nil),         // 24: shale.SinkApplyRequest
-	(*SinkEraseResponse)(nil),        // 25: shale.SinkEraseResponse
-	(*SinkListRequest)(nil),          // 26: shale.SinkListRequest
-	(*SinkListResponse)(nil),         // 27: shale.SinkListResponse
-	(*SinkFilter)(nil),               // 28: shale.SinkFilter
-	(*SinkWatchRequest)(nil),         // 29: shale.SinkWatchRequest
-	(*SinkWatchResponse)(nil),        // 30: shale.SinkWatchResponse
-	(*SinkWatchItem)(nil),            // 31: shale.SinkWatchItem
-	(*SinkProposeGcRequest)(nil),     // 32: shale.SinkProposeGcRequest
-	(*SinkProposeGcResponse)(nil),    // 33: shale.SinkProposeGcResponse
-	(*GcCandidate)(nil),              // 34: shale.GcCandidate
-	(*GcDecision)(nil),               // 35: shale.GcDecision
-	(*SinkAdoptRequest)(nil),         // 36: shale.SinkAdoptRequest
-	(*SinkRetireRequest)(nil),        // 37: shale.SinkRetireRequest
-	(*SinkReconcileRequest)(nil),     // 38: shale.SinkReconcileRequest
-	(*SinkReconcileResponse)(nil),    // 39: shale.SinkReconcileResponse
-	(*SinkGcRequest)(nil),            // 40: shale.SinkGcRequest
-	nil,                              // 41: shale.DeviceAddRequest.LabelsEntry
-	nil,                              // 42: shale.DevicePatchRequest.LabelsEntry
-	nil,                              // 43: shale.SinkAddRequest.LabelsEntry
-	nil,                              // 44: shale.SinkPatchRequest.LabelsEntry
-	(*NodeRef)(nil),                  // 45: shale.NodeRef
-	(DeviceHealth)(0),                // 46: shale.DeviceHealth
-	(*timestamppb.Timestamp)(nil),    // 47: google.protobuf.Timestamp
-	(*DeviceQuarantine)(nil),         // 48: shale.DeviceQuarantine
-	(*SmartSummary)(nil),             // 49: shale.SmartSummary
-	(*DeviceReport)(nil),             // 50: shale.DeviceReport
-	(*NodeSelect)(nil),               // 51: shale.NodeSelect
-	(*patchpb.Patch)(nil),            // 52: patch.Patch
-	(*Device)(nil),                   // 53: shale.Device
-	(Pressure)(0),                    // 54: shale.Pressure
-	(*SinkCapabilities)(nil),         // 55: shale.SinkCapabilities
-	(SinkAttachment)(0),              // 56: shale.SinkAttachment
-	(*Sink)(nil),                     // 57: shale.Sink
+	(*DeviceListRequest)(nil),        // 6: shale.DeviceListRequest
+	(*DeviceListResponse)(nil),       // 7: shale.DeviceListResponse
+	(*DeviceFilter)(nil),             // 8: shale.DeviceFilter
+	(*DeviceWatchRequest)(nil),       // 9: shale.DeviceWatchRequest
+	(*DeviceWatchResponse)(nil),      // 10: shale.DeviceWatchResponse
+	(*DeviceWatchItem)(nil),          // 11: shale.DeviceWatchItem
+	(*DeviceQuarantineRequest)(nil),  // 12: shale.DeviceQuarantineRequest
+	(*DeviceReleaseRequest)(nil),     // 13: shale.DeviceReleaseRequest
+	(*DeviceRetireRequest)(nil),      // 14: shale.DeviceRetireRequest
+	(*DeviceDeclareDeadRequest)(nil), // 15: shale.DeviceDeclareDeadRequest
+	(*DeviceLocateRequest)(nil),      // 16: shale.DeviceLocateRequest
+	(*SinkAddRequest)(nil),           // 17: shale.SinkAddRequest
+	(*SinkGetRequest)(nil),           // 18: shale.SinkGetRequest
+	(*SinkRef)(nil),                  // 19: shale.SinkRef
+	(*SinkSelect)(nil),               // 20: shale.SinkSelect
+	(*SinkPatchRequest)(nil),         // 21: shale.SinkPatchRequest
+	(*SinkListRequest)(nil),          // 22: shale.SinkListRequest
+	(*SinkListResponse)(nil),         // 23: shale.SinkListResponse
+	(*SinkFilter)(nil),               // 24: shale.SinkFilter
+	(*SinkWatchRequest)(nil),         // 25: shale.SinkWatchRequest
+	(*SinkWatchResponse)(nil),        // 26: shale.SinkWatchResponse
+	(*SinkWatchItem)(nil),            // 27: shale.SinkWatchItem
+	(*SinkProposeGcRequest)(nil),     // 28: shale.SinkProposeGcRequest
+	(*SinkProposeGcResponse)(nil),    // 29: shale.SinkProposeGcResponse
+	(*GcCandidate)(nil),              // 30: shale.GcCandidate
+	(*GcDecision)(nil),               // 31: shale.GcDecision
+	(*SinkAdoptRequest)(nil),         // 32: shale.SinkAdoptRequest
+	(*SinkRetireRequest)(nil),        // 33: shale.SinkRetireRequest
+	(*SinkReconcileRequest)(nil),     // 34: shale.SinkReconcileRequest
+	(*SinkReconcileResponse)(nil),    // 35: shale.SinkReconcileResponse
+	(*SinkGcRequest)(nil),            // 36: shale.SinkGcRequest
+	nil,                              // 37: shale.DeviceAddRequest.LabelsEntry
+	nil,                              // 38: shale.DevicePatchRequest.LabelsEntry
+	nil,                              // 39: shale.SinkAddRequest.LabelsEntry
+	nil,                              // 40: shale.SinkPatchRequest.LabelsEntry
+	(*NodeRef)(nil),                  // 41: shale.NodeRef
+	(DeviceHealth)(0),                // 42: shale.DeviceHealth
+	(*timestamppb.Timestamp)(nil),    // 43: google.protobuf.Timestamp
+	(*DeviceQuarantine)(nil),         // 44: shale.DeviceQuarantine
+	(*SmartSummary)(nil),             // 45: shale.SmartSummary
+	(*DeviceReport)(nil),             // 46: shale.DeviceReport
+	(*NodeSelect)(nil),               // 47: shale.NodeSelect
+	(*Device)(nil),                   // 48: shale.Device
+	(Pressure)(0),                    // 49: shale.Pressure
+	(*SinkCapabilities)(nil),         // 50: shale.SinkCapabilities
+	(SinkAttachment)(0),              // 51: shale.SinkAttachment
+	(*Sink)(nil),                     // 52: shale.Sink
 }
 var file_shale_storage_svc_g_proto_depIdxs = []int32{
-	41,  // 0: shale.DeviceAddRequest.labels:type_name -> shale.DeviceAddRequest.LabelsEntry
-	45,  // 1: shale.DeviceAddRequest.node:type_name -> shale.NodeRef
-	46,  // 2: shale.DeviceAddRequest.health:type_name -> shale.DeviceHealth
-	47,  // 3: shale.DeviceAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	47,  // 4: shale.DeviceAddRequest.date_scored:type_name -> google.protobuf.Timestamp
-	48,  // 5: shale.DeviceAddRequest.quarantine:type_name -> shale.DeviceQuarantine
-	49,  // 6: shale.DeviceAddRequest.smart:type_name -> shale.SmartSummary
-	50,  // 7: shale.DeviceAddRequest.report:type_name -> shale.DeviceReport
-	47,  // 8: shale.DeviceAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	3,   // 9: shale.DeviceGetRequest.ref:type_name -> shale.DeviceRef
-	4,   // 10: shale.DeviceGetRequest.select:type_name -> shale.DeviceSelect
-	51,  // 11: shale.DeviceSelect.node:type_name -> shale.NodeSelect
-	3,   // 12: shale.DevicePatchRequest.ref:type_name -> shale.DeviceRef
-	42,  // 13: shale.DevicePatchRequest.labels:type_name -> shale.DevicePatchRequest.LabelsEntry
-	45,  // 14: shale.DevicePatchRequest.node:type_name -> shale.NodeRef
-	46,  // 15: shale.DevicePatchRequest.health:type_name -> shale.DeviceHealth
-	47,  // 16: shale.DevicePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	47,  // 17: shale.DevicePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
-	48,  // 18: shale.DevicePatchRequest.quarantine:type_name -> shale.DeviceQuarantine
-	49,  // 19: shale.DevicePatchRequest.smart:type_name -> shale.SmartSummary
-	50,  // 20: shale.DevicePatchRequest.report:type_name -> shale.DeviceReport
-	47,  // 21: shale.DevicePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	3,   // 22: shale.DeviceApplyRequest.ref:type_name -> shale.DeviceRef
-	52,  // 23: shale.DeviceApplyRequest.patch:type_name -> patch.Patch
-	10,  // 24: shale.DeviceListRequest.filters:type_name -> shale.DeviceFilter
-	53,  // 25: shale.DeviceListResponse.items:type_name -> shale.Device
-	3,   // 26: shale.DeviceFilter.ref:type_name -> shale.DeviceRef
-	45,  // 27: shale.DeviceFilter.node:type_name -> shale.NodeRef
-	10,  // 28: shale.DeviceWatchRequest.filters:type_name -> shale.DeviceFilter
-	13,  // 29: shale.DeviceWatchResponse.items:type_name -> shale.DeviceWatchItem
-	53,  // 30: shale.DeviceWatchItem.value:type_name -> shale.Device
-	3,   // 31: shale.DeviceQuarantineRequest.ref:type_name -> shale.DeviceRef
-	3,   // 32: shale.DeviceReleaseRequest.ref:type_name -> shale.DeviceRef
-	3,   // 33: shale.DeviceRetireRequest.ref:type_name -> shale.DeviceRef
-	3,   // 34: shale.DeviceDeclareDeadRequest.ref:type_name -> shale.DeviceRef
-	3,   // 35: shale.DeviceLocateRequest.ref:type_name -> shale.DeviceRef
-	43,  // 36: shale.SinkAddRequest.labels:type_name -> shale.SinkAddRequest.LabelsEntry
-	45,  // 37: shale.SinkAddRequest.node:type_name -> shale.NodeRef
-	3,   // 38: shale.SinkAddRequest.device:type_name -> shale.DeviceRef
-	47,  // 39: shale.SinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	54,  // 40: shale.SinkAddRequest.pressure:type_name -> shale.Pressure
-	55,  // 41: shale.SinkAddRequest.capabilities:type_name -> shale.SinkCapabilities
-	56,  // 42: shale.SinkAddRequest.attachment:type_name -> shale.SinkAttachment
-	47,  // 43: shale.SinkAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	47,  // 44: shale.SinkAddRequest.date_reconciled:type_name -> google.protobuf.Timestamp
-	21,  // 45: shale.SinkGetRequest.ref:type_name -> shale.SinkRef
-	22,  // 46: shale.SinkGetRequest.select:type_name -> shale.SinkSelect
-	51,  // 47: shale.SinkSelect.node:type_name -> shale.NodeSelect
-	4,   // 48: shale.SinkSelect.device:type_name -> shale.DeviceSelect
-	21,  // 49: shale.SinkPatchRequest.ref:type_name -> shale.SinkRef
-	44,  // 50: shale.SinkPatchRequest.labels:type_name -> shale.SinkPatchRequest.LabelsEntry
-	45,  // 51: shale.SinkPatchRequest.node:type_name -> shale.NodeRef
-	47,  // 52: shale.SinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	54,  // 53: shale.SinkPatchRequest.pressure:type_name -> shale.Pressure
-	55,  // 54: shale.SinkPatchRequest.capabilities:type_name -> shale.SinkCapabilities
-	56,  // 55: shale.SinkPatchRequest.attachment:type_name -> shale.SinkAttachment
-	47,  // 56: shale.SinkPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	47,  // 57: shale.SinkPatchRequest.date_reconciled:type_name -> google.protobuf.Timestamp
-	21,  // 58: shale.SinkApplyRequest.ref:type_name -> shale.SinkRef
-	52,  // 59: shale.SinkApplyRequest.patch:type_name -> patch.Patch
-	28,  // 60: shale.SinkListRequest.filters:type_name -> shale.SinkFilter
-	57,  // 61: shale.SinkListResponse.items:type_name -> shale.Sink
-	21,  // 62: shale.SinkFilter.ref:type_name -> shale.SinkRef
-	45,  // 63: shale.SinkFilter.node:type_name -> shale.NodeRef
-	3,   // 64: shale.SinkFilter.device:type_name -> shale.DeviceRef
-	28,  // 65: shale.SinkWatchRequest.filters:type_name -> shale.SinkFilter
-	31,  // 66: shale.SinkWatchResponse.items:type_name -> shale.SinkWatchItem
-	57,  // 67: shale.SinkWatchItem.value:type_name -> shale.Sink
-	21,  // 68: shale.SinkProposeGcRequest.ref:type_name -> shale.SinkRef
-	0,   // 69: shale.SinkProposeGcRequest.reason:type_name -> shale.GcReason
-	34,  // 70: shale.SinkProposeGcRequest.candidates:type_name -> shale.GcCandidate
-	35,  // 71: shale.SinkProposeGcResponse.decisions:type_name -> shale.GcDecision
-	47,  // 72: shale.GcCandidate.date_expired:type_name -> google.protobuf.Timestamp
-	47,  // 73: shale.GcCandidate.date_deleted:type_name -> google.protobuf.Timestamp
-	47,  // 74: shale.GcDecision.date_expired:type_name -> google.protobuf.Timestamp
-	47,  // 75: shale.GcDecision.date_deleted:type_name -> google.protobuf.Timestamp
-	21,  // 76: shale.SinkAdoptRequest.ref:type_name -> shale.SinkRef
-	45,  // 77: shale.SinkAdoptRequest.node:type_name -> shale.NodeRef
-	21,  // 78: shale.SinkRetireRequest.ref:type_name -> shale.SinkRef
-	21,  // 79: shale.SinkReconcileRequest.ref:type_name -> shale.SinkRef
-	21,  // 80: shale.SinkGcRequest.ref:type_name -> shale.SinkRef
-	1,   // 81: shale.DeviceService.Add:input_type -> shale.DeviceAddRequest
-	2,   // 82: shale.DeviceService.Get:input_type -> shale.DeviceGetRequest
-	5,   // 83: shale.DeviceService.Patch:input_type -> shale.DevicePatchRequest
-	6,   // 84: shale.DeviceService.Apply:input_type -> shale.DeviceApplyRequest
-	3,   // 85: shale.DeviceService.Erase:input_type -> shale.DeviceRef
-	8,   // 86: shale.DeviceService.List:input_type -> shale.DeviceListRequest
-	11,  // 87: shale.DeviceService.Watch:input_type -> shale.DeviceWatchRequest
-	14,  // 88: shale.DeviceService.Quarantine:input_type -> shale.DeviceQuarantineRequest
-	15,  // 89: shale.DeviceService.Release:input_type -> shale.DeviceReleaseRequest
-	16,  // 90: shale.DeviceService.Retire:input_type -> shale.DeviceRetireRequest
-	17,  // 91: shale.DeviceService.DeclareDead:input_type -> shale.DeviceDeclareDeadRequest
-	18,  // 92: shale.DeviceService.Locate:input_type -> shale.DeviceLocateRequest
-	19,  // 93: shale.SinkService.Add:input_type -> shale.SinkAddRequest
-	20,  // 94: shale.SinkService.Get:input_type -> shale.SinkGetRequest
-	23,  // 95: shale.SinkService.Patch:input_type -> shale.SinkPatchRequest
-	24,  // 96: shale.SinkService.Apply:input_type -> shale.SinkApplyRequest
-	21,  // 97: shale.SinkService.Erase:input_type -> shale.SinkRef
-	26,  // 98: shale.SinkService.List:input_type -> shale.SinkListRequest
-	29,  // 99: shale.SinkService.Watch:input_type -> shale.SinkWatchRequest
-	32,  // 100: shale.SinkService.ProposeGc:input_type -> shale.SinkProposeGcRequest
-	36,  // 101: shale.SinkService.Adopt:input_type -> shale.SinkAdoptRequest
-	37,  // 102: shale.SinkService.Retire:input_type -> shale.SinkRetireRequest
-	38,  // 103: shale.SinkService.Reconcile:input_type -> shale.SinkReconcileRequest
-	40,  // 104: shale.SinkService.Gc:input_type -> shale.SinkGcRequest
-	53,  // 105: shale.DeviceService.Add:output_type -> shale.Device
-	53,  // 106: shale.DeviceService.Get:output_type -> shale.Device
-	53,  // 107: shale.DeviceService.Patch:output_type -> shale.Device
-	53,  // 108: shale.DeviceService.Apply:output_type -> shale.Device
-	7,   // 109: shale.DeviceService.Erase:output_type -> shale.DeviceEraseResponse
-	9,   // 110: shale.DeviceService.List:output_type -> shale.DeviceListResponse
-	12,  // 111: shale.DeviceService.Watch:output_type -> shale.DeviceWatchResponse
-	53,  // 112: shale.DeviceService.Quarantine:output_type -> shale.Device
-	53,  // 113: shale.DeviceService.Release:output_type -> shale.Device
-	53,  // 114: shale.DeviceService.Retire:output_type -> shale.Device
-	53,  // 115: shale.DeviceService.DeclareDead:output_type -> shale.Device
-	53,  // 116: shale.DeviceService.Locate:output_type -> shale.Device
-	57,  // 117: shale.SinkService.Add:output_type -> shale.Sink
-	57,  // 118: shale.SinkService.Get:output_type -> shale.Sink
-	57,  // 119: shale.SinkService.Patch:output_type -> shale.Sink
-	57,  // 120: shale.SinkService.Apply:output_type -> shale.Sink
-	25,  // 121: shale.SinkService.Erase:output_type -> shale.SinkEraseResponse
-	27,  // 122: shale.SinkService.List:output_type -> shale.SinkListResponse
-	30,  // 123: shale.SinkService.Watch:output_type -> shale.SinkWatchResponse
-	33,  // 124: shale.SinkService.ProposeGc:output_type -> shale.SinkProposeGcResponse
-	57,  // 125: shale.SinkService.Adopt:output_type -> shale.Sink
-	57,  // 126: shale.SinkService.Retire:output_type -> shale.Sink
-	39,  // 127: shale.SinkService.Reconcile:output_type -> shale.SinkReconcileResponse
-	57,  // 128: shale.SinkService.Gc:output_type -> shale.Sink
-	105, // [105:129] is the sub-list for method output_type
-	81,  // [81:105] is the sub-list for method input_type
-	81,  // [81:81] is the sub-list for extension type_name
-	81,  // [81:81] is the sub-list for extension extendee
-	0,   // [0:81] is the sub-list for field type_name
+	37, // 0: shale.DeviceAddRequest.labels:type_name -> shale.DeviceAddRequest.LabelsEntry
+	41, // 1: shale.DeviceAddRequest.node:type_name -> shale.NodeRef
+	42, // 2: shale.DeviceAddRequest.health:type_name -> shale.DeviceHealth
+	43, // 3: shale.DeviceAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	43, // 4: shale.DeviceAddRequest.date_scored:type_name -> google.protobuf.Timestamp
+	44, // 5: shale.DeviceAddRequest.quarantine:type_name -> shale.DeviceQuarantine
+	45, // 6: shale.DeviceAddRequest.smart:type_name -> shale.SmartSummary
+	46, // 7: shale.DeviceAddRequest.report:type_name -> shale.DeviceReport
+	43, // 8: shale.DeviceAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	3,  // 9: shale.DeviceGetRequest.ref:type_name -> shale.DeviceRef
+	4,  // 10: shale.DeviceGetRequest.select:type_name -> shale.DeviceSelect
+	47, // 11: shale.DeviceSelect.node:type_name -> shale.NodeSelect
+	3,  // 12: shale.DevicePatchRequest.ref:type_name -> shale.DeviceRef
+	38, // 13: shale.DevicePatchRequest.labels:type_name -> shale.DevicePatchRequest.LabelsEntry
+	41, // 14: shale.DevicePatchRequest.node:type_name -> shale.NodeRef
+	42, // 15: shale.DevicePatchRequest.health:type_name -> shale.DeviceHealth
+	43, // 16: shale.DevicePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	43, // 17: shale.DevicePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
+	44, // 18: shale.DevicePatchRequest.quarantine:type_name -> shale.DeviceQuarantine
+	45, // 19: shale.DevicePatchRequest.smart:type_name -> shale.SmartSummary
+	46, // 20: shale.DevicePatchRequest.report:type_name -> shale.DeviceReport
+	43, // 21: shale.DevicePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	8,  // 22: shale.DeviceListRequest.filters:type_name -> shale.DeviceFilter
+	4,  // 23: shale.DeviceListRequest.select:type_name -> shale.DeviceSelect
+	48, // 24: shale.DeviceListResponse.items:type_name -> shale.Device
+	3,  // 25: shale.DeviceFilter.ref:type_name -> shale.DeviceRef
+	41, // 26: shale.DeviceFilter.node:type_name -> shale.NodeRef
+	8,  // 27: shale.DeviceWatchRequest.filters:type_name -> shale.DeviceFilter
+	11, // 28: shale.DeviceWatchResponse.items:type_name -> shale.DeviceWatchItem
+	48, // 29: shale.DeviceWatchItem.value:type_name -> shale.Device
+	3,  // 30: shale.DeviceQuarantineRequest.ref:type_name -> shale.DeviceRef
+	3,  // 31: shale.DeviceReleaseRequest.ref:type_name -> shale.DeviceRef
+	3,  // 32: shale.DeviceRetireRequest.ref:type_name -> shale.DeviceRef
+	3,  // 33: shale.DeviceDeclareDeadRequest.ref:type_name -> shale.DeviceRef
+	3,  // 34: shale.DeviceLocateRequest.ref:type_name -> shale.DeviceRef
+	39, // 35: shale.SinkAddRequest.labels:type_name -> shale.SinkAddRequest.LabelsEntry
+	41, // 36: shale.SinkAddRequest.node:type_name -> shale.NodeRef
+	3,  // 37: shale.SinkAddRequest.device:type_name -> shale.DeviceRef
+	43, // 38: shale.SinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	49, // 39: shale.SinkAddRequest.pressure:type_name -> shale.Pressure
+	50, // 40: shale.SinkAddRequest.capabilities:type_name -> shale.SinkCapabilities
+	51, // 41: shale.SinkAddRequest.attachment:type_name -> shale.SinkAttachment
+	43, // 42: shale.SinkAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	43, // 43: shale.SinkAddRequest.date_reconciled:type_name -> google.protobuf.Timestamp
+	19, // 44: shale.SinkGetRequest.ref:type_name -> shale.SinkRef
+	20, // 45: shale.SinkGetRequest.select:type_name -> shale.SinkSelect
+	47, // 46: shale.SinkSelect.node:type_name -> shale.NodeSelect
+	4,  // 47: shale.SinkSelect.device:type_name -> shale.DeviceSelect
+	19, // 48: shale.SinkPatchRequest.ref:type_name -> shale.SinkRef
+	40, // 49: shale.SinkPatchRequest.labels:type_name -> shale.SinkPatchRequest.LabelsEntry
+	41, // 50: shale.SinkPatchRequest.node:type_name -> shale.NodeRef
+	43, // 51: shale.SinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	49, // 52: shale.SinkPatchRequest.pressure:type_name -> shale.Pressure
+	50, // 53: shale.SinkPatchRequest.capabilities:type_name -> shale.SinkCapabilities
+	51, // 54: shale.SinkPatchRequest.attachment:type_name -> shale.SinkAttachment
+	43, // 55: shale.SinkPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	43, // 56: shale.SinkPatchRequest.date_reconciled:type_name -> google.protobuf.Timestamp
+	24, // 57: shale.SinkListRequest.filters:type_name -> shale.SinkFilter
+	20, // 58: shale.SinkListRequest.select:type_name -> shale.SinkSelect
+	52, // 59: shale.SinkListResponse.items:type_name -> shale.Sink
+	19, // 60: shale.SinkFilter.ref:type_name -> shale.SinkRef
+	41, // 61: shale.SinkFilter.node:type_name -> shale.NodeRef
+	3,  // 62: shale.SinkFilter.device:type_name -> shale.DeviceRef
+	24, // 63: shale.SinkWatchRequest.filters:type_name -> shale.SinkFilter
+	27, // 64: shale.SinkWatchResponse.items:type_name -> shale.SinkWatchItem
+	52, // 65: shale.SinkWatchItem.value:type_name -> shale.Sink
+	19, // 66: shale.SinkProposeGcRequest.ref:type_name -> shale.SinkRef
+	0,  // 67: shale.SinkProposeGcRequest.reason:type_name -> shale.GcReason
+	30, // 68: shale.SinkProposeGcRequest.candidates:type_name -> shale.GcCandidate
+	31, // 69: shale.SinkProposeGcResponse.decisions:type_name -> shale.GcDecision
+	43, // 70: shale.GcCandidate.date_expired:type_name -> google.protobuf.Timestamp
+	43, // 71: shale.GcCandidate.date_deleted:type_name -> google.protobuf.Timestamp
+	43, // 72: shale.GcDecision.date_expired:type_name -> google.protobuf.Timestamp
+	43, // 73: shale.GcDecision.date_deleted:type_name -> google.protobuf.Timestamp
+	19, // 74: shale.SinkAdoptRequest.ref:type_name -> shale.SinkRef
+	41, // 75: shale.SinkAdoptRequest.node:type_name -> shale.NodeRef
+	19, // 76: shale.SinkRetireRequest.ref:type_name -> shale.SinkRef
+	19, // 77: shale.SinkReconcileRequest.ref:type_name -> shale.SinkRef
+	19, // 78: shale.SinkGcRequest.ref:type_name -> shale.SinkRef
+	1,  // 79: shale.DeviceService.Add:input_type -> shale.DeviceAddRequest
+	2,  // 80: shale.DeviceService.Get:input_type -> shale.DeviceGetRequest
+	5,  // 81: shale.DeviceService.Patch:input_type -> shale.DevicePatchRequest
+	6,  // 82: shale.DeviceService.List:input_type -> shale.DeviceListRequest
+	9,  // 83: shale.DeviceService.Watch:input_type -> shale.DeviceWatchRequest
+	12, // 84: shale.DeviceService.Quarantine:input_type -> shale.DeviceQuarantineRequest
+	13, // 85: shale.DeviceService.Release:input_type -> shale.DeviceReleaseRequest
+	14, // 86: shale.DeviceService.Retire:input_type -> shale.DeviceRetireRequest
+	15, // 87: shale.DeviceService.DeclareDead:input_type -> shale.DeviceDeclareDeadRequest
+	16, // 88: shale.DeviceService.Locate:input_type -> shale.DeviceLocateRequest
+	17, // 89: shale.SinkService.Add:input_type -> shale.SinkAddRequest
+	18, // 90: shale.SinkService.Get:input_type -> shale.SinkGetRequest
+	21, // 91: shale.SinkService.Patch:input_type -> shale.SinkPatchRequest
+	22, // 92: shale.SinkService.List:input_type -> shale.SinkListRequest
+	25, // 93: shale.SinkService.Watch:input_type -> shale.SinkWatchRequest
+	28, // 94: shale.SinkService.ProposeGc:input_type -> shale.SinkProposeGcRequest
+	32, // 95: shale.SinkService.Adopt:input_type -> shale.SinkAdoptRequest
+	33, // 96: shale.SinkService.Retire:input_type -> shale.SinkRetireRequest
+	34, // 97: shale.SinkService.Reconcile:input_type -> shale.SinkReconcileRequest
+	36, // 98: shale.SinkService.Gc:input_type -> shale.SinkGcRequest
+	48, // 99: shale.DeviceService.Add:output_type -> shale.Device
+	48, // 100: shale.DeviceService.Get:output_type -> shale.Device
+	48, // 101: shale.DeviceService.Patch:output_type -> shale.Device
+	7,  // 102: shale.DeviceService.List:output_type -> shale.DeviceListResponse
+	10, // 103: shale.DeviceService.Watch:output_type -> shale.DeviceWatchResponse
+	48, // 104: shale.DeviceService.Quarantine:output_type -> shale.Device
+	48, // 105: shale.DeviceService.Release:output_type -> shale.Device
+	48, // 106: shale.DeviceService.Retire:output_type -> shale.Device
+	48, // 107: shale.DeviceService.DeclareDead:output_type -> shale.Device
+	48, // 108: shale.DeviceService.Locate:output_type -> shale.Device
+	52, // 109: shale.SinkService.Add:output_type -> shale.Sink
+	52, // 110: shale.SinkService.Get:output_type -> shale.Sink
+	52, // 111: shale.SinkService.Patch:output_type -> shale.Sink
+	23, // 112: shale.SinkService.List:output_type -> shale.SinkListResponse
+	26, // 113: shale.SinkService.Watch:output_type -> shale.SinkWatchResponse
+	29, // 114: shale.SinkService.ProposeGc:output_type -> shale.SinkProposeGcResponse
+	52, // 115: shale.SinkService.Adopt:output_type -> shale.Sink
+	52, // 116: shale.SinkService.Retire:output_type -> shale.Sink
+	35, // 117: shale.SinkService.Reconcile:output_type -> shale.SinkReconcileResponse
+	52, // 118: shale.SinkService.Gc:output_type -> shale.Sink
+	99, // [99:119] is the sub-list for method output_type
+	79, // [79:99] is the sub-list for method input_type
+	79, // [79:79] is the sub-list for extension type_name
+	79, // [79:79] is the sub-list for extension extendee
+	0,  // [0:79] is the sub-list for field type_name
 }
 
 func init() { file_shale_storage_svc_g_proto_init() }
@@ -7843,7 +7542,7 @@ func file_shale_storage_svc_g_proto_init() {
 		(*deviceRef_Alias)(nil),
 		(*deviceRef_HardwareId)(nil),
 	}
-	file_shale_storage_svc_g_proto_msgTypes[20].OneofWrappers = []any{
+	file_shale_storage_svc_g_proto_msgTypes[18].OneofWrappers = []any{
 		(*sinkRef_Id)(nil),
 		(*sinkRef_Alias)(nil),
 	}
@@ -7853,7 +7552,7 @@ func file_shale_storage_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_storage_svc_g_proto_rawDesc), len(file_shale_storage_svc_g_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   44,
+			NumMessages:   40,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

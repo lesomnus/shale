@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1208,442 +1208,20 @@ func (b0 CameraPolicySelect_builder) Build() *CameraPolicySelect {
 	return m0
 }
 
-type CameraPolicyPatchRequest struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref              *CameraPolicyRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
-	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
-	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
-	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
-}
-
-func (x *CameraPolicyPatchRequest) Reset() {
-	*x = CameraPolicyPatchRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraPolicyPatchRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraPolicyPatchRequest) ProtoMessage() {}
-
-func (x *CameraPolicyPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraPolicyPatchRequest) GetRef() *CameraPolicyRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraPolicyPatchRequest) GetAlias() string {
-	if x != nil {
-		if x.xxx_hidden_Alias != nil {
-			return *x.xxx_hidden_Alias
-		}
-		return ""
-	}
-	return ""
-}
-
-func (x *CameraPolicyPatchRequest) GetName() string {
-	if x != nil {
-		if x.xxx_hidden_Name != nil {
-			return *x.xxx_hidden_Name
-		}
-		return ""
-	}
-	return ""
-}
-
-func (x *CameraPolicyPatchRequest) GetDesc() string {
-	if x != nil {
-		if x.xxx_hidden_Desc != nil {
-			return *x.xxx_hidden_Desc
-		}
-		return ""
-	}
-	return ""
-}
-
-func (x *CameraPolicyPatchRequest) GetLabels() map[string]string {
-	if x != nil {
-		return x.xxx_hidden_Labels
-	}
-	return nil
-}
-
-func (x *CameraPolicyPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateUpdated
-	}
-	return nil
-}
-
-func (x *CameraPolicyPatchRequest) GetDateUpdatedForce() bool {
-	if x != nil {
-		return x.xxx_hidden_DateUpdatedForce
-	}
-	return false
-}
-
-func (x *CameraPolicyPatchRequest) SetRef(v *CameraPolicyRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraPolicyPatchRequest) SetAlias(v string) {
-	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
-}
-
-func (x *CameraPolicyPatchRequest) SetName(v string) {
-	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
-}
-
-func (x *CameraPolicyPatchRequest) SetDesc(v string) {
-	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
-}
-
-func (x *CameraPolicyPatchRequest) SetLabels(v map[string]string) {
-	x.xxx_hidden_Labels = v
-}
-
-func (x *CameraPolicyPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateUpdated = v
-}
-
-func (x *CameraPolicyPatchRequest) SetDateUpdatedForce(v bool) {
-	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
-}
-
-func (x *CameraPolicyPatchRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraPolicyPatchRequest) HasAlias() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *CameraPolicyPatchRequest) HasName() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *CameraPolicyPatchRequest) HasDesc() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
-func (x *CameraPolicyPatchRequest) HasDateUpdated() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateUpdated != nil
-}
-
-func (x *CameraPolicyPatchRequest) HasDateUpdatedForce() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
-}
-
-func (x *CameraPolicyPatchRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraPolicyPatchRequest) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Alias = nil
-}
-
-func (x *CameraPolicyPatchRequest) ClearName() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Name = nil
-}
-
-func (x *CameraPolicyPatchRequest) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Desc = nil
-}
-
-func (x *CameraPolicyPatchRequest) ClearDateUpdated() {
-	x.xxx_hidden_DateUpdated = nil
-}
-
-func (x *CameraPolicyPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_DateUpdatedForce = false
-}
-
-type CameraPolicyPatchRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref    *CameraPolicyRef
-	Alias  *string
-	Name   *string
-	Desc   *string
-	Labels map[string]string
-	// The version this update requires the stored date_updated to be.
-	// It is a precondition, not a write: the update applies only if the row
-	// still holds this value, and the server stamps the new version itself.
-	// Setting it together with date_updated_force is an error --
-	// the version is the token every client's compare-and-swap is measured
-	// against, so it is not the caller's to choose.
-	DateUpdated *timestamppb.Timestamp
-	// Update whatever the stored date_updated is, with no precondition.
-	// The server still stamps a new version, so other clients' tokens are
-	// invalidated as usual; this declines the check for THIS update only.
-	// One of date_updated or this must be set. An omitted version is
-	// refused rather than assumed, because an unset field cannot be told
-	// apart from a caller who never considered locking at all.
-	DateUpdatedForce *bool
-}
-
-func (b0 CameraPolicyPatchRequest_builder) Build() *CameraPolicyPatchRequest {
-	m0 := &CameraPolicyPatchRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
-		x.xxx_hidden_Alias = b.Alias
-	}
-	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
-		x.xxx_hidden_Name = b.Name
-	}
-	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
-		x.xxx_hidden_Desc = b.Desc
-	}
-	x.xxx_hidden_Labels = b.Labels
-	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
-		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
-	}
-	return m0
-}
-
-type CameraPolicyApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraPolicyRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraPolicyApplyRequest) Reset() {
-	*x = CameraPolicyApplyRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraPolicyApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraPolicyApplyRequest) ProtoMessage() {}
-
-func (x *CameraPolicyApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraPolicyApplyRequest) GetRef() *CameraPolicyRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraPolicyApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraPolicyApplyRequest) SetRef(v *CameraPolicyRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraPolicyApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraPolicyApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraPolicyApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraPolicyApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraPolicyApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraPolicyApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraPolicyRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraPolicyApplyRequest_builder) Build() *CameraPolicyApplyRequest {
-	m0 := &CameraPolicyApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraPolicyEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraPolicyEraseResponse) Reset() {
-	*x = CameraPolicyEraseResponse{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraPolicyEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraPolicyEraseResponse) ProtoMessage() {}
-
-func (x *CameraPolicyEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraPolicyEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraPolicyEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraPolicyEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraPolicyEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraPolicyEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraPolicyEraseResponse_builder) Build() *CameraPolicyEraseResponse {
-	m0 := &CameraPolicyEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraPolicyListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraPolicySelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraPolicyListRequest) Reset() {
 	*x = CameraPolicyListRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1655,7 +1233,7 @@ func (x *CameraPolicyListRequest) String() string {
 func (*CameraPolicyListRequest) ProtoMessage() {}
 
 func (x *CameraPolicyListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1696,6 +1274,13 @@ func (x *CameraPolicyListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraPolicyListRequest) GetSelect() *CameraPolicySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraPolicyListRequest) SetFilters(v []*CameraPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1710,6 +1295,21 @@ func (x *CameraPolicyListRequest) SetAfter(v string) {
 
 func (x *CameraPolicyListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraPolicyListRequest) SetSelect(v *CameraPolicySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraPolicyListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraPolicyListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraPolicyListRequest_builder struct {
@@ -1732,6 +1332,15 @@ type CameraPolicyListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraPolicySelect
 }
 
 func (b0 CameraPolicyListRequest_builder) Build() *CameraPolicyListRequest {
@@ -1742,6 +1351,7 @@ func (b0 CameraPolicyListRequest_builder) Build() *CameraPolicyListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1755,7 +1365,7 @@ type CameraPolicyListResponse struct {
 
 func (x *CameraPolicyListResponse) Reset() {
 	*x = CameraPolicyListResponse{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1767,7 +1377,7 @@ func (x *CameraPolicyListResponse) String() string {
 func (*CameraPolicyListResponse) ProtoMessage() {}
 
 func (x *CameraPolicyListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1837,7 +1447,7 @@ type CameraPolicyFilter struct {
 
 func (x *CameraPolicyFilter) Reset() {
 	*x = CameraPolicyFilter{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1849,7 +1459,7 @@ func (x *CameraPolicyFilter) String() string {
 func (*CameraPolicyFilter) ProtoMessage() {}
 
 func (x *CameraPolicyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1978,7 +1588,7 @@ type CameraPolicyWatchRequest struct {
 
 func (x *CameraPolicyWatchRequest) Reset() {
 	*x = CameraPolicyWatchRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1990,7 +1600,7 @@ func (x *CameraPolicyWatchRequest) String() string {
 func (*CameraPolicyWatchRequest) ProtoMessage() {}
 
 func (x *CameraPolicyWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2028,13 +1638,15 @@ func (x *CameraPolicyWatchRequest) SetSkipSnapshot(v bool) {
 type CameraPolicyWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraPolicyFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2062,7 +1674,7 @@ type CameraPolicyWatchResponse struct {
 
 func (x *CameraPolicyWatchResponse) Reset() {
 	*x = CameraPolicyWatchResponse{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2074,7 +1686,7 @@ func (x *CameraPolicyWatchResponse) String() string {
 func (*CameraPolicyWatchResponse) ProtoMessage() {}
 
 func (x *CameraPolicyWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2126,7 +1738,7 @@ type CameraPolicyWatchItem struct {
 
 func (x *CameraPolicyWatchItem) Reset() {
 	*x = CameraPolicyWatchItem{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2138,7 +1750,7 @@ func (x *CameraPolicyWatchItem) String() string {
 func (*CameraPolicyWatchItem) ProtoMessage() {}
 
 func (x *CameraPolicyWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2215,7 +1827,7 @@ type CameraPolicyWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2223,7 +1835,8 @@ type CameraPolicyWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraPolicy
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2261,7 +1874,7 @@ type CameraPolicyCreateRequest struct {
 
 func (x *CameraPolicyCreateRequest) Reset() {
 	*x = CameraPolicyCreateRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2273,7 +1886,7 @@ func (x *CameraPolicyCreateRequest) String() string {
 func (*CameraPolicyCreateRequest) ProtoMessage() {}
 
 func (x *CameraPolicyCreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2417,7 +2030,7 @@ type CameraPolicyActivateRequest struct {
 
 func (x *CameraPolicyActivateRequest) Reset() {
 	*x = CameraPolicyActivateRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2429,7 +2042,7 @@ func (x *CameraPolicyActivateRequest) String() string {
 func (*CameraPolicyActivateRequest) ProtoMessage() {}
 
 func (x *CameraPolicyActivateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2511,7 +2124,7 @@ type CameraPolicyEnrollRequest struct {
 
 func (x *CameraPolicyEnrollRequest) Reset() {
 	*x = CameraPolicyEnrollRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[16]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2523,7 +2136,7 @@ func (x *CameraPolicyEnrollRequest) String() string {
 func (*CameraPolicyEnrollRequest) ProtoMessage() {}
 
 func (x *CameraPolicyEnrollRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[16]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2620,7 +2233,7 @@ type CameraPolicyObserveRequest struct {
 
 func (x *CameraPolicyObserveRequest) Reset() {
 	*x = CameraPolicyObserveRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[17]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2632,7 +2245,7 @@ func (x *CameraPolicyObserveRequest) String() string {
 func (*CameraPolicyObserveRequest) ProtoMessage() {}
 
 func (x *CameraPolicyObserveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[17]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2759,7 +2372,7 @@ type CameraPolicyObserveResponse struct {
 
 func (x *CameraPolicyObserveResponse) Reset() {
 	*x = CameraPolicyObserveResponse{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[18]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2771,7 +2384,7 @@ func (x *CameraPolicyObserveResponse) String() string {
 func (*CameraPolicyObserveResponse) ProtoMessage() {}
 
 func (x *CameraPolicyObserveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[18]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2940,7 +2553,7 @@ type CameraPolicyTrustFactoryTLSRequest struct {
 
 func (x *CameraPolicyTrustFactoryTLSRequest) Reset() {
 	*x = CameraPolicyTrustFactoryTLSRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[19]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2952,7 +2565,7 @@ func (x *CameraPolicyTrustFactoryTLSRequest) String() string {
 func (*CameraPolicyTrustFactoryTLSRequest) ProtoMessage() {}
 
 func (x *CameraPolicyTrustFactoryTLSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[19]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3049,7 +2662,7 @@ type CameraPolicyApproveTLSRequest struct {
 
 func (x *CameraPolicyApproveTLSRequest) Reset() {
 	*x = CameraPolicyApproveTLSRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[20]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3061,7 +2674,7 @@ func (x *CameraPolicyApproveTLSRequest) String() string {
 func (*CameraPolicyApproveTLSRequest) ProtoMessage() {}
 
 func (x *CameraPolicyApproveTLSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[20]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3160,7 +2773,7 @@ type CameraPolicyApproveTLSResponse struct {
 
 func (x *CameraPolicyApproveTLSResponse) Reset() {
 	*x = CameraPolicyApproveTLSResponse{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[21]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3172,7 +2785,7 @@ func (x *CameraPolicyApproveTLSResponse) String() string {
 func (*CameraPolicyApproveTLSResponse) ProtoMessage() {}
 
 func (x *CameraPolicyApproveTLSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[21]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3279,7 +2892,7 @@ type CameraPolicyVerifyTransportRequest struct {
 
 func (x *CameraPolicyVerifyTransportRequest) Reset() {
 	*x = CameraPolicyVerifyTransportRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[22]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3291,7 +2904,7 @@ func (x *CameraPolicyVerifyTransportRequest) String() string {
 func (*CameraPolicyVerifyTransportRequest) ProtoMessage() {}
 
 func (x *CameraPolicyVerifyTransportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[22]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3366,7 +2979,7 @@ type CameraPolicyObserveClockRequest struct {
 
 func (x *CameraPolicyObserveClockRequest) Reset() {
 	*x = CameraPolicyObserveClockRequest{}
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[23]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3378,7 +2991,7 @@ func (x *CameraPolicyObserveClockRequest) String() string {
 func (*CameraPolicyObserveClockRequest) ProtoMessage() {}
 
 func (x *CameraPolicyObserveClockRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[23]
+	mi := &file_shale_camera_policy_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3505,9 +3118,9 @@ var File_shale_camera_policy_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_policy_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/camera_policy_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x1cshale/camera_bootstrap.proto\x1a\x19shale/camera_policy.proto\x1a\x1fshale/camera_preset_svc.g.proto\x1a\x18shale/camera_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xf1\x04\n" +
-	"\x16CameraPolicyAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x1fshale/camera_policy_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/camera.proto\x1a\x1cshale/camera_bootstrap.proto\x1a\x19shale/camera_policy.proto\x1a\x1fshale/camera_preset_svc.g.proto\x1a\x18shale/camera_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xf9\x04\n" +
+	"\x16CameraPolicyAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -3529,9 +3142,9 @@ const file_shale_camera_policy_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
 	"\x16CameraPolicyGetRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraPolicyRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraPolicySelectR\x06select\"j\n" +
-	"\x0fCameraPolicyRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12>\n" +
+	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraPolicySelectR\x06select\"r\n" +
+	"\x0fCameraPolicyRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12>\n" +
 	"\brevision\x18\x02 \x01(\v2 .shale.CameraPolicyRefByRevisionH\x00R\brevisionB\x05\n" +
 	"\x03key\"\x80\x01\n" +
 	"\x19CameraPolicyRefByRevision\x12(\n" +
@@ -3560,29 +3173,13 @@ const file_shale_camera_policy_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xef\x02\n" +
-	"\x18CameraPolicyPatchRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraPolicyRefR\x03ref\x12\x14\n" +
-	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
-	"\x04name\x18\n" +
-	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12C\n" +
-	"\x06labels\x18\x0e \x03(\v2+.shale.CameraPolicyPatchRequest.LabelsEntryR\x06labels\x12=\n" +
-	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
-	"\vLabelsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
-	"\x18CameraPolicyApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraPolicyRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
-	"\x19CameraPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa7\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xda\x01\n" +
 	"\x17CameraPolicyListRequest\x123\n" +
 	"\afilters\x18\x01 \x03(\v2\x19.shale.CameraPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"`\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x121\n" +
+	"\x06select\x18\x06 \x01(\v2\x19.shale.CameraPolicySelectR\x06select\"`\n" +
 	"\x18CameraPolicyListResponse\x12)\n" +
 	"\x05items\x18\x01 \x03(\v2\x13.shale.CameraPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xbf\x01\n" +
@@ -3657,13 +3254,10 @@ const file_shale_camera_policy_svc_g_proto_rawDesc = "" +
 	"\x15assignment_generation\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x14assignmentGeneration\x12.\n" +
 	"\x06device\x18\x03 \x01(\v2\x16.shale.CameraDeviceRefR\x06device\x12!\n" +
 	"\bendpoint\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\bendpoint\x123\n" +
-	"\x05clock\x18\x05 \x01(\v2\x1d.shale.CameraClockObservationR\x05clock2\xe6\b\n" +
+	"\x05clock\x18\x05 \x01(\v2\x1d.shale.CameraClockObservationR\x05clock2\xa5\a\n" +
 	"\x13CameraPolicyService\x129\n" +
 	"\x03Add\x12\x1d.shale.CameraPolicyAddRequest\x1a\x13.shale.CameraPolicy\x129\n" +
-	"\x03Get\x12\x1d.shale.CameraPolicyGetRequest\x1a\x13.shale.CameraPolicy\x12=\n" +
-	"\x05Patch\x12\x1f.shale.CameraPolicyPatchRequest\x1a\x13.shale.CameraPolicy\x12=\n" +
-	"\x05Apply\x12\x1f.shale.CameraPolicyApplyRequest\x1a\x13.shale.CameraPolicy\x12A\n" +
-	"\x05Erase\x12\x16.shale.CameraPolicyRef\x1a .shale.CameraPolicyEraseResponse\x12G\n" +
+	"\x03Get\x12\x1d.shale.CameraPolicyGetRequest\x1a\x13.shale.CameraPolicy\x12G\n" +
 	"\x04List\x12\x1e.shale.CameraPolicyListRequest\x1a\x1f.shale.CameraPolicyListResponse\x12L\n" +
 	"\x05Watch\x12\x1f.shale.CameraPolicyWatchRequest\x1a .shale.CameraPolicyWatchResponse0\x01\x12?\n" +
 	"\x06Create\x12 .shale.CameraPolicyCreateRequest\x1a\x13.shale.CameraPolicy\x12D\n" +
@@ -3676,152 +3270,137 @@ const file_shale_camera_policy_svc_g_proto_rawDesc = "" +
 	"\x0fVerifyTransport\x12).shale.CameraPolicyVerifyTransportRequest\x1a\".shale.CameraPolicyObserveResponse\x12K\n" +
 	"\fObserveClock\x12&.shale.CameraPolicyObserveClockRequest\x1a\x13.shale.CameraDeviceB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_camera_policy_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_shale_camera_policy_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_shale_camera_policy_svc_g_proto_goTypes = []any{
 	(*CameraPolicyAddRequest)(nil),             // 0: shale.CameraPolicyAddRequest
 	(*CameraPolicyGetRequest)(nil),             // 1: shale.CameraPolicyGetRequest
 	(*CameraPolicyRef)(nil),                    // 2: shale.CameraPolicyRef
 	(*CameraPolicyRefByRevision)(nil),          // 3: shale.CameraPolicyRefByRevision
 	(*CameraPolicySelect)(nil),                 // 4: shale.CameraPolicySelect
-	(*CameraPolicyPatchRequest)(nil),           // 5: shale.CameraPolicyPatchRequest
-	(*CameraPolicyApplyRequest)(nil),           // 6: shale.CameraPolicyApplyRequest
-	(*CameraPolicyEraseResponse)(nil),          // 7: shale.CameraPolicyEraseResponse
-	(*CameraPolicyListRequest)(nil),            // 8: shale.CameraPolicyListRequest
-	(*CameraPolicyListResponse)(nil),           // 9: shale.CameraPolicyListResponse
-	(*CameraPolicyFilter)(nil),                 // 10: shale.CameraPolicyFilter
-	(*CameraPolicyWatchRequest)(nil),           // 11: shale.CameraPolicyWatchRequest
-	(*CameraPolicyWatchResponse)(nil),          // 12: shale.CameraPolicyWatchResponse
-	(*CameraPolicyWatchItem)(nil),              // 13: shale.CameraPolicyWatchItem
-	(*CameraPolicyCreateRequest)(nil),          // 14: shale.CameraPolicyCreateRequest
-	(*CameraPolicyActivateRequest)(nil),        // 15: shale.CameraPolicyActivateRequest
-	(*CameraPolicyEnrollRequest)(nil),          // 16: shale.CameraPolicyEnrollRequest
-	(*CameraPolicyObserveRequest)(nil),         // 17: shale.CameraPolicyObserveRequest
-	(*CameraPolicyObserveResponse)(nil),        // 18: shale.CameraPolicyObserveResponse
-	(*CameraPolicyTrustFactoryTLSRequest)(nil), // 19: shale.CameraPolicyTrustFactoryTLSRequest
-	(*CameraPolicyApproveTLSRequest)(nil),      // 20: shale.CameraPolicyApproveTLSRequest
-	(*CameraPolicyApproveTLSResponse)(nil),     // 21: shale.CameraPolicyApproveTLSResponse
-	(*CameraPolicyVerifyTransportRequest)(nil), // 22: shale.CameraPolicyVerifyTransportRequest
-	(*CameraPolicyObserveClockRequest)(nil),    // 23: shale.CameraPolicyObserveClockRequest
-	nil,                                        // 24: shale.CameraPolicyAddRequest.LabelsEntry
-	nil,                                        // 25: shale.CameraPolicyPatchRequest.LabelsEntry
-	(*TenantRef)(nil),                          // 26: shale.TenantRef
-	(*SiteRef)(nil),                            // 27: shale.SiteRef
-	(*CameraNetworkRef)(nil),                   // 28: shale.CameraNetworkRef
-	(*CameraPresetRef)(nil),                    // 29: shale.CameraPresetRef
-	(*CameraEnrollmentPolicy)(nil),             // 30: shale.CameraEnrollmentPolicy
-	(*timestamppb.Timestamp)(nil),              // 31: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                       // 32: shale.TenantSelect
-	(*SiteSelect)(nil),                         // 33: shale.SiteSelect
-	(*CameraNetworkSelect)(nil),                // 34: shale.CameraNetworkSelect
-	(*CameraPresetSelect)(nil),                 // 35: shale.CameraPresetSelect
-	(*patchpb.Patch)(nil),                      // 36: patch.Patch
-	(*CameraPolicy)(nil),                       // 37: shale.CameraPolicy
-	(*CameraBindingRef)(nil),                   // 38: shale.CameraBindingRef
-	(*CameraAssignmentRef)(nil),                // 39: shale.CameraAssignmentRef
-	(*CameraIdentityEvidence)(nil),             // 40: shale.CameraIdentityEvidence
-	(*CameraObservedEndpoint)(nil),             // 41: shale.CameraObservedEndpoint
-	(*CameraDevice)(nil),                       // 42: shale.CameraDevice
-	(*CameraBinding)(nil),                      // 43: shale.CameraBinding
-	(*CameraJob)(nil),                          // 44: shale.CameraJob
-	(*CameraFactoryTLSPlan)(nil),               // 45: shale.CameraFactoryTLSPlan
-	(*CameraTransportGrant)(nil),               // 46: shale.CameraTransportGrant
-	(*CameraDeviceTLSIdentity)(nil),            // 47: shale.CameraDeviceTLSIdentity
-	(*CameraJobRef)(nil),                       // 48: shale.CameraJobRef
-	(*CameraNetwork)(nil),                      // 49: shale.CameraNetwork
-	(*CameraDeviceRef)(nil),                    // 50: shale.CameraDeviceRef
-	(*CameraClockObservation)(nil),             // 51: shale.CameraClockObservation
+	(*CameraPolicyListRequest)(nil),            // 5: shale.CameraPolicyListRequest
+	(*CameraPolicyListResponse)(nil),           // 6: shale.CameraPolicyListResponse
+	(*CameraPolicyFilter)(nil),                 // 7: shale.CameraPolicyFilter
+	(*CameraPolicyWatchRequest)(nil),           // 8: shale.CameraPolicyWatchRequest
+	(*CameraPolicyWatchResponse)(nil),          // 9: shale.CameraPolicyWatchResponse
+	(*CameraPolicyWatchItem)(nil),              // 10: shale.CameraPolicyWatchItem
+	(*CameraPolicyCreateRequest)(nil),          // 11: shale.CameraPolicyCreateRequest
+	(*CameraPolicyActivateRequest)(nil),        // 12: shale.CameraPolicyActivateRequest
+	(*CameraPolicyEnrollRequest)(nil),          // 13: shale.CameraPolicyEnrollRequest
+	(*CameraPolicyObserveRequest)(nil),         // 14: shale.CameraPolicyObserveRequest
+	(*CameraPolicyObserveResponse)(nil),        // 15: shale.CameraPolicyObserveResponse
+	(*CameraPolicyTrustFactoryTLSRequest)(nil), // 16: shale.CameraPolicyTrustFactoryTLSRequest
+	(*CameraPolicyApproveTLSRequest)(nil),      // 17: shale.CameraPolicyApproveTLSRequest
+	(*CameraPolicyApproveTLSResponse)(nil),     // 18: shale.CameraPolicyApproveTLSResponse
+	(*CameraPolicyVerifyTransportRequest)(nil), // 19: shale.CameraPolicyVerifyTransportRequest
+	(*CameraPolicyObserveClockRequest)(nil),    // 20: shale.CameraPolicyObserveClockRequest
+	nil,                                        // 21: shale.CameraPolicyAddRequest.LabelsEntry
+	(*TenantRef)(nil),                          // 22: shale.TenantRef
+	(*SiteRef)(nil),                            // 23: shale.SiteRef
+	(*CameraNetworkRef)(nil),                   // 24: shale.CameraNetworkRef
+	(*CameraPresetRef)(nil),                    // 25: shale.CameraPresetRef
+	(*CameraEnrollmentPolicy)(nil),             // 26: shale.CameraEnrollmentPolicy
+	(*timestamppb.Timestamp)(nil),              // 27: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                       // 28: shale.TenantSelect
+	(*SiteSelect)(nil),                         // 29: shale.SiteSelect
+	(*CameraNetworkSelect)(nil),                // 30: shale.CameraNetworkSelect
+	(*CameraPresetSelect)(nil),                 // 31: shale.CameraPresetSelect
+	(*CameraPolicy)(nil),                       // 32: shale.CameraPolicy
+	(*CameraBindingRef)(nil),                   // 33: shale.CameraBindingRef
+	(*CameraAssignmentRef)(nil),                // 34: shale.CameraAssignmentRef
+	(*CameraIdentityEvidence)(nil),             // 35: shale.CameraIdentityEvidence
+	(*CameraObservedEndpoint)(nil),             // 36: shale.CameraObservedEndpoint
+	(*CameraDevice)(nil),                       // 37: shale.CameraDevice
+	(*CameraBinding)(nil),                      // 38: shale.CameraBinding
+	(*CameraJob)(nil),                          // 39: shale.CameraJob
+	(*CameraFactoryTLSPlan)(nil),               // 40: shale.CameraFactoryTLSPlan
+	(*CameraTransportGrant)(nil),               // 41: shale.CameraTransportGrant
+	(*CameraDeviceTLSIdentity)(nil),            // 42: shale.CameraDeviceTLSIdentity
+	(*CameraJobRef)(nil),                       // 43: shale.CameraJobRef
+	(*CameraNetwork)(nil),                      // 44: shale.CameraNetwork
+	(*CameraDeviceRef)(nil),                    // 45: shale.CameraDeviceRef
+	(*CameraClockObservation)(nil),             // 46: shale.CameraClockObservation
 }
 var file_shale_camera_policy_svc_g_proto_depIdxs = []int32{
-	26, // 0: shale.CameraPolicyAddRequest.tenant:type_name -> shale.TenantRef
-	27, // 1: shale.CameraPolicyAddRequest.site:type_name -> shale.SiteRef
-	24, // 2: shale.CameraPolicyAddRequest.labels:type_name -> shale.CameraPolicyAddRequest.LabelsEntry
-	28, // 3: shale.CameraPolicyAddRequest.network:type_name -> shale.CameraNetworkRef
-	29, // 4: shale.CameraPolicyAddRequest.preset:type_name -> shale.CameraPresetRef
-	30, // 5: shale.CameraPolicyAddRequest.enrollment:type_name -> shale.CameraEnrollmentPolicy
-	31, // 6: shale.CameraPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	22, // 0: shale.CameraPolicyAddRequest.tenant:type_name -> shale.TenantRef
+	23, // 1: shale.CameraPolicyAddRequest.site:type_name -> shale.SiteRef
+	21, // 2: shale.CameraPolicyAddRequest.labels:type_name -> shale.CameraPolicyAddRequest.LabelsEntry
+	24, // 3: shale.CameraPolicyAddRequest.network:type_name -> shale.CameraNetworkRef
+	25, // 4: shale.CameraPolicyAddRequest.preset:type_name -> shale.CameraPresetRef
+	26, // 5: shale.CameraPolicyAddRequest.enrollment:type_name -> shale.CameraEnrollmentPolicy
+	27, // 6: shale.CameraPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 7: shale.CameraPolicyGetRequest.ref:type_name -> shale.CameraPolicyRef
 	4,  // 8: shale.CameraPolicyGetRequest.select:type_name -> shale.CameraPolicySelect
 	3,  // 9: shale.CameraPolicyRef.revision:type_name -> shale.CameraPolicyRefByRevision
-	26, // 10: shale.CameraPolicyRefByRevision.tenant:type_name -> shale.TenantRef
-	32, // 11: shale.CameraPolicySelect.tenant:type_name -> shale.TenantSelect
-	33, // 12: shale.CameraPolicySelect.site:type_name -> shale.SiteSelect
-	34, // 13: shale.CameraPolicySelect.network:type_name -> shale.CameraNetworkSelect
-	35, // 14: shale.CameraPolicySelect.preset:type_name -> shale.CameraPresetSelect
-	2,  // 15: shale.CameraPolicyPatchRequest.ref:type_name -> shale.CameraPolicyRef
-	25, // 16: shale.CameraPolicyPatchRequest.labels:type_name -> shale.CameraPolicyPatchRequest.LabelsEntry
-	31, // 17: shale.CameraPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 18: shale.CameraPolicyApplyRequest.ref:type_name -> shale.CameraPolicyRef
-	36, // 19: shale.CameraPolicyApplyRequest.patch:type_name -> patch.Patch
-	10, // 20: shale.CameraPolicyListRequest.filters:type_name -> shale.CameraPolicyFilter
-	37, // 21: shale.CameraPolicyListResponse.items:type_name -> shale.CameraPolicy
-	2,  // 22: shale.CameraPolicyFilter.ref:type_name -> shale.CameraPolicyRef
-	26, // 23: shale.CameraPolicyFilter.tenant:type_name -> shale.TenantRef
-	27, // 24: shale.CameraPolicyFilter.site:type_name -> shale.SiteRef
-	28, // 25: shale.CameraPolicyFilter.network:type_name -> shale.CameraNetworkRef
-	10, // 26: shale.CameraPolicyWatchRequest.filters:type_name -> shale.CameraPolicyFilter
-	13, // 27: shale.CameraPolicyWatchResponse.items:type_name -> shale.CameraPolicyWatchItem
-	37, // 28: shale.CameraPolicyWatchItem.value:type_name -> shale.CameraPolicy
-	28, // 29: shale.CameraPolicyCreateRequest.network:type_name -> shale.CameraNetworkRef
-	29, // 30: shale.CameraPolicyCreateRequest.preset:type_name -> shale.CameraPresetRef
-	30, // 31: shale.CameraPolicyCreateRequest.enrollment:type_name -> shale.CameraEnrollmentPolicy
-	2,  // 32: shale.CameraPolicyActivateRequest.ref:type_name -> shale.CameraPolicyRef
-	31, // 33: shale.CameraPolicyActivateRequest.expected_network_version:type_name -> google.protobuf.Timestamp
-	38, // 34: shale.CameraPolicyEnrollRequest.binding:type_name -> shale.CameraBindingRef
-	2,  // 35: shale.CameraPolicyEnrollRequest.policy:type_name -> shale.CameraPolicyRef
-	39, // 36: shale.CameraPolicyObserveRequest.assignment:type_name -> shale.CameraAssignmentRef
-	40, // 37: shale.CameraPolicyObserveRequest.identity:type_name -> shale.CameraIdentityEvidence
-	41, // 38: shale.CameraPolicyObserveRequest.endpoints:type_name -> shale.CameraObservedEndpoint
-	42, // 39: shale.CameraPolicyObserveResponse.device:type_name -> shale.CameraDevice
-	43, // 40: shale.CameraPolicyObserveResponse.binding:type_name -> shale.CameraBinding
-	44, // 41: shale.CameraPolicyObserveResponse.job:type_name -> shale.CameraJob
-	45, // 42: shale.CameraPolicyObserveResponse.factory_tls_plan:type_name -> shale.CameraFactoryTLSPlan
-	46, // 43: shale.CameraPolicyObserveResponse.transport_grant:type_name -> shale.CameraTransportGrant
-	45, // 44: shale.CameraPolicyTrustFactoryTLSRequest.plan:type_name -> shale.CameraFactoryTLSPlan
-	47, // 45: shale.CameraPolicyTrustFactoryTLSRequest.identity:type_name -> shale.CameraDeviceTLSIdentity
-	48, // 46: shale.CameraPolicyApproveTLSRequest.ref:type_name -> shale.CameraJobRef
-	31, // 47: shale.CameraPolicyApproveTLSRequest.expected_network_version:type_name -> google.protobuf.Timestamp
-	37, // 48: shale.CameraPolicyApproveTLSResponse.policy:type_name -> shale.CameraPolicy
-	49, // 49: shale.CameraPolicyApproveTLSResponse.network:type_name -> shale.CameraNetwork
-	44, // 50: shale.CameraPolicyApproveTLSResponse.job:type_name -> shale.CameraJob
-	46, // 51: shale.CameraPolicyVerifyTransportRequest.grant:type_name -> shale.CameraTransportGrant
-	39, // 52: shale.CameraPolicyObserveClockRequest.assignment:type_name -> shale.CameraAssignmentRef
-	50, // 53: shale.CameraPolicyObserveClockRequest.device:type_name -> shale.CameraDeviceRef
-	51, // 54: shale.CameraPolicyObserveClockRequest.clock:type_name -> shale.CameraClockObservation
-	0,  // 55: shale.CameraPolicyService.Add:input_type -> shale.CameraPolicyAddRequest
-	1,  // 56: shale.CameraPolicyService.Get:input_type -> shale.CameraPolicyGetRequest
-	5,  // 57: shale.CameraPolicyService.Patch:input_type -> shale.CameraPolicyPatchRequest
-	6,  // 58: shale.CameraPolicyService.Apply:input_type -> shale.CameraPolicyApplyRequest
-	2,  // 59: shale.CameraPolicyService.Erase:input_type -> shale.CameraPolicyRef
-	8,  // 60: shale.CameraPolicyService.List:input_type -> shale.CameraPolicyListRequest
-	11, // 61: shale.CameraPolicyService.Watch:input_type -> shale.CameraPolicyWatchRequest
-	14, // 62: shale.CameraPolicyService.Create:input_type -> shale.CameraPolicyCreateRequest
-	15, // 63: shale.CameraPolicyService.Activate:input_type -> shale.CameraPolicyActivateRequest
-	16, // 64: shale.CameraPolicyService.Enroll:input_type -> shale.CameraPolicyEnrollRequest
-	17, // 65: shale.CameraPolicyService.Observe:input_type -> shale.CameraPolicyObserveRequest
-	19, // 66: shale.CameraPolicyService.TrustFactoryTLS:input_type -> shale.CameraPolicyTrustFactoryTLSRequest
-	20, // 67: shale.CameraPolicyService.ApproveTLS:input_type -> shale.CameraPolicyApproveTLSRequest
-	22, // 68: shale.CameraPolicyService.VerifyTransport:input_type -> shale.CameraPolicyVerifyTransportRequest
-	23, // 69: shale.CameraPolicyService.ObserveClock:input_type -> shale.CameraPolicyObserveClockRequest
-	37, // 70: shale.CameraPolicyService.Add:output_type -> shale.CameraPolicy
-	37, // 71: shale.CameraPolicyService.Get:output_type -> shale.CameraPolicy
-	37, // 72: shale.CameraPolicyService.Patch:output_type -> shale.CameraPolicy
-	37, // 73: shale.CameraPolicyService.Apply:output_type -> shale.CameraPolicy
-	7,  // 74: shale.CameraPolicyService.Erase:output_type -> shale.CameraPolicyEraseResponse
-	9,  // 75: shale.CameraPolicyService.List:output_type -> shale.CameraPolicyListResponse
-	12, // 76: shale.CameraPolicyService.Watch:output_type -> shale.CameraPolicyWatchResponse
-	37, // 77: shale.CameraPolicyService.Create:output_type -> shale.CameraPolicy
-	49, // 78: shale.CameraPolicyService.Activate:output_type -> shale.CameraNetwork
-	44, // 79: shale.CameraPolicyService.Enroll:output_type -> shale.CameraJob
-	18, // 80: shale.CameraPolicyService.Observe:output_type -> shale.CameraPolicyObserveResponse
-	18, // 81: shale.CameraPolicyService.TrustFactoryTLS:output_type -> shale.CameraPolicyObserveResponse
-	21, // 82: shale.CameraPolicyService.ApproveTLS:output_type -> shale.CameraPolicyApproveTLSResponse
-	18, // 83: shale.CameraPolicyService.VerifyTransport:output_type -> shale.CameraPolicyObserveResponse
-	42, // 84: shale.CameraPolicyService.ObserveClock:output_type -> shale.CameraDevice
-	70, // [70:85] is the sub-list for method output_type
-	55, // [55:70] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	22, // 10: shale.CameraPolicyRefByRevision.tenant:type_name -> shale.TenantRef
+	28, // 11: shale.CameraPolicySelect.tenant:type_name -> shale.TenantSelect
+	29, // 12: shale.CameraPolicySelect.site:type_name -> shale.SiteSelect
+	30, // 13: shale.CameraPolicySelect.network:type_name -> shale.CameraNetworkSelect
+	31, // 14: shale.CameraPolicySelect.preset:type_name -> shale.CameraPresetSelect
+	7,  // 15: shale.CameraPolicyListRequest.filters:type_name -> shale.CameraPolicyFilter
+	4,  // 16: shale.CameraPolicyListRequest.select:type_name -> shale.CameraPolicySelect
+	32, // 17: shale.CameraPolicyListResponse.items:type_name -> shale.CameraPolicy
+	2,  // 18: shale.CameraPolicyFilter.ref:type_name -> shale.CameraPolicyRef
+	22, // 19: shale.CameraPolicyFilter.tenant:type_name -> shale.TenantRef
+	23, // 20: shale.CameraPolicyFilter.site:type_name -> shale.SiteRef
+	24, // 21: shale.CameraPolicyFilter.network:type_name -> shale.CameraNetworkRef
+	7,  // 22: shale.CameraPolicyWatchRequest.filters:type_name -> shale.CameraPolicyFilter
+	10, // 23: shale.CameraPolicyWatchResponse.items:type_name -> shale.CameraPolicyWatchItem
+	32, // 24: shale.CameraPolicyWatchItem.value:type_name -> shale.CameraPolicy
+	24, // 25: shale.CameraPolicyCreateRequest.network:type_name -> shale.CameraNetworkRef
+	25, // 26: shale.CameraPolicyCreateRequest.preset:type_name -> shale.CameraPresetRef
+	26, // 27: shale.CameraPolicyCreateRequest.enrollment:type_name -> shale.CameraEnrollmentPolicy
+	2,  // 28: shale.CameraPolicyActivateRequest.ref:type_name -> shale.CameraPolicyRef
+	27, // 29: shale.CameraPolicyActivateRequest.expected_network_version:type_name -> google.protobuf.Timestamp
+	33, // 30: shale.CameraPolicyEnrollRequest.binding:type_name -> shale.CameraBindingRef
+	2,  // 31: shale.CameraPolicyEnrollRequest.policy:type_name -> shale.CameraPolicyRef
+	34, // 32: shale.CameraPolicyObserveRequest.assignment:type_name -> shale.CameraAssignmentRef
+	35, // 33: shale.CameraPolicyObserveRequest.identity:type_name -> shale.CameraIdentityEvidence
+	36, // 34: shale.CameraPolicyObserveRequest.endpoints:type_name -> shale.CameraObservedEndpoint
+	37, // 35: shale.CameraPolicyObserveResponse.device:type_name -> shale.CameraDevice
+	38, // 36: shale.CameraPolicyObserveResponse.binding:type_name -> shale.CameraBinding
+	39, // 37: shale.CameraPolicyObserveResponse.job:type_name -> shale.CameraJob
+	40, // 38: shale.CameraPolicyObserveResponse.factory_tls_plan:type_name -> shale.CameraFactoryTLSPlan
+	41, // 39: shale.CameraPolicyObserveResponse.transport_grant:type_name -> shale.CameraTransportGrant
+	40, // 40: shale.CameraPolicyTrustFactoryTLSRequest.plan:type_name -> shale.CameraFactoryTLSPlan
+	42, // 41: shale.CameraPolicyTrustFactoryTLSRequest.identity:type_name -> shale.CameraDeviceTLSIdentity
+	43, // 42: shale.CameraPolicyApproveTLSRequest.ref:type_name -> shale.CameraJobRef
+	27, // 43: shale.CameraPolicyApproveTLSRequest.expected_network_version:type_name -> google.protobuf.Timestamp
+	32, // 44: shale.CameraPolicyApproveTLSResponse.policy:type_name -> shale.CameraPolicy
+	44, // 45: shale.CameraPolicyApproveTLSResponse.network:type_name -> shale.CameraNetwork
+	39, // 46: shale.CameraPolicyApproveTLSResponse.job:type_name -> shale.CameraJob
+	41, // 47: shale.CameraPolicyVerifyTransportRequest.grant:type_name -> shale.CameraTransportGrant
+	34, // 48: shale.CameraPolicyObserveClockRequest.assignment:type_name -> shale.CameraAssignmentRef
+	45, // 49: shale.CameraPolicyObserveClockRequest.device:type_name -> shale.CameraDeviceRef
+	46, // 50: shale.CameraPolicyObserveClockRequest.clock:type_name -> shale.CameraClockObservation
+	0,  // 51: shale.CameraPolicyService.Add:input_type -> shale.CameraPolicyAddRequest
+	1,  // 52: shale.CameraPolicyService.Get:input_type -> shale.CameraPolicyGetRequest
+	5,  // 53: shale.CameraPolicyService.List:input_type -> shale.CameraPolicyListRequest
+	8,  // 54: shale.CameraPolicyService.Watch:input_type -> shale.CameraPolicyWatchRequest
+	11, // 55: shale.CameraPolicyService.Create:input_type -> shale.CameraPolicyCreateRequest
+	12, // 56: shale.CameraPolicyService.Activate:input_type -> shale.CameraPolicyActivateRequest
+	13, // 57: shale.CameraPolicyService.Enroll:input_type -> shale.CameraPolicyEnrollRequest
+	14, // 58: shale.CameraPolicyService.Observe:input_type -> shale.CameraPolicyObserveRequest
+	16, // 59: shale.CameraPolicyService.TrustFactoryTLS:input_type -> shale.CameraPolicyTrustFactoryTLSRequest
+	17, // 60: shale.CameraPolicyService.ApproveTLS:input_type -> shale.CameraPolicyApproveTLSRequest
+	19, // 61: shale.CameraPolicyService.VerifyTransport:input_type -> shale.CameraPolicyVerifyTransportRequest
+	20, // 62: shale.CameraPolicyService.ObserveClock:input_type -> shale.CameraPolicyObserveClockRequest
+	32, // 63: shale.CameraPolicyService.Add:output_type -> shale.CameraPolicy
+	32, // 64: shale.CameraPolicyService.Get:output_type -> shale.CameraPolicy
+	6,  // 65: shale.CameraPolicyService.List:output_type -> shale.CameraPolicyListResponse
+	9,  // 66: shale.CameraPolicyService.Watch:output_type -> shale.CameraPolicyWatchResponse
+	32, // 67: shale.CameraPolicyService.Create:output_type -> shale.CameraPolicy
+	44, // 68: shale.CameraPolicyService.Activate:output_type -> shale.CameraNetwork
+	39, // 69: shale.CameraPolicyService.Enroll:output_type -> shale.CameraJob
+	15, // 70: shale.CameraPolicyService.Observe:output_type -> shale.CameraPolicyObserveResponse
+	15, // 71: shale.CameraPolicyService.TrustFactoryTLS:output_type -> shale.CameraPolicyObserveResponse
+	18, // 72: shale.CameraPolicyService.ApproveTLS:output_type -> shale.CameraPolicyApproveTLSResponse
+	15, // 73: shale.CameraPolicyService.VerifyTransport:output_type -> shale.CameraPolicyObserveResponse
+	37, // 74: shale.CameraPolicyService.ObserveClock:output_type -> shale.CameraDevice
+	63, // [63:75] is the sub-list for method output_type
+	51, // [51:63] is the sub-list for method input_type
+	51, // [51:51] is the sub-list for extension type_name
+	51, // [51:51] is the sub-list for extension extendee
+	0,  // [0:51] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_policy_svc_g_proto_init() }
@@ -3846,7 +3425,7 @@ func file_shale_camera_policy_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_policy_svc_g_proto_rawDesc), len(file_shale_camera_policy_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

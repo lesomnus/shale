@@ -55,6 +55,9 @@ type Audit struct {
 	xxx_hidden_Id                  []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_TenantId            []byte                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_ActorId             []byte                 `protobuf:"bytes,8,opt,name=actor_id,json=actorId"`
+	xxx_hidden_CallerId            []byte                 `protobuf:"bytes,23,opt,name=caller_id,json=callerId"`
+	xxx_hidden_CallerTenantId      []byte                 `protobuf:"bytes,24,opt,name=caller_tenant_id,json=callerTenantId"`
+	xxx_hidden_Presence            string                 `protobuf:"bytes,25,opt,name=presence"`
 	xxx_hidden_TraceId             []byte                 `protobuf:"bytes,9,opt,name=trace_id,json=traceId"`
 	xxx_hidden_Action              string                 `protobuf:"bytes,10,opt,name=action"`
 	xxx_hidden_ObjectId            []byte                 `protobuf:"bytes,11,opt,name=object_id,json=objectId"`
@@ -115,6 +118,27 @@ func (x *Audit) GetActorId() []byte {
 		return x.xxx_hidden_ActorId
 	}
 	return nil
+}
+
+func (x *Audit) GetCallerId() []byte {
+	if x != nil {
+		return x.xxx_hidden_CallerId
+	}
+	return nil
+}
+
+func (x *Audit) GetCallerTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_CallerTenantId
+	}
+	return nil
+}
+
+func (x *Audit) GetPresence() string {
+	if x != nil {
+		return x.xxx_hidden_Presence
+	}
+	return ""
 }
 
 func (x *Audit) GetTraceId() []byte {
@@ -220,6 +244,24 @@ func (x *Audit) SetActorId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_ActorId = v
+}
+
+func (x *Audit) SetCallerId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_CallerId = v
+}
+
+func (x *Audit) SetCallerTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_CallerTenantId = v
+}
+
+func (x *Audit) SetPresence(v string) {
+	x.xxx_hidden_Presence = v
 }
 
 func (x *Audit) SetTraceId(v []byte) {
@@ -336,6 +378,11 @@ type Audit_builder struct {
 	// nobody asked for -- what a deployment does to itself before it serves
 	// anything.
 	ActorId []byte
+	// The credential holder on a represented call. NULL for a direct call.
+	// These facts do not widen who may read the trail.
+	CallerId       []byte
+	CallerTenantId []byte
+	Presence       string
 	// The trace the request belonged to, empty if it was not traced. Sixteen
 	// bytes as OpenTelemetry spells one, which is not a UUID however alike they
 	// look, so it is stored as what it is.
@@ -579,6 +626,9 @@ func (b0 Audit_builder) Build() *Audit {
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_TenantId = b.TenantId
 	x.xxx_hidden_ActorId = b.ActorId
+	x.xxx_hidden_CallerId = b.CallerId
+	x.xxx_hidden_CallerTenantId = b.CallerTenantId
+	x.xxx_hidden_Presence = b.Presence
 	x.xxx_hidden_TraceId = b.TraceId
 	x.xxx_hidden_Action = b.Action
 	x.xxx_hidden_ObjectId = b.ObjectId
@@ -598,11 +648,14 @@ var File_shale_payday_audit_proto protoreflect.FileDescriptor
 
 const file_shale_payday_audit_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/payday/audit.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe5\b\n" +
+	"\x18shale/payday/audit.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe8\t\n" +
 	"\x05Audit\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12#\n" +
 	"\ttenant_id\x18\x02 \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12!\n" +
-	"\bactor_id\x18\b \x01(\fB\x06\xea\x82\x16\x02\x10@R\aactorId\x12\x19\n" +
+	"\bactor_id\x18\b \x01(\fB\x06\xea\x82\x16\x02\x10@R\aactorId\x12%\n" +
+	"\tcaller_id\x18\x17 \x01(\fB\b\xea\x82\x16\x04\x10@8\x01R\bcallerId\x122\n" +
+	"\x10caller_tenant_id\x18\x18 \x01(\fB\b\xea\x82\x16\x04\x10@8\x01R\x0ecallerTenantId\x12\"\n" +
+	"\bpresence\x18\x19 \x01(\tB\x06\xea\x82\x16\x028\x01R\bpresence\x12\x19\n" +
 	"\btrace_id\x18\t \x01(\fR\atraceId\x12\x16\n" +
 	"\x06action\x18\n" +
 	" \x01(\tR\x06action\x12#\n" +
@@ -615,7 +668,7 @@ const file_shale_payday_audit_proto_rawDesc = "" +
 	"\x06domain\x18\x13 \x01(\rB\a\xea\x82\x16\x03\x82\x01\x00R\x06domain\x12\x16\n" +
 	"\x06fields\x18\x14 \x03(\rR\x06fields\x12\x1f\n" +
 	"\x06digest\x18\x15 \x01(\fB\a\xea\x82\x16\x03\x82\x01\x00R\x06digest\x12#\n" +
-	"\rdigest_fields\x18\x16 \x03(\rR\fdigestFields:\xbb\x04\xca\xfc\x15\xfd\x02\x12\x02\x10\x01\x1a\x17\x12\x06object\x1a\r\n" +
+	"\rdigest_fields\x18\x16 \x03(\rR\fdigestFields:\xbf\x04\xca\xfc\x15\x81\x03\x12\x06\x82\x01\x00\x8a\x01\x00\x1a\x17\x12\x06object\x1a\r\n" +
 	"\tobject_id\x10\v\x1a(\x12\x05trail\x1a\r\n" +
 	"\ttenant_id\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a8\x12\x0fby_actor_tenant\x1a\x13\n" +

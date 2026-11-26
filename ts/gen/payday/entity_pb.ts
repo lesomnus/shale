@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/entity.proto.
  */
 export const file_payday_entity: GenFile = /*@__PURE__*/
-  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkipQcKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24SIwoFdHJhaWwYCiABKAsyFC5wYXlkYXkuRW50aXR5LlRyYWlsGggKBlRlbmFudBpFCghUZW5hbnRlZBILCgN2aWEYASABKAkSDQoFZmllbGQYAiADKAkSDQoFc3RhbXAYAyABKAkSDgoGYWdyZWVzGAQgAygJGooBCgVUcmFpbBIxCghyZWNvcmRlZBgBIAEoCzIdLnBheWRheS5FbnRpdHkuVHJhaWwuUmVjb3JkZWRIABInCgNvZmYYAiABKAsyGC5wYXlkYXkuRW50aXR5LlRyYWlsLk9mZkgAGgoKCFJlY29yZGVkGhIKA09mZhILCgN3aHkYASABKAlCBQoDaG93GggKBkdsb2JhbBoqCgVFcmFzZRIhCgRoYXJkGAEgASgLMhMucGF5ZGF5LkVudGl0eS5IYXJkGgYKBEhhcmQasAEKBExpc3QSIwoFb3JkZXIYASADKAsyFC5wYXlkYXkuRW50aXR5Lk9yZGVyEhYKBHdpdGgYAiADKAsyCC5vcm0uUmVmEhQKAmJ5GAMgAygLMggub3JtLlJlZhIMCgRzaXplGAQgASgNEgsKA21heBgFIAEoDRIPCgdmaWx0ZXJzGAYgASgNEikKBm9yZGVycxgHIAMoCzIZLnBheWRheS5FbnRpdHkuTmFtZWRPcmRlcho/CgpOYW1lZE9yZGVyEgwKBG5hbWUYASABKAkSIwoFb3JkZXIYAiADKAsyFC5wYXlkYXkuRW50aXR5Lk9yZGVyGgcKBVdhdGNoGi4KBU9yZGVyEhcKBWZpZWxkGAEgASgLMggub3JtLlJlZhIMCgRkZXNjGAIgASgIQgkKB3RlbmFuY3kiYgoFRmllbGQSDgoGc2VjcmV0GAEgASgIEg8KB3N0YW1wZWQYAiABKAgSFwoIcGVyc29uYWwYAyABKAhCBaoBAggBEg0KBWV2ZW50GAUgASgISgQIBBAFUgppbXBlcnNvbmFsKrgBCgNPd24SEwoPT1dOX1VOU1BFQ0lGSUVEEAASDgoKT1dOX1RFTkFOVBABEg4KCk9XTl9IT0xERVIQAhINCglPV05fQVVESVQQAxIOCgpPV05fT1VUQk9YEAQSEAoMT1dOX0FSQ0hJVkVEEAUSDgoKT1dOX0FDQ0VTUxAGEhAKDE9XTl9ST1dfU0VBTBAHEgwKCE9XTl9PV0VEEAgSDQoJT1dOX0VWRU5UEAkSDAoIT1dOX0ZBQ1QQCkImWh9naXRodWIuY29tL2xlc29tbnVzL3BheWRheS9wZHBikgMCCAJiCGVkaXRpb25zcOgH", [file_orm_ref]);
+  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXki1QgKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24SIwoFdHJhaWwYCiABKAsyFC5wYXlkYXkuRW50aXR5LlRyYWlsEicKCGZvcm1lcmx5GAsgAygLMhUucGF5ZGF5LkVudGl0eS5Gb3JtZXISJgoHY29sdW1ucxgMIAMoCzIVLnBheWRheS5FbnRpdHkuQ29sdW1uGggKBlRlbmFudBpFCghUZW5hbnRlZBILCgN2aWEYASABKAkSDQoFZmllbGQYAiADKAkSDQoFc3RhbXAYAyABKAkSDgoGYWdyZWVzGAQgAygJGooBCgVUcmFpbBIxCghyZWNvcmRlZBgBIAEoCzIdLnBheWRheS5FbnRpdHkuVHJhaWwuUmVjb3JkZWRIABInCgNvZmYYAiABKAsyGC5wYXlkYXkuRW50aXR5LlRyYWlsLk9mZkgAGgoKCFJlY29yZGVkGhIKA09mZhILCgN3aHkYASABKAlCBQoDaG93GjQKBkNvbHVtbhINCgVmaWVsZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIMCgR3aWRlGAMgASgIGicKBkZvcm1lchIPCgdtZXNzYWdlGAEgASgJEgwKBG5hbWUYAiABKAkaCAoGR2xvYmFsGioKBUVyYXNlEiEKBGhhcmQYASABKAsyEy5wYXlkYXkuRW50aXR5LkhhcmQaBgoESGFyZBqwAQoETGlzdBIjCgVvcmRlchgBIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXISFgoEd2l0aBgCIAMoCzIILm9ybS5SZWYSFAoCYnkYAyADKAsyCC5vcm0uUmVmEgwKBHNpemUYBCABKA0SCwoDbWF4GAUgASgNEg8KB2ZpbHRlcnMYBiABKA0SKQoGb3JkZXJzGAcgAygLMhkucGF5ZGF5LkVudGl0eS5OYW1lZE9yZGVyGj8KCk5hbWVkT3JkZXISDAoEbmFtZRgBIAEoCRIjCgVvcmRlchgCIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXIaBwoFV2F0Y2gaLgoFT3JkZXISFwoFZmllbGQYASABKAsyCC5vcm0uUmVmEgwKBGRlc2MYAiABKAhCCQoHdGVuYW5jeSJiCgVGaWVsZBIOCgZzZWNyZXQYASABKAgSDwoHc3RhbXBlZBgCIAEoCBIXCghwZXJzb25hbBgDIAEoCEIFqgECCAESDQoFZXZlbnQYBSABKAhKBAgEEAVSCmltcGVyc29uYWwqgQIKA093bhITCg9PV05fVU5TUEVDSUZJRUQQABIOCgpPV05fVEVOQU5UEAESDgoKT1dOX0hPTERFUhACEg0KCU9XTl9BVURJVBADEg4KCk9XTl9PVVRCT1gQBBIQCgxPV05fQVJDSElWRUQQBRIOCgpPV05fQUNDRVNTEAYSEAoMT1dOX1JPV19TRUFMEAcSDAoIT1dOX09XRUQQCBINCglPV05fRVZFTlQQCRIMCghPV05fRkFDVBAKEhQKEE9XTl9OT1RJRklDQVRJT04QCxIcChhPV05fTk9USUZJQ0FUSU9OX1JFQ0VJUFQQDBITCg9PV05fRU5USVRMRU1FTlQQDUImWh9naXRodWIuY29tL2xlc29tbnVzL3BheWRheS9wZHBikgMCCAJiCGVkaXRpb25zcOgH", [file_orm_ref]);
 
 /**
  * Entity is what payday has to be told about a message that `orm` already
@@ -198,6 +198,59 @@ export type Entity = Message<"payday.Entity"> & {
    * @generated from field: payday.Entity.Trail trail = 10;
    */
   trail?: Entity_Trail | undefined;
+
+  /**
+   * Formerly is what this entity was called before a build renamed it: each
+   * name its message had, in this package, and the word a person wrote it as
+   * then where that was not the message's in kebab-case.
+   *
+   * 	formerly: [{message: "TenantDomain"}]
+   *
+   * # Why a rename says so
+   *
+   * Because an entity's name is written down where nothing moves it. Its
+   * table is named after it, and a migration finds a table by its name: one
+   * renamed is made again, empty, and the rows stay in the old one, which
+   * nothing reads again. The trail's archive labels each chunk with the word
+   * of the kind its rows are about, and a chunk is never written again: one
+   * labelled with a word nothing answers to is of no kind -- kept or destroyed
+   * by the pass about everything else rather than by its own kind's window,
+   * and not read with that kind's rows when they are checked against the
+   * trail. And a configuration file names a kind by that word
+   * (`audit.by.<kind>`).
+   *
+   * Said here, what an earlier build wrote under the old name is read as this
+   * entity's. `pd gen` writes `pd.TableRenames`, which `rename.Tables` moves
+   * before a migration -- the table, with its rows and what ent named after
+   * it -- and registers each name with `pdid.Formerly`, so that the old word
+   * and the old full name are this entity's domain wherever they are read
+   * back.
+   *
+   * # What it does not reach
+   *
+   * A name an earlier build sent rather than kept. The service is the new
+   * name's, and a caller of the old one is answered Unimplemented; its
+   * methods' names are new in the policy an app writes of them. And what the
+   * trail keeps of a write -- its `action`, the message a patch names -- stays
+   * as it was written, which is what a record of what happened is.
+   *
+   * Only ever added to: a deployment may migrate from any build before. And a
+   * name here is never given to another entity, as a domain number is not --
+   * `pd gen` refuses a schema in which one entity is called, or was called,
+   * what another was.
+   *
+   * @generated from field: repeated payday.Entity.Former formerly = 11;
+   */
+  formerly: Entity_Former[];
+
+  /**
+   * Columns replace the CLI table defaults. Paths name scalar fields, including
+   * fields reached through singular messages. A wide column appears only in
+   * `-o wide`; at least one column must appear in the ordinary table.
+   *
+   * @generated from field: repeated payday.Entity.Column columns = 12;
+   */
+  columns: Entity_Column[];
 };
 
 /**
@@ -427,6 +480,67 @@ export const Entity_Trail_OffSchema: GenMessage<Entity_Trail_Off> = /*@__PURE__*
   messageDesc(file_payday_entity, 0, 2, 1);
 
 /**
+ * @generated from message payday.Entity.Column
+ */
+export type Entity_Column = Message<"payday.Entity.Column"> & {
+  /**
+   * @generated from field: string field = 1;
+   */
+  field: string;
+
+  /**
+   * Title defaults to the upper-case field path.
+   *
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: bool wide = 3;
+   */
+  wide: boolean;
+};
+
+/**
+ * Describes the message payday.Entity.Column.
+ * Use `create(Entity_ColumnSchema)` to create a new message.
+ */
+export const Entity_ColumnSchema: GenMessage<Entity_Column> = /*@__PURE__*/
+  messageDesc(file_payday_entity, 0, 3);
+
+/**
+ * Former is a name an entity had. See [Entity.formerly].
+ *
+ * @generated from message payday.Entity.Former
+ */
+export type Entity_Former = Message<"payday.Entity.Former"> & {
+  /**
+   * Message is the message's name then, in this package: `TenantDomain`.
+   * Its table was that in lower case, and its full name that in this
+   * package.
+   *
+   * @generated from field: string message = 1;
+   */
+  message: string;
+
+  /**
+   * Name is the word a person wrote it as then. Left out, it is `message`
+   * in kebab-case, as an entity's `name` is -- so it is written only for an
+   * entity that declared its own then.
+   *
+   * @generated from field: string name = 2;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message payday.Entity.Former.
+ * Use `create(Entity_FormerSchema)` to create a new message.
+ */
+export const Entity_FormerSchema: GenMessage<Entity_Former> = /*@__PURE__*/
+  messageDesc(file_payday_entity, 0, 4);
+
+/**
  * Global is an entity that is not behind the wall -- a table the whole
  * deployment shares.
  *
@@ -444,7 +558,7 @@ export type Entity_Global = Message<"payday.Entity.Global"> & {
  * Use `create(Entity_GlobalSchema)` to create a new message.
  */
 export const Entity_GlobalSchema: GenMessage<Entity_Global> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 3);
+  messageDesc(file_payday_entity, 0, 5);
 
 /**
  * Erase says the row goes. See [Entity.erase].
@@ -487,7 +601,7 @@ export type Entity_Erase = Message<"payday.Entity.Erase"> & {
  * Use `create(Entity_EraseSchema)` to create a new message.
  */
 export const Entity_EraseSchema: GenMessage<Entity_Erase> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 4);
+  messageDesc(file_payday_entity, 0, 6);
 
 /**
  * @generated from message payday.Entity.Hard
@@ -500,7 +614,7 @@ export type Entity_Hard = Message<"payday.Entity.Hard"> & {
  * Use `create(Entity_HardSchema)` to create a new message.
  */
 export const Entity_HardSchema: GenMessage<Entity_Hard> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 5);
+  messageDesc(file_payday_entity, 0, 7);
 
 /**
  * List is how this entity is read a page at a time.
@@ -614,7 +728,7 @@ export type Entity_List = Message<"payday.Entity.List"> & {
  * Use `create(Entity_ListSchema)` to create a new message.
  */
 export const Entity_ListSchema: GenMessage<Entity_List> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 6);
+  messageDesc(file_payday_entity, 0, 8);
 
 /**
  * NamedOrder is an order of a list a request names.
@@ -640,17 +754,19 @@ export type Entity_NamedOrder = Message<"payday.Entity.NamedOrder"> & {
  * Use `create(Entity_NamedOrderSchema)` to create a new message.
  */
 export const Entity_NamedOrderSchema: GenMessage<Entity_NamedOrder> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 7);
+  messageDesc(file_payday_entity, 0, 9);
 
 /**
  * Watch is how this entity is read as it changes.
  *
  * What arrives is **state and never a delta**, and that is the decision the
- * rest follows from. A client keeps what it was last told about a row and
- * replaces it, so a stream that missed something is still correct -- the next
- * item about that row carries the whole of it. It also makes a stream that
- * fell behind *cheaper* rather than more expensive: a row that changed three
- * times is one row to read.
+ * rest follows from. A client replaces what it was last told about a row with
+ * the whole of it, so an item sent twice, or a row changed three times before
+ * it was read, is one row to read and nothing to replay. A stream that cannot
+ * keep up is ended, not let skip, and the one asked for again begins with
+ * everything that matches then. What the generated Watch says, and what it
+ * does not -- a row that leaves a caller's sight with no write to it -- is on
+ * the rpc.
  *
  * @generated from message payday.Entity.Watch
  */
@@ -662,7 +778,7 @@ export type Entity_Watch = Message<"payday.Entity.Watch"> & {
  * Use `create(Entity_WatchSchema)` to create a new message.
  */
 export const Entity_WatchSchema: GenMessage<Entity_Watch> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 8);
+  messageDesc(file_payday_entity, 0, 10);
 
 /**
  * Order is one column of a list's order.
@@ -700,7 +816,7 @@ export type Entity_Order = Message<"payday.Entity.Order"> & {
  * Use `create(Entity_OrderSchema)` to create a new message.
  */
 export const Entity_OrderSchema: GenMessage<Entity_Order> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 9);
+  messageDesc(file_payday_entity, 0, 11);
 
 /**
  * Field is what payday adds to one field of an entity.
@@ -1020,7 +1136,7 @@ export enum Own {
    * An app's past (payday#151): an event for each of its operations, and a
    * fact for each field of a resource from a moment on. These two are copied
    * only into an app that declares them, at the domains it chose -- see
-   * `payday.Past` -- and every other entity here is in every app.
+   * `payday.Past`. Notifications below are optional as well.
    *
    * @generated from enum value: OWN_EVENT = 9;
    */
@@ -1030,6 +1146,28 @@ export enum Own {
    * @generated from enum value: OWN_FACT = 10;
    */
   FACT = 10,
+
+  /**
+   * Notification storage is optional and numbered by App.notify. The public
+   * notification values are projections rather than these internal records.
+   *
+   * @generated from enum value: OWN_NOTIFICATION = 11;
+   */
+  NOTIFICATION = 11,
+
+  /**
+   * @generated from enum value: OWN_NOTIFICATION_RECEIPT = 12;
+   */
+  NOTIFICATION_RECEIPT = 12,
+
+  /**
+   * A tenant's copy of what it is entitled to (payday#185): one row for each
+   * grant a source issued it, copied only into an app that declares
+   * `payday.Entitlements`, at the domain it chose. See the `entitle` package.
+   *
+   * @generated from enum value: OWN_ENTITLEMENT = 13;
+   */
+  ENTITLEMENT = 13,
 }
 
 /**

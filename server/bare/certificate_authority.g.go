@@ -11,7 +11,6 @@ import (
 	ent "github.com/lesomnus/shale/internal/ent"
 	certificateauthority "github.com/lesomnus/shale/internal/ent/certificateauthority"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -34,11 +33,14 @@ type CertificateAuthorityServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCertificateAuthorityServiceServer(db *ent.Client, opts ...Option) api.CertificateAuthorityServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CertificateAuthorityServiceServer{Store: s.Store}
 }
@@ -156,7 +158,10 @@ func (st CertificateAuthorityServiceServer) create(ctx context.Context, req *api
 }
 
 func (s CertificateAuthorityServiceServer) Add(ctx context.Context, req *api.CertificateAuthorityAddRequest) (*api.CertificateAuthority, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +176,7 @@ func (s CertificateAuthorityServiceServer) Add(ctx context.Context, req *api.Cer
 	}
 
 	var stored *ent.CertificateAuthority
-	if snapshotOptions(s.Rec, api.CertificateAuthorityService_Add_FullMethodName).Value {
+	if s.images(api.CertificateAuthorityService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -197,10 +202,11 @@ func (s CertificateAuthorityServiceServer) Add(ctx context.Context, req *api.Cer
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.CertificateAuthorityService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.CertificateAuthority",
+		By:     api.CertificateAuthorityService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -254,7 +260,9 @@ func (s CertificateAuthorityServiceServer) Get(ctx context.Context, req *api.Cer
 	}
 
 	q := s.Db.CertificateAuthority.Query().Where(p)
-	CertificateAuthoritySelectInit(q, req.GetSelect())
+	if err := CertificateAuthoritySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -325,20 +333,31 @@ func CertificateAuthoritySelectedFields(m *api.CertificateAuthoritySelect) []str
 	return vs
 }
 
-func CertificateAuthoritySelect(q *ent.CertificateAuthorityQuery, m *api.CertificateAuthoritySelect) {
+// CertificateAuthoritySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CertificateAuthoritySelect(ctx context.Context, scope Scope, q *ent.CertificateAuthorityQuery, m *api.CertificateAuthoritySelect) error {
 	if !m.GetAll() {
 		fields := CertificateAuthoritySelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func CertificateAuthoritySelectInit(q *ent.CertificateAuthorityQuery, m *api.CertificateAuthoritySelect) {
+// CertificateAuthoritySelectInit is [CertificateAuthoritySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CertificateAuthoritySelectInit(ctx context.Context, scope Scope, q *ent.CertificateAuthorityQuery, m *api.CertificateAuthoritySelect) error {
 	if m != nil {
-		CertificateAuthoritySelect(q, m)
+		return CertificateAuthoritySelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CertificateAuthorityServiceServer) Patch(ctx context.Context, req *api.CertificateAuthorityPatchRequest) (*api.CertificateAuthority, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(certificateAuthorityOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -387,13 +406,6 @@ var certificateAuthorityOrmEntity = ormpatch.MustEntityOf(api.File_shale_certifi
 var certificateAuthorityPatchColumns = entpatch.Columns{
 	1: certificateauthority.FieldId, 4: certificateauthority.FieldAlias, 5: certificateauthority.FieldName, 6: certificateauthority.FieldDesc, 7: certificateauthority.FieldLabels, 8: certificateauthority.FieldCertificate, 9: certificateauthority.FieldPrivateKey, 10: certificateauthority.FieldState, 11: certificateauthority.FieldFingerprint, 12: certificateauthority.FieldDateExpires, 13: certificateauthority.FieldDateUpdated, 14: certificateauthority.FieldDateErased, 15: certificateauthority.FieldDateCreated, 16: certificateauthority.FieldDateActive, 17: certificateauthority.FieldDateRetired}
 
-func (s CertificateAuthorityServiceServer) Apply(ctx context.Context, req *api.CertificateAuthorityApplyRequest) (*api.CertificateAuthority, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.CertificateAuthorityService_Apply_FullMethodName)
-}
-
 func (s CertificateAuthorityServiceServer) apply(ctx context.Context, ref *api.CertificateAuthorityRef, doc *patchpb.Patch, by string) (*api.CertificateAuthority, error) {
 	plan := &ormpatch.Plan{Entity: certificateAuthorityOrmEntity}
 	if doc != nil {
@@ -415,7 +427,7 @@ func (s CertificateAuthorityServiceServer) apply(ctx context.Context, ref *api.C
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +448,7 @@ func (s CertificateAuthorityServiceServer) apply(ctx context.Context, ref *api.C
 	}
 
 	var previous *api.CertificateAuthority
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -505,7 +517,8 @@ func (s CertificateAuthorityServiceServer) apply(ctx context.Context, ref *api.C
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CertificateAuthority",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -522,6 +535,9 @@ func (s CertificateAuthorityServiceServer) apply(ctx context.Context, ref *api.C
 }
 
 func (s CertificateAuthorityServiceServer) Erase(ctx context.Context, req *api.CertificateAuthorityRef) (*api.CertificateAuthorityEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := CertificateAuthorityPick(req)
 	if err != nil {
 		return nil, err
@@ -531,7 +547,7 @@ func (s CertificateAuthorityServiceServer) Erase(ctx context.Context, req *api.C
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -542,8 +558,8 @@ func (s CertificateAuthorityServiceServer) Erase(ctx context.Context, req *api.C
 
 	var k any
 	var previous *api.CertificateAuthority
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.CertificateAuthorityService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.CertificateAuthorityService_Erase_FullMethodName)
 		var v *ent.CertificateAuthority
 		var err error
 		if images.Previous {
@@ -574,7 +590,8 @@ func (s CertificateAuthorityServiceServer) Erase(ctx context.Context, req *api.C
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.CertificateAuthority",
 			By:       api.CertificateAuthorityService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

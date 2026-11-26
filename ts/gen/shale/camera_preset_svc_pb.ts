@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
+import { file_orm } from "../orm_pb.js";
 import type { CameraIdentityEvidence } from "./camera_pb.js";
 import { file_shale_camera } from "./camera_pb.js";
 import type { CameraPreset, CameraPresetRule, CameraPresetSchema, CameraResolvedPresetSchema } from "./camera_preset_pb.js";
@@ -24,7 +23,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/camera_preset_svc.g.proto.
  */
 export const file_shale_camera_preset_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9jYW1lcmFfcHJlc2V0X3N2Yy5nLnByb3RvEgVzaGFsZSKcAwoWQ2FtZXJhUHJlc2V0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjkKBmxhYmVscxgHIAMoCzIpLnNoYWxlLkNhbWVyYVByZXNldEFkZFJlcXVlc3QuTGFiZWxzRW50cnkSGQoKcHJlc2V0X2tleRgIIAEoCUIFqgECCAISFwoIcmV2aXNpb24YCSABKAlCBaoBAggCEiYKBXJ1bGVzGAogAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiaAoWQ2FtZXJhUHJlc2V0R2V0UmVxdWVzdBIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQcmVzZXRSZWYSKQoGc2VsZWN0GAIgASgLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0U2VsZWN0IlwKD0NhbWVyYVByZXNldFJlZhIMCgJpZBgBIAEoDEgAEjQKCHJldmlzaW9uGAIgASgLMiAuc2hhbGUuQ2FtZXJhUHJlc2V0UmVmQnlSZXZpc2lvbkgAQgUKA2tleSJjChlDYW1lcmFQcmVzZXRSZWZCeVJldmlzaW9uEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhISCgpwcmVzZXRfa2V5GAggASgJEhAKCHJldmlzaW9uGAkgASgJIpgCChJDYW1lcmFQcmVzZXRTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIfCgRzaXRlGAMgASgLMhEuc2hhbGUuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhIKCnByZXNldF9rZXkYCCABKAgSEAoIcmV2aXNpb24YCSABKAgSDQoFcnVsZXMYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKkAgoYQ2FtZXJhUHJlc2V0UGF0Y2hSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSOwoGbGFiZWxzGA4gAygLMisuc2hhbGUuQ2FtZXJhUHJlc2V0UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiXAoYQ2FtZXJhUHJlc2V0QXBwbHlSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIisKGUNhbWVyYVByZXNldEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIogBChdDYW1lcmFQcmVzZXRMaXN0UmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJTChhDYW1lcmFQcmVzZXRMaXN0UmVzcG9uc2USIgoFaXRlbXMYASADKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSEwoEbmV4dBgCIAEoCUIFqgECCAIieQoSQ2FtZXJhUHJlc2V0RmlsdGVyEiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYiZAoYQ2FtZXJhUHJlc2V0V2F0Y2hSZXF1ZXN0EioKB2ZpbHRlcnMYASADKAsyGS5zaGFsZS5DYW1lcmFQcmVzZXRGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiSAoZQ2FtZXJhUHJlc2V0V2F0Y2hSZXNwb25zZRIrCgVpdGVtcxgBIAMoCzIcLnNoYWxlLkNhbWVyYVByZXNldFdhdGNoSXRlbSJeChVDYW1lcmFQcmVzZXRXYXRjaEl0ZW0SCgoCaWQYASABKAwSIgoFdmFsdWUYAiABKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiLMAQoZQ2FtZXJhUHJlc2V0Q3JlYXRlUmVxdWVzdBIgCgZ0ZW5hbnQYASABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgCIAEoCzIOLnNoYWxlLlNpdGVSZWYSGQoKcHJlc2V0X2tleRgDIAEoCUIFqgECCAISFwoIcmV2aXNpb24YBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEiYKBXJ1bGVzGAYgAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZSK8AQogQ2FtZXJhUHJlc2V0UmVzb2x2ZUZvckpvYlJlcXVlc3QSIAoDam9iGAEgASgLMhMuc2hhbGUuQ2FtZXJhSm9iUmVmEh8KEGxlYXNlX2dlbmVyYXRpb24YAiABKANCBaoBAggCEiQKFWFzc2lnbm1lbnRfZ2VuZXJhdGlvbhgDIAEoA0IFqgECCAISLwoIaWRlbnRpdHkYBCABKAsyHS5zaGFsZS5DYW1lcmFJZGVudGl0eUV2aWRlbmNlMvsEChNDYW1lcmFQcmVzZXRTZXJ2aWNlEjkKA0FkZBIdLnNoYWxlLkNhbWVyYVByZXNldEFkZFJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSOQoDR2V0Eh0uc2hhbGUuQ2FtZXJhUHJlc2V0R2V0UmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBI9CgVQYXRjaBIfLnNoYWxlLkNhbWVyYVByZXNldFBhdGNoUmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBI9CgVBcHBseRIfLnNoYWxlLkNhbWVyYVByZXNldEFwcGx5UmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBJBCgVFcmFzZRIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhogLnNoYWxlLkNhbWVyYVByZXNldEVyYXNlUmVzcG9uc2USRwoETGlzdBIeLnNoYWxlLkNhbWVyYVByZXNldExpc3RSZXF1ZXN0Gh8uc2hhbGUuQ2FtZXJhUHJlc2V0TGlzdFJlc3BvbnNlEkwKBVdhdGNoEh8uc2hhbGUuQ2FtZXJhUHJlc2V0V2F0Y2hSZXF1ZXN0GiAuc2hhbGUuQ2FtZXJhUHJlc2V0V2F0Y2hSZXNwb25zZTABEj8KBkNyZWF0ZRIgLnNoYWxlLkNhbWVyYVByZXNldENyZWF0ZVJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSVQoNUmVzb2x2ZUZvckpvYhInLnNoYWxlLkNhbWVyYVByZXNldFJlc29sdmVGb3JKb2JSZXF1ZXN0Ghsuc2hhbGUuQ2FtZXJhUmVzb2x2ZWRQcmVzZXRCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera, file_shale_camera_preset, file_shale_camera_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
+  fileDesc("Ch9zaGFsZS9jYW1lcmFfcHJlc2V0X3N2Yy5nLnByb3RvEgVzaGFsZSKkAwoWQ2FtZXJhUHJlc2V0QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISOQoGbGFiZWxzGAcgAygLMikuc2hhbGUuQ2FtZXJhUHJlc2V0QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIZCgpwcmVzZXRfa2V5GAggASgJQgWqAQIIAhIXCghyZXZpc2lvbhgJIAEoCUIFqgECCAISJgoFcnVsZXMYCiADKAsyFy5zaGFsZS5DYW1lcmFQcmVzZXRSdWxlEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJoChZDYW1lcmFQcmVzZXRHZXRSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIpCgZzZWxlY3QYAiABKAsyGS5zaGFsZS5DYW1lcmFQcmVzZXRTZWxlY3QiZAoPQ2FtZXJhUHJlc2V0UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABI0CghyZXZpc2lvbhgCIAEoCzIgLnNoYWxlLkNhbWVyYVByZXNldFJlZkJ5UmV2aXNpb25IAEIFCgNrZXkiYwoZQ2FtZXJhUHJlc2V0UmVmQnlSZXZpc2lvbhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSEgoKcHJlc2V0X2tleRgIIAEoCRIQCghyZXZpc2lvbhgJIAEoCSKYAgoSQ2FtZXJhUHJlc2V0U2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSHwoEc2l0ZRgDIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBISCgpwcmVzZXRfa2V5GAggASgIEhAKCHJldmlzaW9uGAkgASgIEg0KBXJ1bGVzGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiswEKF0NhbWVyYVByZXNldExpc3RSZXF1ZXN0EioKB2ZpbHRlcnMYASADKAsyGS5zaGFsZS5DYW1lcmFQcmVzZXRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEikKBnNlbGVjdBgGIAEoCzIZLnNoYWxlLkNhbWVyYVByZXNldFNlbGVjdCJTChhDYW1lcmFQcmVzZXRMaXN0UmVzcG9uc2USIgoFaXRlbXMYASADKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSEwoEbmV4dBgCIAEoCUIFqgECCAIieQoSQ2FtZXJhUHJlc2V0RmlsdGVyEiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYiZAoYQ2FtZXJhUHJlc2V0V2F0Y2hSZXF1ZXN0EioKB2ZpbHRlcnMYASADKAsyGS5zaGFsZS5DYW1lcmFQcmVzZXRGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiSAoZQ2FtZXJhUHJlc2V0V2F0Y2hSZXNwb25zZRIrCgVpdGVtcxgBIAMoCzIcLnNoYWxlLkNhbWVyYVByZXNldFdhdGNoSXRlbSJeChVDYW1lcmFQcmVzZXRXYXRjaEl0ZW0SCgoCaWQYASABKAwSIgoFdmFsdWUYAiABKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiLMAQoZQ2FtZXJhUHJlc2V0Q3JlYXRlUmVxdWVzdBIgCgZ0ZW5hbnQYASABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgCIAEoCzIOLnNoYWxlLlNpdGVSZWYSGQoKcHJlc2V0X2tleRgDIAEoCUIFqgECCAISFwoIcmV2aXNpb24YBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEiYKBXJ1bGVzGAYgAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZSK8AQogQ2FtZXJhUHJlc2V0UmVzb2x2ZUZvckpvYlJlcXVlc3QSIAoDam9iGAEgASgLMhMuc2hhbGUuQ2FtZXJhSm9iUmVmEh8KEGxlYXNlX2dlbmVyYXRpb24YAiABKANCBaoBAggCEiQKFWFzc2lnbm1lbnRfZ2VuZXJhdGlvbhgDIAEoA0IFqgECCAISLwoIaWRlbnRpdHkYBCABKAsyHS5zaGFsZS5DYW1lcmFJZGVudGl0eUV2aWRlbmNlMroDChNDYW1lcmFQcmVzZXRTZXJ2aWNlEjkKA0FkZBIdLnNoYWxlLkNhbWVyYVByZXNldEFkZFJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSOQoDR2V0Eh0uc2hhbGUuQ2FtZXJhUHJlc2V0R2V0UmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBJHCgRMaXN0Eh4uc2hhbGUuQ2FtZXJhUHJlc2V0TGlzdFJlcXVlc3QaHy5zaGFsZS5DYW1lcmFQcmVzZXRMaXN0UmVzcG9uc2USTAoFV2F0Y2gSHy5zaGFsZS5DYW1lcmFQcmVzZXRXYXRjaFJlcXVlc3QaIC5zaGFsZS5DYW1lcmFQcmVzZXRXYXRjaFJlc3BvbnNlMAESPwoGQ3JlYXRlEiAuc2hhbGUuQ2FtZXJhUHJlc2V0Q3JlYXRlUmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBJVCg1SZXNvbHZlRm9ySm9iEicuc2hhbGUuQ2FtZXJhUHJlc2V0UmVzb2x2ZUZvckpvYlJlcXVlc3QaGy5zaGFsZS5DYW1lcmFSZXNvbHZlZFByZXNldEIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_shale_camera, file_shale_camera_preset, file_shale_camera_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
 
 /**
  * @generated from message shale.CameraPresetAddRequest
@@ -249,112 +248,6 @@ export const CameraPresetSelectSchema: GenMessage<CameraPresetSelect> = /*@__PUR
   messageDesc(file_shale_camera_preset_svc_g, 4);
 
 /**
- * @generated from message shale.CameraPresetPatchRequest
- */
-export type CameraPresetPatchRequest = Message<"shale.CameraPresetPatchRequest"> & {
-  /**
-   * @generated from field: shale.CameraPresetRef ref = 1;
-   */
-  ref?: CameraPresetRef | undefined;
-
-  /**
-   * @generated from field: string alias = 8;
-   */
-  alias: string;
-
-  /**
-   * @generated from field: string name = 10;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string desc = 12;
-   */
-  desc: string;
-
-  /**
-   * @generated from field: map<string, string> labels = 14;
-   */
-  labels: { [key: string]: string };
-
-  /**
-   * The version this update requires the stored date_updated to be.
-   * It is a precondition, not a write: the update applies only if the row
-   * still holds this value, and the server stamps the new version itself.
-   * Setting it together with date_updated_force is an error --
-   * the version is the token every client's compare-and-swap is measured
-   * against, so it is not the caller's to choose.
-   *
-   * @generated from field: google.protobuf.Timestamp date_updated = 26;
-   */
-  dateUpdated?: Timestamp | undefined;
-
-  /**
-   * Update whatever the stored date_updated is, with no precondition.
-   * The server still stamps a new version, so other clients' tokens are
-   * invalidated as usual; this declines the check for THIS update only.
-   * One of date_updated or this must be set. An omitted version is
-   * refused rather than assumed, because an unset field cannot be told
-   * apart from a caller who never considered locking at all.
-   *
-   * @generated from field: bool date_updated_force = 27;
-   */
-  dateUpdatedForce: boolean;
-};
-
-/**
- * Describes the message shale.CameraPresetPatchRequest.
- * Use `create(CameraPresetPatchRequestSchema)` to create a new message.
- */
-export const CameraPresetPatchRequestSchema: GenMessage<CameraPresetPatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 5);
-
-/**
- * @generated from message shale.CameraPresetApplyRequest
- */
-export type CameraPresetApplyRequest = Message<"shale.CameraPresetApplyRequest"> & {
-  /**
-   * @generated from field: shale.CameraPresetRef ref = 1;
-   */
-  ref?: CameraPresetRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.CameraPresetApplyRequest.
- * Use `create(CameraPresetApplyRequestSchema)` to create a new message.
- */
-export const CameraPresetApplyRequestSchema: GenMessage<CameraPresetApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 6);
-
-/**
- * @generated from message shale.CameraPresetEraseResponse
- */
-export type CameraPresetEraseResponse = Message<"shale.CameraPresetEraseResponse"> & {
-  /**
-   * Erased is whether this call is the one that erased the row.
-   *
-   * False for a row that was already gone, was never there, or is out
-   * of this caller's reach -- which are one answer on purpose, and the
-   * reason the RPC does not fail instead.
-   *
-   * @generated from field: bool erased = 1;
-   */
-  erased: boolean;
-};
-
-/**
- * Describes the message shale.CameraPresetEraseResponse.
- * Use `create(CameraPresetEraseResponseSchema)` to create a new message.
- */
-export const CameraPresetEraseResponseSchema: GenMessage<CameraPresetEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 7);
-
-/**
  * @generated from message shale.CameraPresetListRequest
  */
 export type CameraPresetListRequest = Message<"shale.CameraPresetListRequest"> & {
@@ -394,6 +287,20 @@ export type CameraPresetListRequest = Message<"shale.CameraPresetListRequest"> &
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.CameraPresetSelect select = 6;
+   */
+  select?: CameraPresetSelect | undefined;
 };
 
 /**
@@ -401,7 +308,7 @@ export type CameraPresetListRequest = Message<"shale.CameraPresetListRequest"> &
  * Use `create(CameraPresetListRequestSchema)` to create a new message.
  */
 export const CameraPresetListRequestSchema: GenMessage<CameraPresetListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 8);
+  messageDesc(file_shale_camera_preset_svc_g, 5);
 
 /**
  * @generated from message shale.CameraPresetListResponse
@@ -431,7 +338,7 @@ export type CameraPresetListResponse = Message<"shale.CameraPresetListResponse">
  * Use `create(CameraPresetListResponseSchema)` to create a new message.
  */
 export const CameraPresetListResponseSchema: GenMessage<CameraPresetListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 9);
+  messageDesc(file_shale_camera_preset_svc_g, 6);
 
 /**
  * @generated from message shale.CameraPresetFilter
@@ -458,20 +365,22 @@ export type CameraPresetFilter = Message<"shale.CameraPresetFilter"> & {
  * Use `create(CameraPresetFilterSchema)` to create a new message.
  */
 export const CameraPresetFilterSchema: GenMessage<CameraPresetFilter> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 10);
+  messageDesc(file_shale_camera_preset_svc_g, 7);
 
 /**
  * @generated from message shale.CameraPresetWatchRequest
  */
 export type CameraPresetWatchRequest = Message<"shale.CameraPresetWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated shale.CameraPresetFilter filters = 1;
    */
@@ -494,7 +403,7 @@ export type CameraPresetWatchRequest = Message<"shale.CameraPresetWatchRequest">
  * Use `create(CameraPresetWatchRequestSchema)` to create a new message.
  */
 export const CameraPresetWatchRequestSchema: GenMessage<CameraPresetWatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 11);
+  messageDesc(file_shale_camera_preset_svc_g, 8);
 
 /**
  * @generated from message shale.CameraPresetWatchResponse
@@ -513,7 +422,7 @@ export type CameraPresetWatchResponse = Message<"shale.CameraPresetWatchResponse
  * Use `create(CameraPresetWatchResponseSchema)` to create a new message.
  */
 export const CameraPresetWatchResponseSchema: GenMessage<CameraPresetWatchResponse> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 12);
+  messageDesc(file_shale_camera_preset_svc_g, 9);
 
 /**
  * @generated from message shale.CameraPresetWatchItem
@@ -528,7 +437,7 @@ export type CameraPresetWatchItem = Message<"shale.CameraPresetWatchItem"> & {
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -536,7 +445,8 @@ export type CameraPresetWatchItem = Message<"shale.CameraPresetWatchItem"> & {
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: shale.CameraPreset value = 2;
    */
@@ -560,7 +470,7 @@ export type CameraPresetWatchItem = Message<"shale.CameraPresetWatchItem"> & {
  * Use `create(CameraPresetWatchItemSchema)` to create a new message.
  */
 export const CameraPresetWatchItemSchema: GenMessage<CameraPresetWatchItem> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 13);
+  messageDesc(file_shale_camera_preset_svc_g, 10);
 
 /**
  * @generated from message shale.CameraPresetCreateRequest
@@ -602,7 +512,7 @@ export type CameraPresetCreateRequest = Message<"shale.CameraPresetCreateRequest
  * Use `create(CameraPresetCreateRequestSchema)` to create a new message.
  */
 export const CameraPresetCreateRequestSchema: GenMessage<CameraPresetCreateRequest> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 14);
+  messageDesc(file_shale_camera_preset_svc_g, 11);
 
 /**
  * @generated from message shale.CameraPresetResolveForJobRequest
@@ -634,7 +544,7 @@ export type CameraPresetResolveForJobRequest = Message<"shale.CameraPresetResolv
  * Use `create(CameraPresetResolveForJobRequestSchema)` to create a new message.
  */
 export const CameraPresetResolveForJobRequestSchema: GenMessage<CameraPresetResolveForJobRequest> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset_svc_g, 15);
+  messageDesc(file_shale_camera_preset_svc_g, 12);
 
 /**
  * @generated from service shale.CameraPresetService
@@ -661,36 +571,6 @@ export const CameraPresetService: GenService<{
     output: typeof CameraPresetSchema;
   },
   /**
-   * Patch updates an existing CameraPreset
-   *
-   * @generated from rpc shale.CameraPresetService.Patch
-   */
-  patch: {
-    methodKind: "unary";
-    input: typeof CameraPresetPatchRequestSchema;
-    output: typeof CameraPresetSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing CameraPreset
-   *
-   * @generated from rpc shale.CameraPresetService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof CameraPresetApplyRequestSchema;
-    output: typeof CameraPresetSchema;
-  },
-  /**
-   * Erase deletes a CameraPreset
-   *
-   * @generated from rpc shale.CameraPresetService.Erase
-   */
-  erase: {
-    methodKind: "unary";
-    input: typeof CameraPresetRefSchema;
-    output: typeof CameraPresetEraseResponseSchema;
-  },
-  /**
    * List reads CameraPresets a page at a time.
    *
    * @generated from rpc shale.CameraPresetService.List
@@ -703,15 +583,23 @@ export const CameraPresetService: GenService<{
   /**
    * Watch the CameraPresets this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc shale.CameraPresetService.Watch
    */

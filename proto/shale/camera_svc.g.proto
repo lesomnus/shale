@@ -2,7 +2,7 @@ edition = "2023";
 package shale;
 
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
+import "orm.proto";
 import "shale/camera.proto";
 import "shale/camera_preset.proto";
 import "shale/host_svc.g.proto";
@@ -19,23 +19,27 @@ service CameraNetworkService {
   rpc Get(CameraNetworkGetRequest) returns (CameraNetwork);
   // Patch updates an existing CameraNetwork
   rpc Patch(CameraNetworkPatchRequest) returns (CameraNetwork);
-  // Apply applies a patch document to an existing CameraNetwork
-  rpc Apply(CameraNetworkApplyRequest) returns (CameraNetwork);
-  // Erase deletes a CameraNetwork
-  rpc Erase(CameraNetworkRef) returns (CameraNetworkEraseResponse);
   // List reads CameraNetworks a page at a time.
   rpc List(CameraNetworkListRequest) returns (CameraNetworkListResponse);
   // Watch the CameraNetworks this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(CameraNetworkWatchRequest) returns (stream CameraNetworkWatchResponse);
   rpc Configure(CameraNetworkConfigureRequest) returns (CameraNetwork);
 }
@@ -47,23 +51,27 @@ service CameraDeviceService {
   rpc Get(CameraDeviceGetRequest) returns (CameraDevice);
   // Patch updates an existing CameraDevice
   rpc Patch(CameraDevicePatchRequest) returns (CameraDevice);
-  // Apply applies a patch document to an existing CameraDevice
-  rpc Apply(CameraDeviceApplyRequest) returns (CameraDevice);
-  // Erase deletes a CameraDevice
-  rpc Erase(CameraDeviceRef) returns (CameraDeviceEraseResponse);
   // List reads CameraDevices a page at a time.
   rpc List(CameraDeviceListRequest) returns (CameraDeviceListResponse);
   // Watch the CameraDevices this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(CameraDeviceWatchRequest) returns (stream CameraDeviceWatchResponse);
   rpc Claim(CameraDeviceClaimRequest) returns (CameraDevice);
   rpc Observe(CameraDeviceObserveRequest) returns (CameraDevice);
@@ -76,23 +84,27 @@ service CameraAssignmentService {
   rpc Get(CameraAssignmentGetRequest) returns (CameraAssignment);
   // Patch updates an existing CameraAssignment
   rpc Patch(CameraAssignmentPatchRequest) returns (CameraAssignment);
-  // Apply applies a patch document to an existing CameraAssignment
-  rpc Apply(CameraAssignmentApplyRequest) returns (CameraAssignment);
-  // Erase deletes a CameraAssignment
-  rpc Erase(CameraAssignmentRef) returns (CameraAssignmentEraseResponse);
   // List reads CameraAssignments a page at a time.
   rpc List(CameraAssignmentListRequest) returns (CameraAssignmentListResponse);
   // Watch the CameraAssignments this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(CameraAssignmentWatchRequest) returns (stream CameraAssignmentWatchResponse);
   rpc Assign(CameraAssignmentAssignRequest) returns (CameraAssignment);
   rpc Snapshot(CameraAssignmentSnapshotRequest) returns (CameraCatalogSnapshot);
@@ -110,23 +122,27 @@ service CameraBindingService {
   rpc Get(CameraBindingGetRequest) returns (CameraBinding);
   // Patch updates an existing CameraBinding
   rpc Patch(CameraBindingPatchRequest) returns (CameraBinding);
-  // Apply applies a patch document to an existing CameraBinding
-  rpc Apply(CameraBindingApplyRequest) returns (CameraBinding);
-  // Erase deletes a CameraBinding
-  rpc Erase(CameraBindingRef) returns (CameraBindingEraseResponse);
   // List reads CameraBindings a page at a time.
   rpc List(CameraBindingListRequest) returns (CameraBindingListResponse);
   // Watch the CameraBindings this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(CameraBindingWatchRequest) returns (stream CameraBindingWatchResponse);
   rpc Bind(CameraBindingBindRequest) returns (CameraBinding);
   rpc SetCollect(CameraBindingSetCollectRequest) returns (CameraBinding);
@@ -139,23 +155,27 @@ service CameraJobService {
   rpc Get(CameraJobGetRequest) returns (CameraJob);
   // Patch updates an existing CameraJob
   rpc Patch(CameraJobPatchRequest) returns (CameraJob);
-  // Apply applies a patch document to an existing CameraJob
-  rpc Apply(CameraJobApplyRequest) returns (CameraJob);
-  // Erase deletes a CameraJob
-  rpc Erase(CameraJobRef) returns (CameraJobEraseResponse);
   // List reads CameraJobs a page at a time.
   rpc List(CameraJobListRequest) returns (CameraJobListResponse);
   // Watch the CameraJobs this caller may see, as they are now and as they change.
   //
-  // What arrives is **state and never a delta**, so a client converges rather
-  // than replays: it keeps what it was last told about a row and replaces it.
-  // An event it did not receive is one it does not need, since the next one
-  // about that row carries the whole of it.
+  // What arrives is **state and never a delta**: an item is the whole of a row
+  // as this caller's Get reads it when the item is sent, and a client replaces
+  // what it held of that row. An item is sent when a write touches a row the
+  // stream is about, so a row erased, or taken out of this caller's sight by a
+  // write, arrives with no value. A row that leaves this caller's sight with no
+  // write to it -- what they may see changed, not the row -- is not said, and a
+  // client goes on holding it for as long as the stream is open.
+  //
+  // A stream that cannot keep up is ended, and is not let skip: an open stream
+  // has missed nothing. One that ended has, and asking again is how it is put
+  // right, since the first message of the new one is everything that matches
+  // then; a row that stopped matching in between is in no message of either.
   //
   // The first message is everything that matches right now, so a client does
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
-  // being read -- and that is harmless for the same reason.
+  // being read -- and that is harmless, since each is the whole row.
   rpc Watch(CameraJobWatchRequest) returns (stream CameraJobWatchResponse);
   rpc Create(CameraJobCreateRequest) returns (CameraJob);
   rpc Claim(CameraJobClaimRequest) returns (CameraJob);
@@ -164,7 +184,7 @@ service CameraJobService {
 }
 
 message CameraNetworkAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -176,7 +196,7 @@ message CameraNetworkAddRequest {
   repeated string seeds = 10;
   string interface_hint = 11 [features.field_presence = IMPLICIT];
   int64 revision = 12 [features.field_presence = IMPLICIT];
-  bytes active_policy_id = 16;
+  bytes active_policy_id = 16 [(orm.field) = {type: TYPE_UUID}];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -187,7 +207,7 @@ message CameraNetworkGetRequest {
 
 message CameraNetworkRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   }
 }
 
@@ -221,7 +241,7 @@ message CameraNetworkPatchRequest {
   repeated string seeds = 20;
   string interface_hint = 22;
   int64 revision = 24;
-  bytes active_policy_id = 32;
+  bytes active_policy_id = 32 [(orm.field) = {type: TYPE_UUID}];
   // Clear active_policy_id instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
@@ -241,20 +261,6 @@ message CameraNetworkPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message CameraNetworkApplyRequest {
-  CameraNetworkRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message CameraNetworkEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
 }
 
 message CameraNetworkListRequest {
@@ -278,6 +284,16 @@ message CameraNetworkListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  CameraNetworkSelect select = 6;
 }
 
 message CameraNetworkListResponse {
@@ -300,13 +316,15 @@ message CameraNetworkFilter {
 }
 
 message CameraNetworkWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated CameraNetworkFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -327,7 +345,7 @@ message CameraNetworkWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -335,7 +353,8 @@ message CameraNetworkWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   CameraNetwork value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -361,7 +380,7 @@ message CameraNetworkConfigureRequest {
 }
 
 message CameraDeviceAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -373,7 +392,7 @@ message CameraDeviceAddRequest {
   CameraIdentityEvidence identity = 10;
   repeated CameraObservedEndpoint endpoints = 11;
   int64 observation_revision = 12 [features.field_presence = IMPLICIT];
-  bytes active_job_id = 16;
+  bytes active_job_id = 16 [(orm.field) = {type: TYPE_UUID}];
   int64 claim_generation = 17 [features.field_presence = IMPLICIT];
   CameraEnrollmentObservation enrollment = 18;
   CameraFactoryTLSState factory_tls = 19;
@@ -390,7 +409,7 @@ message CameraDeviceGetRequest {
 
 message CameraDeviceRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     CameraDeviceRefByIdentity identity = 8;
   }
 }
@@ -439,7 +458,7 @@ message CameraDevicePatchRequest {
   bool identity_null = 21;
   repeated CameraObservedEndpoint endpoints = 22;
   int64 observation_revision = 24;
-  bytes active_job_id = 32;
+  bytes active_job_id = 32 [(orm.field) = {type: TYPE_UUID}];
   // Clear active_job_id instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
@@ -492,20 +511,6 @@ message CameraDevicePatchRequest {
   bool date_updated_force = 27;
 }
 
-message CameraDeviceApplyRequest {
-  CameraDeviceRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message CameraDeviceEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
-}
-
 message CameraDeviceListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
@@ -527,6 +532,16 @@ message CameraDeviceListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  CameraDeviceSelect select = 6;
 }
 
 message CameraDeviceListResponse {
@@ -550,13 +565,15 @@ message CameraDeviceFilter {
 }
 
 message CameraDeviceWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated CameraDeviceFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -577,7 +594,7 @@ message CameraDeviceWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -585,7 +602,8 @@ message CameraDeviceWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   CameraDevice value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -612,7 +630,7 @@ message CameraDeviceObserveRequest {
 }
 
 message CameraAssignmentAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -623,7 +641,7 @@ message CameraAssignmentAddRequest {
   SetRef set = 9;
   ProducerRef producer = 10;
   string worker_slot = 11 [features.field_presence = IMPLICIT];
-  bytes worker_id = 12;
+  bytes worker_id = 12 [(orm.field) = {type: TYPE_UUID}];
   int64 generation = 16 [features.field_presence = IMPLICIT];
   int64 catalog_revision = 17 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
@@ -636,7 +654,7 @@ message CameraAssignmentGetRequest {
 
 message CameraAssignmentRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     CameraAssignmentRefBySet set = 9;
   }
 }
@@ -673,7 +691,7 @@ message CameraAssignmentPatchRequest {
   map<string, string> labels = 14;
   ProducerRef producer = 20;
   string worker_slot = 22;
-  bytes worker_id = 24;
+  bytes worker_id = 24 [(orm.field) = {type: TYPE_UUID}];
   // Clear worker_id instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
@@ -697,20 +715,6 @@ message CameraAssignmentPatchRequest {
   bool date_updated_force = 27;
 }
 
-message CameraAssignmentApplyRequest {
-  CameraAssignmentRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message CameraAssignmentEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
-}
-
 message CameraAssignmentListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
@@ -732,6 +736,16 @@ message CameraAssignmentListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  CameraAssignmentSelect select = 6;
 }
 
 message CameraAssignmentListResponse {
@@ -757,13 +771,15 @@ message CameraAssignmentFilter {
 }
 
 message CameraAssignmentWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated CameraAssignmentFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -784,7 +800,7 @@ message CameraAssignmentWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -792,7 +808,8 @@ message CameraAssignmentWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   CameraAssignment value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -849,7 +866,7 @@ message CameraAppliedRequest {
 }
 
 message CameraBindingAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -880,7 +897,7 @@ message CameraBindingGetRequest {
 
 message CameraBindingRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     CameraBindingRefByLogical logical = 2;
     CameraBindingRefBySource source = 10;
   }
@@ -973,20 +990,6 @@ message CameraBindingPatchRequest {
   bool date_updated_force = 27;
 }
 
-message CameraBindingApplyRequest {
-  CameraBindingRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message CameraBindingEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
-}
-
 message CameraBindingListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
@@ -1008,6 +1011,16 @@ message CameraBindingListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  CameraBindingSelect select = 6;
 }
 
 message CameraBindingListResponse {
@@ -1033,13 +1046,15 @@ message CameraBindingFilter {
 }
 
 message CameraBindingWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated CameraBindingFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -1060,7 +1075,7 @@ message CameraBindingWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -1068,7 +1083,8 @@ message CameraBindingWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   CameraBinding value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
@@ -1097,7 +1113,7 @@ message CameraBindingSetCollectRequest {
 }
 
 message CameraJobAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -1111,7 +1127,7 @@ message CameraJobAddRequest {
   CameraJobStage stage = 12 [features.field_presence = IMPLICIT];
   int64 lease_generation = 16 [features.field_presence = IMPLICIT];
   int64 assignment_generation = 17 [features.field_presence = IMPLICIT];
-  bytes lease_owner = 18;
+  bytes lease_owner = 18 [(orm.field) = {type: TYPE_UUID}];
   google.protobuf.Timestamp lease_expires = 19;
   CameraJobInputs inputs = 20;
   CameraJobObservation observed = 21;
@@ -1130,7 +1146,7 @@ message CameraJobGetRequest {
 
 message CameraJobRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     CameraJobRefByIntent intent = 2;
   }
 }
@@ -1178,7 +1194,7 @@ message CameraJobPatchRequest {
   CameraJobStage stage = 24;
   int64 lease_generation = 32;
   int64 assignment_generation = 34;
-  bytes lease_owner = 36;
+  bytes lease_owner = 36 [(orm.field) = {type: TYPE_UUID}];
   // Clear lease_owner instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
@@ -1232,20 +1248,6 @@ message CameraJobPatchRequest {
   bool date_updated_force = 27;
 }
 
-message CameraJobApplyRequest {
-  CameraJobRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message CameraJobEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
-}
-
 message CameraJobListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
@@ -1267,6 +1269,16 @@ message CameraJobListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  CameraJobSelect select = 6;
 }
 
 message CameraJobListResponse {
@@ -1291,13 +1303,15 @@ message CameraJobFilter {
 }
 
 message CameraJobWatchRequest {
-  // Which rows to watch, in the same words List takes them: what is watched is
-  // what that list would answer with, now and afterwards.
+  // Which rows to watch, each named by its filter's ref. A filter that names
+  // no row is refused, though List takes it: what a stream is about is the
+  // rows its filters name, resolved once when it opens, and not what a List
+  // of the same filters would answer later. The first message is that List's
+  // answer now.
   //
-  // Required, and bounded the way a List is -- for a heavier reason. A list
-  // runs its filters once; a watch runs them again for every write that touches
-  // the entity, for as long as the stream is open. A watch with no filters is
-  // the whole table, forever, which is the one shape that has no cap at all.
+  // Required, and bounded as a List's filters are. A watch with no filters
+  // would be the whole table, forever, which is the one shape that has no cap
+  // at all.
   repeated CameraJobFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
@@ -1318,7 +1332,7 @@ message CameraJobWatchItem {
   bytes id = 1;
 
   // The row as it is now, and **absent when it is no longer one this caller may
-  // see**: erased, or moved out of the filters this stream named.
+  // see** as a write to it left it: erased, or out of this caller's sight.
   //
   // Absence is the whole of how a removal is said. There is no flag for it, and
   // there is deliberately no way to tell those two apart -- a stream that
@@ -1326,7 +1340,8 @@ message CameraJobWatchItem {
   // about rows that stopped being theirs, which is the thing the wall is for.
   //
   // It is only ever said about a row this stream has already carried. One that
-  // never matched is not news.
+  // never matched is not news. And only of a row a write touched: a row that
+  // left this caller's sight because what they may see changed is not said.
   CameraJob value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
