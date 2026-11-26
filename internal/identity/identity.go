@@ -9,8 +9,9 @@
 // (§34.7).
 //
 // Whichever it is, Shale talks to it the same way: as the holder `shale`
-// in each tenant it serves, holding the role that lets it check a password,
-// read a person, and ask what roster grants them. On an external roster the
+// in each tenant it serves, an app installed there, holding the role of
+// roster's that lets it check a password, read a person, and ask what roster
+// grants them -- which is Shale's own roles, of the app Shale (#321). On an external roster the
 // key the operator hands over says how (roster's `docs/apps.md`): a
 // deployment key is answered as the holder each tenant nominated for it, a
 // tenant key as the holder it hangs on. On the embedded one Shale writes the
@@ -94,7 +95,8 @@ func (c Config) Embedded() bool { return c.Addr == "" }
 // Agent is the alias of the holder Shale acts as in every tenant.
 const Agent = "shale"
 
-// AgentMethods is what that holder may call on the embedded roster:
+// AgentMethods is what that holder may call on the embedded roster, the
+// role of roster's `shale-app` that installing Shale there names:
 // checking a password, reading a person and the tenant, making a person,
 // asking what roster grants somebody (`auth.operators`, §33.1), and
 // introspecting an app's exchange token issued to Shale (§33.8).

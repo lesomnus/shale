@@ -75,8 +75,8 @@ const Everything = "/shale.*/*"
 var ErrTeam = errors.New("auth.operators.team: operators are not a team any more")
 
 // Operators answers what a person may change, by roster's grant (§33.1):
-// a role at roster naming Shale's methods, bound to them or to a group
-// they are in, asked with `HolderService.Reaches` and read from its
+// a role of Shale's at roster (`Role.app`) naming its methods, bound to
+// them or to a group of Shale's they are in, asked with `HolderService.Reaches` and read from its
 // `everywhere`. Answers are kept for Ttl; when roster cannot be asked the
 // answer is no, and the log says why.
 //
@@ -114,8 +114,8 @@ type grantEntry struct {
 func NewOperators(s *Store, cfg OperatorsConfig, log *slog.Logger) (*Operators, error) {
 	if cfg.Team != "" || cfg.Site != "" {
 		return nil, fmt.Errorf("%w: a membership is not a permission at roster, so anybody who may add one could make an operator. "+
-			"What a person may change is what roster grants them -- bind a role naming %s, or the services they look after, "+
-			"to them or to a group they are in -- and drop team and site (§33.1)", ErrTeam, Everything)
+			"What a person may change is what roster grants them -- bind a role of Shale's naming %s, or the services they look after, "+
+			"to them or to a group of Shale's they are in -- and drop team and site (§33.1)", ErrTeam, Everything)
 	}
 	if cfg.Tenant == "" {
 		return nil, errors.New("auth.operators.tenant: say whose people operate the cluster")

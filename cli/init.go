@@ -336,7 +336,7 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, t)
 		fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, adm.person.Id, shown(admPw))
 		if granted {
-			fmt.Fprintf(out, "operators   whoever roster grants %s in @%s: @%s/%s, as %s\n", identity.Everything, tenant, tenant, admin, identity.OperatorRole)
+			fmt.Fprintf(out, "operators   whoever roster grants %s in @%s, a role of Shale's: @%s/%s, as %s\n", identity.Everything, tenant, tenant, admin, identity.OperatorRole)
 		}
 		if kept {
 			fmt.Fprintf(out, "\n%s; ", stash.Read(admPw))
@@ -355,7 +355,7 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		}
 		switch {
 		case s.Operators != nil:
-			fmt.Fprintf(out, "\n            operators are the people of @%s roster grants %s, or as much of it as they look after", s.Operators.TenantAlias(), identity.Everything)
+			fmt.Fprintf(out, "\n            operators are the people of @%s bound a role of Shale's at roster naming %s; as much of it as somebody looks after, in their own tenant", s.Operators.TenantAlias(), identity.Everything)
 		case err != nil:
 			fmt.Fprintf(out, "\n            @%s has no key here yet, so there are no cluster operators until it does", clusterAlias)
 		default:

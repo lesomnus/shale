@@ -226,8 +226,8 @@ next start and is recognized by its hardware identity
       addr: roster-data.app-roster.svc.cluster.local:8080
       insecure: true                 # in-cluster; TLS ends at the ingress
       # An rk_ on roster's control plane, minted with
-      #   roster control key add --allow /roster.NominationService/List shale
-      # and answered in each tenant that nominated it (roster app install).
+      #   roster --as <operator> control key add --allow /roster.NominationService/List shale
+      # and answered in each tenant that nominated it (roster app install, §33.1).
       key: file:/run/shale/roster/key
     operators:
       tenant: hday                   # whose people operate the cluster

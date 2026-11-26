@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc"
@@ -141,73 +142,37 @@ func (e *embedded) Close() error {
 	return e.rs.Close()
 }
 
-// agent writes the `shale` holder, the role it holds and the binding into
-// a tenant, through the deployment's own door; it refuses a tenant that is
-// not there rather than making one, since a tenant is a customer.
+// agent installs Shale in a tenant as an app, through the deployment's
+// own door, as `roster app install --allow … --serves '/shale.*/*' shale`
+// does it (roster's `cli.InstallApp`): the `shale` holder, a role of
+// roster's naming what Shale asks roster ([AgentMethods]) bound to it, and
+// `shale-everything`, a role of the app's naming all of Shale, which is
+// what lets Shale's own roles be written there. roster's gate reads
+// roster's roles alone, and `HolderService/Reaches` asked as Shale is
+// answered of Shale's roles alone (#321). There is no control plane here,
+// so no nomination and no key: Shale is answered as the holder by the
+// plain header on a listener nothing else reaches. It refuses a tenant
+// that is not there rather than making one, since a tenant is a customer.
 func (e *embedded) agent(ctx context.Context, tenant string) error {
 	ctx, cancel := unframed(ctx)
 	defer cancel()
-	own := e.rs.Ungated
-	t, err := own.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build())
-	if err != nil {
+	if _, err := e.rs.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build()); err != nil {
 		if status.Code(err) == codes.NotFound {
 			return fmt.Errorf("%w: %s", ErrNoTenant, tenant)
 		}
 
 		return err
 	}
-	tref := rstr.TenantRef_builder{Id: t.GetId()}.Build()
-	h, err := own.Holder().Get(ctx, rstr.HolderGetRequest_builder{
-		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(Agent), Tenant: tref}.Build()}.Build(),
-	}.Build())
+	said, err := rostercli.InstallApp(ctx, e.rs, rostercli.AppInstall{
+		Name:   Agent,
+		Tenant: tenant,
+		Allow:  AgentMethods,
+		Serves: []string{Everything},
+	})
 	if err != nil {
-		if status.Code(err) != codes.NotFound {
-			return err
-		}
-		h, err = own.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: tref, Alias: Agent, Name: "Shale"}.Build())
-		if err != nil {
-			return fmt.Errorf("holder %s: %w", Agent, err)
-		}
+		return fmt.Errorf("installing Shale in %s: %w", tenant, err)
 	}
-	r, err := own.Role().Get(ctx, rstr.RoleGetRequest_builder{
-		Ref: rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(Agent), Tenant: tref}.Build()}.Build(),
-	}.Build())
-	if err != nil {
-		if status.Code(err) != codes.NotFound {
-			return err
-		}
-		r, err = own.Role().Add(ctx, rstr.RoleAddRequest_builder{
-			Tenant: tref, Alias: Agent, Name: "what Shale asks roster", Methods: AgentMethods,
-		}.Build())
-		if err != nil {
-			return fmt.Errorf("role %s: %w", Agent, err)
-		}
-	} else if missing := slices.DeleteFunc(slices.Clone(AgentMethods), func(m string) bool { return slices.Contains(r.GetMethods(), m) }); len(missing) > 0 {
-		// A role written by an older Shale: what this one asks is added.
-		if _, err := own.Role().Patch(ctx, rstr.RolePatchRequest_builder{
-			Ref:              rstr.RoleRef_builder{Id: r.GetId()}.Build(),
-			Methods:          append(slices.Clone(r.GetMethods()), missing...),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build()); err != nil {
-			return fmt.Errorf("role %s: %w", Agent, err)
-		}
-	}
-	vs, err := own.Binding().List(ctx, rstr.BindingListRequest_builder{
-		Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{
-			Role:   rstr.RoleRef_builder{Id: r.GetId()}.Build(),
-			Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		}.Build()},
-	}.Build())
-	if err != nil {
-		return err
-	}
-	if len(vs.GetItems()) == 0 {
-		if _, err := own.Binding().Add(ctx, rstr.BindingAddRequest_builder{
-			Role: rstr.RoleRef_builder{Id: r.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		}.Build()); err != nil && status.Code(err) != codes.AlreadyExists {
-			return fmt.Errorf("binding: %w", err)
-		}
-	}
+	e.log.DebugContext(ctx, "identity: Shale is an app of the tenant", "tenant", tenant, "said", strings.Join(said, " "))
 
 	return nil
 }
@@ -402,7 +367,8 @@ func (e *embedded) unadministered(ctx context.Context, tref *rstr.TenantRef, peo
 }
 
 // OperatorRole is the role `shale init` writes at the embedded roster for
-// whoever operates the cluster: [Everything], all of Shale.
+// whoever operates the cluster: [Everything], all of Shale, a role of the
+// app Shale's.
 const OperatorRole = "shale-operator"
 
 // Grant binds a person of a tenant of the embedded roster to a role naming
@@ -411,9 +377,29 @@ const OperatorRole = "shale-operator"
 // first operator where `auth.operators` is set, and what the tests grant
 // with. A role already there is bound as the tenant has it. At an external
 // roster its operator, or a tenant administrator, binds roles there.
+//
+// A role naming Shale's methods is a role **of the app Shale** (`Role.app`,
+// its holder in the tenant), which is what Shale's `Reaches` is answered
+// of (#321); one naming roster's is roster's, which is what roster's gate
+// reads. One that names both is refused, since a role is one app's. It is
+// bound to the person, and never held through a team.
 func (s *Store) Grant(ctx context.Context, tenant, role string, methods []string, holder pdid.Id) (pdid.Id, error) {
 	if s.em == nil {
 		return pdid.Nil, ErrExternal
+	}
+	shales := 0
+	for _, m := range methods {
+		if strings.HasPrefix(m, "/shale.") {
+			shales++
+		}
+	}
+	if shales > 0 && shales < len(methods) {
+		return pdid.Nil, fmt.Errorf("role @%s/%s: Shale's methods and roster's are two roles, one of each app", tenant, role)
+	}
+	if shales > 0 {
+		if err := s.ensureAgent(ctx, tenant); err != nil {
+			return pdid.Nil, err
+		}
 	}
 	ctx, cancel := unframed(ctx)
 	defer cancel()
@@ -426,7 +412,11 @@ func (s *Store) Grant(ctx context.Context, tenant, role string, methods []string
 		if status.Code(err) != codes.NotFound {
 			return pdid.Nil, err
 		}
-		r, err = own.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: tref, Alias: role, Name: role, Methods: methods}.Build())
+		add := rstr.RoleAddRequest_builder{Tenant: tref, Alias: role, Name: role, Methods: methods}
+		if shales > 0 {
+			add.App = rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(Agent), Tenant: tref}.Build()}.Build()
+		}
+		r, err = own.Role().Add(ctx, add.Build())
 		if err != nil {
 			return pdid.Nil, fmt.Errorf("role @%s/%s: %w", tenant, role, err)
 		}

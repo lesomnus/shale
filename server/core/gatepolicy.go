@@ -157,7 +157,7 @@ func granted(ctx context.Context, may func(context.Context, pdid.Id, pdid.Id, st
 		return status.Errorf(codes.Unavailable, "%s: cannot tell what roster grants you right now: %v", c.Action, err)
 	}
 	if !ok {
-		return denied(c.Action, "roster grants you nothing that covers this; a role at roster naming it does")
+		return denied(c.Action, "roster grants you nothing that covers this; a role of Shale's at roster naming it, bound to you or to a group of Shale's you are in, does")
 	}
 
 	return nil
@@ -424,7 +424,7 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 				return status.Errorf(codes.Unavailable, "%s: cannot tell what roster grants you right now: %v", m, err)
 			}
 			if !ok {
-				return denied(m, "the cluster API serves operators: people of the operators' tenant whom roster grants all of Shale ("+identity.Everything+")")
+				return denied(m, "the cluster API serves operators: people of the operators' tenant whom roster grants all of Shale ("+identity.Everything+"), a role of Shale's")
 			}
 		case p.ClusterTenant.IsZero():
 			// No cluster tenant is known here yet: nobody is an operator,

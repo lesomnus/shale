@@ -142,15 +142,21 @@ holds a credential.
   signs its people in through its own roster tenant has no second tenant to
   put operators in, and should not need one: roster already says who may do
   what, as **roles** naming methods, bound to a person or to a group they
-  are in. With `auth.operators` set (§36.1) -- the tenant whose people
+  are in. What somebody may do at Shale is a **role of Shale's** at roster
+  (`Role.app` is the holder Shale is answered as in the tenant), bound to
+  the person or to a group of Shale's: roster's gate reads roster's roles
+  alone, a role of roster's names roster's methods and nothing of
+  Shale's, and a role of an app's is held in no team. With `auth.operators` set (§36.1) -- the tenant whose people
   operate the cluster, which is one this deployment serves -- a person may
   call a method **if and only if a pattern roster grants them across their
   tenant covers it on its own**: Shale asks roster's data plane
-  (`HolderService.Reaches`) and reads `everywhere`, not `methods`, since
+  (`HolderService.Reaches`, asked as Shale and so answered of Shale's
+  roles alone) and reads `everywhere`, not `methods`, since
   `methods` is roster's gate's union, which roster's own wall narrows for
   a grant bound at one of its sites or held in a team, and Shale has no
-  such narrowing to apply. A role naming `/shale.*/*` is all of Shale; one
-  naming `/shale.SourceService/*` is the cameras and nothing else. Shale
+  such narrowing to apply. A role of Shale's naming `/shale.*/*` is all of
+  Shale; one naming `/shale.SourceService/*` is the cameras and nothing
+  else. Shale
   keeps the answer for `auth.operators.ttl` (30 s), and **fails closed**:
   while roster cannot be asked, nobody changes anything, the call is
   refused as `UNAVAILABLE` with the reason, the log says why, and the
@@ -221,21 +227,54 @@ holds a credential.
   their reads to those sites; it never widens what they may call. A person
   roster grants all of Shale sees every site whatever their own row says.
 
-  With an external roster, the holder Shale is answered as in a tenant --
-  the one the tenant nominated for a deployment key, or the one a tenant
-  key hangs on -- needs a role at roster allowing
-  `/roster.HolderService/Get`, `/roster.HolderService/Reaches` and
-  `/roster.TenantService/Get` (and `/roster.MeService/Get` for a tenant
-  key, which is how Shale learns the key's tenant), plus
-  `/roster.VouchService/Verify` where people still sign in with a
-  password, and `/payday.TokenService/Introspect` where apps view on
-  people's behalf ([§33.8](#338-viewing-on-a-persons-behalf)). A
-  deployment key itself holds `/roster.NominationService/List` -- and
-  `/roster.SyncService/Watch` where apps view on people's behalf -- and
-  nothing else: `roster control key add --allow
-  /roster.NominationService/List shale`, then `roster app install
-  --tenant <tenant> --role … shale` for each tenant. The embedded roster's
-  `shale` holder is given what it needs itself.
+  **With the embedded roster** Shale installs itself in each tenant as an
+  app, as `roster app install` does (roster's `cli.InstallApp`): its holder
+  `shale`, `shale-app`, a role of roster's naming what Shale asks roster,
+  and `shale-everything`, a role of Shale's naming `/shale.*/*`, both bound
+  to it. `shale init` binds the first operator `shale-operator`, a role of
+  Shale's naming `/shale.*/*`.
+
+  **With a roster elsewhere** Shale writes no role: roster's operator
+  installs it, at the box, once per tenant, and the tenant gives its
+  people Shale's roles:
+
+  ```sh
+  roster --as <operator> control key add --allow /roster.NominationService/List shale
+  roster --as <operator> app install --tenant acme \
+    --allow /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get,/payday.TokenService/Introspect \
+    --serves '/shale.*/*' --administer admin shale
+  roster --as <operator> role add @acme/shale-operator \
+    '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}, "methods": ["/shale.*/*"]}'
+  roster --as <operator> binding add \
+    '{"role": {"slug": {"alias": "shale-operator", "tenant": {"alias": "acme"}}}, "holder": {"slug": {"alias": "olive", "tenant": {"alias": "acme"}}}}'
+  ```
+
+  The key holds, as itself, the list of the tenants that nominated it --
+  and `/roster.SyncService/Watch` where apps view on people's behalf
+  ([§33.8](#338-viewing-on-a-persons-behalf)) -- and nothing else; in each tenant it is answered as the
+  holder `install` made, which may call the four methods `--allow` names
+  -- `/roster.VouchService/Verify` beside them where people sign in with a
+  password, and `/roster.MeService/Get` for a tenant key (`rt_`), which is
+  how Shale learns the key's tenant. `--serves` writes `shale-everything`,
+  a role of Shale's, and `--administer` names the people of the tenant who
+  hold it -- all of Shale, so they administer it there, and operate the
+  cluster where theirs is the operators' tenant -- and who write Shale's
+  roles and bind them, as `role add` and `binding add` do above. An
+  operator is a role of Shale's naming `/shale.*/*`; a viewer, where
+  `auth.operators.reads: granted`, one naming what the console reads, for
+  example `/shale.SetService/*`, `/shale.SourceService/*`,
+  `/shale.LaminaService/*` and `/shale.SiteService/*`. Each is bound to the
+  person, or to a group of Shale's and the person put in it, and is not
+  held through a team:
+
+  ```sh
+  roster --as <operator> group add @acme/shale-viewers '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}}'
+  roster --as <operator> binding add \
+    '{"role": {"slug": {"alias": "shale-viewer", "tenant": {"alias": "acme"}}}, "group": {"slug": {"alias": "shale-viewers", "tenant": {"alias": "acme"}}}}'
+  roster --as <operator> group-membership add \
+    '{"group": {"slug": {"alias": "shale-viewers", "tenant": {"alias": "acme"}}}, "holder": {"slug": {"alias": "vic", "tenant": {"alias": "acme"}}}}'
+  roster --as <operator> holder reaches @acme/vic '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}}'   # what Shale is answered
+  ```
 - **Storage Nodes and Relays know nothing about tenants or people.** On
   their data planes they trust one thing: a valid CP signature on each
   request or stream. On its control API a node trusts one peer: the Control
@@ -721,9 +760,12 @@ portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own si
   an open WHEP session takes the fresh token in place
   ([§39.4](16-relay.md#394-viewers)).
 - **What the portal may do** is what a tenant binds to the app's holder at
-  roster: a role naming `/shale.DelegationService/Live`,
-  `/shale.DelegationService/Timeline`, or both. Live and recordings are
-  granted apart. Nothing the portal says widens it.
+  roster: a **role of Shale's** naming `/shale.DelegationService/Live`,
+  `/shale.DelegationService/Timeline`, or both, bound to the portal's
+  holder -- Shale asks `HolderService/Reaches` about that holder, which is
+  answered of Shale's roles. A role of roster's names neither, and one of
+  the portal's own is the portal's. Live and recordings are granted apart.
+  Nothing the portal says widens it.
 - **What the person may do** is what they may read themselves: every
   person of the tenant, by default. With `auth.operators.reads: granted`,
   reads are as far as roster grants them like any other call, and a role
