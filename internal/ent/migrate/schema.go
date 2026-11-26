@@ -1462,6 +1462,48 @@ var (
 			},
 		},
 	}
+	// ReachColumns holds the columns for the "reach" table.
+	ReachColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "cameras", Type: field.TypeJson, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "holder_id", Type: field.TypeUuid},
+	}
+	// ReachTable holds the schema information for the "reach" table.
+	ReachTable = &schema.Table{
+		Name:       "reach",
+		Columns:    ReachColumns,
+		PrimaryKey: []*schema.Column{ReachColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "reach_tenant_tenant",
+				Columns:    []*schema.Column{ReachColumns[5]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "reach_holder_holder",
+				Columns:    []*schema.Column{ReachColumns[6]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "reach_page",
+				Unique:  false,
+				Columns: []*schema.Column{ReachColumns[5], ReachColumns[4], ReachColumns[0]},
+			},
+			{
+				Name:    "reach_holder",
+				Unique:  false,
+				Columns: []*schema.Column{ReachColumns[6], ReachColumns[4]},
+			},
+		},
+	}
 	// ReaderColumns holds the columns for the "reader" table.
 	ReaderColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -2059,6 +2101,7 @@ var (
 		OwedTable,
 		PlacementpolicyTable,
 		ProducerTable,
+		ReachTable,
 		ReaderTable,
 		RelayTable,
 		RowsealTable,
@@ -2203,6 +2246,11 @@ func init() {
 	ProducerTable.ForeignKeys[4].RefTable = SatelliteTable
 	ProducerTable.Annotation = &entsql.Annotation{
 		Table: "producer",
+	}
+	ReachTable.ForeignKeys[0].RefTable = TenantTable
+	ReachTable.ForeignKeys[1].RefTable = HolderTable
+	ReachTable.Annotation = &entsql.Annotation{
+		Table: "reach",
 	}
 	ReaderTable.ForeignKeys[0].RefTable = TenantTable
 	ReaderTable.Annotation = &entsql.Annotation{

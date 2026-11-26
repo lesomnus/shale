@@ -411,6 +411,34 @@ at most ([§33.7](10-security.md#337-what-a-compromise-costs)). The
 trail at roster says who ended it; Shale's says nothing of a key, since
 none of its rows changed.
 
+**A script's token narrowed to some cameras** carries one of its person's
+lists of cameras, a `reach` ([§33.1](10-security.md#331-trust-model), *A
+key narrowed to some cameras*). The person makes the list -- sites and
+cameras they see -- and the token with it on the *Tokens* page, *which
+cameras*: *a list of cameras*; or makes the list with `shale reach add`
+signed in, and asks for the key with its identifier as the scope
+(`HolderService/BeginKey`'s `scope`). Such a token may call only the reads
+and views of cameras -- `source`, `set`, `lamina` and `attempt` reads and
+watches, `live`, `timeline` and `export` -- and
+answers only what the list reaches of what its person sees; anything else
+is `PERMISSION_DENIED`, *this key carries a list of cameras*, whatever the
+token was minted with.
+
+```bash
+shale reach add '{"name":"gate cameras","cameras":{"sites":["<site>"],"sources":["<source>"]}}'
+shale reach ls
+shale reach patch <reach> '{"cameras":{"sources":["<source>"]},"date_updated_force":true}'
+shale reach erase <reach>
+```
+
+**Changing its list** changes what every token that carries it reaches,
+from its next call (within `auth.operators.ttl` where several control
+planes serve the tenant); the token itself is not made again. **Erasing
+the list** leaves its tokens reaching nothing: a list answers empty, and a
+call that names a camera is `FAILED_PRECONDITION`, *this key's list of
+cameras is gone*. **Ending the token** is as for any key, above; its list
+stays, for other tokens to carry.
+
 ```bash
 # processes (§34.1)
 shale init [--tenant t] [--admin a] [--operator o]   # CA, signing key, first tenant, first operator and admin
@@ -463,6 +491,7 @@ shale index rebuild [<sink>]
 shale set add|ls|get|patch|erase|watch   # patch: retention, placement, max_bitrate_total
 shale set negotiate|allocate|live <set>
 shale source add|ls|get|patch|erase|live
+shale reach add|ls|get|patch|erase        # a person's own lists of cameras, which a token may carry (§33.1)
 shale site add|ls|erase
 shale site-member add|ls|erase           # which people and readers may see which site
 shale holder add|ls|patch|erase          # people: `add` makes them at roster first (§33.1)

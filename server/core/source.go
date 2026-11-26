@@ -23,6 +23,16 @@ func (s Core) Source() api.SourceServiceServer {
 	return coreSource{s, s.Next().Source()}
 }
 
+// Get is the generated read, behind the wall and the scope beside it; a
+// key whose list of cameras is gone is told so (§33.1).
+func (s coreSource) Get(ctx context.Context, req *api.SourceGetRequest) (*api.Source, error) {
+	if err := s.reachGone(ctx); err != nil {
+		return nil, err
+	}
+
+	return s.SourceServiceServer.Get(ctx, req)
+}
+
 // Add assigns the ordinal: one past the highest the set has ever had,
 // erased members included, so an ordinal is never reused (§7). The site is
 // copied from the set, because payday narrows each row by its own field 3.

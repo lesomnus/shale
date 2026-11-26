@@ -400,6 +400,9 @@ func (s coreSource) Live(ctx context.Context, req *api.SourceLiveRequest) (*api.
 	if err != nil {
 		return nil, err
 	}
+	if err := s.reachGone(ctx); err != nil {
+		return nil, err
+	}
 	src, err := s.SourceServiceServer.Get(ctx, api.SourceGetRequest_builder{Ref: req.GetRef()}.Build())
 	if err != nil {
 		return nil, err

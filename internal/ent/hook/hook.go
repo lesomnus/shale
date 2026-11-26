@@ -309,6 +309,18 @@ func (f ProducerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProducerMutation", m)
 }
 
+// The ReachFunc type is an adapter to allow the use of ordinary
+// function as Reach mutator.
+type ReachFunc func(context.Context, *ent.ReachMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReachFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ReachMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReachMutation", m)
+}
+
 // The ReaderFunc type is an adapter to allow the use of ordinary
 // function as Reader mutator.
 type ReaderFunc func(context.Context, *ent.ReaderMutation) (ent.Value, error)

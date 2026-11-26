@@ -32,7 +32,10 @@ const (
 	HolderKeyState_HOLDER_KEY_STATE_PENDING HolderKeyState = 1
 	// Made: `token` is the key's, answered this once.
 	HolderKeyState_HOLDER_KEY_STATE_MADE HolderKeyState = 2
-	// The person said no at the identity service. Nothing was made.
+	// Nothing was made, and nothing more comes of this handle: the person
+	// said no at the identity service, or said yes and roster would not make
+	// the key -- a method they do not hold at Shale, a name they already
+	// use -- which `refusal` says in roster's words.
 	HolderKeyState_HOLDER_KEY_STATE_REFUSED HolderKeyState = 3
 	// Nobody said yes in time, or the key was carried away already by an
 	// earlier PollKey. Nothing more comes of this handle.
@@ -2185,8 +2188,11 @@ type HolderBeginKeyRequest_builder struct {
 	Methods []string
 	// When it stops working, after now; unset is a key that does not.
 	DateExpired *timestamppb.Timestamp
-	// Shale's own word about the key, which roster keeps on it and answers
-	// back when it is used (`ApiKey.scope`); empty for none.
+	// Which cameras it reaches: the identifier of a list of cameras of the
+	// caller's (a Reach, §33.1), written as a UUID, which roster keeps on the
+	// key (`ApiKey.scope`); empty for every camera the caller sees. A key
+	// that carries a list may be given only the methods a list confines
+	// (§33.1, *A key narrowed to some cameras*), and is refused the others.
 	Scope string
 }
 
@@ -2562,8 +2568,10 @@ type HolderKey_builder struct {
 	DateUsed *timestamppb.Timestamp
 	// When it was made.
 	DateCreated *timestamppb.Timestamp
-	// The word Shale had roster keep on it when it was made, as roster
-	// holds it (`ApiKey.scope`); empty for none. Nothing reads it yet.
+	// The list of cameras it reaches (a Reach, §33.1), by the identifier
+	// roster keeps on it (`ApiKey.scope`): the list's identifier, written as
+	// a UUID. Empty is a key that reaches what its person reaches. The list
+	// may since have been erased, and then the key reaches nothing.
 	Scope string
 }
 
@@ -2643,6 +2651,7 @@ type HolderPollKeyResponse struct {
 	xxx_hidden_State    HolderKeyState         `protobuf:"varint,1,opt,name=state,enum=shale.HolderKeyState"`
 	xxx_hidden_Token    string                 `protobuf:"bytes,2,opt,name=token"`
 	xxx_hidden_Interval *durationpb.Duration   `protobuf:"bytes,3,opt,name=interval"`
+	xxx_hidden_Refusal  string                 `protobuf:"bytes,4,opt,name=refusal"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -2693,6 +2702,13 @@ func (x *HolderPollKeyResponse) GetInterval() *durationpb.Duration {
 	return nil
 }
 
+func (x *HolderPollKeyResponse) GetRefusal() string {
+	if x != nil {
+		return x.xxx_hidden_Refusal
+	}
+	return ""
+}
+
 func (x *HolderPollKeyResponse) SetState(v HolderKeyState) {
 	x.xxx_hidden_State = v
 }
@@ -2703,6 +2719,10 @@ func (x *HolderPollKeyResponse) SetToken(v string) {
 
 func (x *HolderPollKeyResponse) SetInterval(v *durationpb.Duration) {
 	x.xxx_hidden_Interval = v
+}
+
+func (x *HolderPollKeyResponse) SetRefusal(v string) {
+	x.xxx_hidden_Refusal = v
 }
 
 func (x *HolderPollKeyResponse) HasInterval() bool {
@@ -2724,6 +2744,9 @@ type HolderPollKeyResponse_builder struct {
 	Token string
 	// How long to wait before asking again, when `state` is PENDING.
 	Interval *durationpb.Duration
+	// Why roster would not make the key, in its sentence, when `state` is
+	// REFUSED after the person's yes; empty for the person's own no.
+	Refusal string
 }
 
 func (b0 HolderPollKeyResponse_builder) Build() *HolderPollKeyResponse {
@@ -2733,6 +2756,7 @@ func (b0 HolderPollKeyResponse_builder) Build() *HolderPollKeyResponse {
 	x.xxx_hidden_State = b.State
 	x.xxx_hidden_Token = b.Token
 	x.xxx_hidden_Interval = b.Interval
+	x.xxx_hidden_Refusal = b.Refusal
 	return m0
 }
 
@@ -2786,6 +2810,7 @@ type HolderListKeysResponse struct {
 	xxx_hidden_Reads      []string               `protobuf:"bytes,3,rep,name=reads"`
 	xxx_hidden_Remembered *durationpb.Duration   `protobuf:"bytes,4,opt,name=remembered"`
 	xxx_hidden_NoneHeld   string                 `protobuf:"bytes,5,opt,name=none_held,json=noneHeld"`
+	xxx_hidden_Narrowed   []string               `protobuf:"bytes,6,rep,name=narrowed"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2852,6 +2877,13 @@ func (x *HolderListKeysResponse) GetNoneHeld() string {
 	return ""
 }
 
+func (x *HolderListKeysResponse) GetNarrowed() []string {
+	if x != nil {
+		return x.xxx_hidden_Narrowed
+	}
+	return nil
+}
+
 func (x *HolderListKeysResponse) SetKeys(v []*HolderKey) {
 	x.xxx_hidden_Keys = &v
 }
@@ -2870,6 +2902,10 @@ func (x *HolderListKeysResponse) SetRemembered(v *durationpb.Duration) {
 
 func (x *HolderListKeysResponse) SetNoneHeld(v string) {
 	x.xxx_hidden_NoneHeld = v
+}
+
+func (x *HolderListKeysResponse) SetNarrowed(v []string) {
+	x.xxx_hidden_Narrowed = v
 }
 
 func (x *HolderListKeysResponse) HasRemembered() bool {
@@ -2904,6 +2940,11 @@ type HolderListKeysResponse_builder struct {
 	// operators (`auth.operators`), so no role of Shale's exists for anybody
 	// to hold. Empty otherwise.
 	NoneHeld string
+	// Of `holds`, what a key that carries a list of cameras may be given:
+	// the reads and views a list confines (§33.1, *A key narrowed to some
+	// cameras*). A key that carries a list is refused every other method,
+	// whatever it names.
+	Narrowed []string
 }
 
 func (b0 HolderListKeysResponse_builder) Build() *HolderListKeysResponse {
@@ -2915,6 +2956,7 @@ func (b0 HolderListKeysResponse_builder) Build() *HolderListKeysResponse {
 	x.xxx_hidden_Reads = b.Reads
 	x.xxx_hidden_Remembered = b.Remembered
 	x.xxx_hidden_NoneHeld = b.NoneHeld
+	x.xxx_hidden_Narrowed = b.Narrowed
 	return m0
 }
 
@@ -3160,12 +3202,13 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12\x1b\n" +
 	"\x05scope\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\x05scope\"5\n" +
 	"\x14HolderPollKeyRequest\x12\x1d\n" +
-	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\x9f\x01\n" +
+	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\xc0\x01\n" +
 	"\x15HolderPollKeyResponse\x122\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x15.shale.HolderKeyStateB\x05\xaa\x01\x02\b\x02R\x05state\x12\x1b\n" +
 	"\x05token\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x125\n" +
-	"\binterval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\binterval\"\x17\n" +
-	"\x15HolderListKeysRequest\"\xc9\x01\n" +
+	"\binterval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12\x1f\n" +
+	"\arefusal\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\arefusal\"\x17\n" +
+	"\x15HolderListKeysRequest\"\xe5\x01\n" +
 	"\x16HolderListKeysResponse\x12$\n" +
 	"\x04keys\x18\x01 \x03(\v2\x10.shale.HolderKeyR\x04keys\x12\x14\n" +
 	"\x05holds\x18\x02 \x03(\tR\x05holds\x12\x14\n" +
@@ -3173,7 +3216,8 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"remembered\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\n" +
 	"remembered\x12\"\n" +
-	"\tnone_held\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\bnoneHeld\",\n" +
+	"\tnone_held\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\bnoneHeld\x12\x1a\n" +
+	"\bnarrowed\x18\x06 \x03(\tR\bnarrowed\",\n" +
 	"\x13HolderEndKeyRequest\x12\x15\n" +
 	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\"Q\n" +
 	"\x14HolderEndKeyResponse\x129\n" +

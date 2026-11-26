@@ -406,8 +406,15 @@ func liveSource(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Clien
 // first source, and the producer.
 func liveProducer(t *testing.T, ctx context.Context, c *cluster, admin *grpc.ClientConn, srcs ...producer.SourceConfig) (*api.Set, *api.LiveSource, *producer.Producer) {
 	t.Helper()
+
+	return liveProducerAt(t, ctx, c, admin, nil, srcs...)
+}
+
+// liveProducerAt is liveProducer with its set in a site, or in none.
+func liveProducerAt(t *testing.T, ctx context.Context, c *cluster, admin *grpc.ClientConn, site *api.SiteRef, srcs ...producer.SourceConfig) (*api.Set, *api.LiveSource, *producer.Producer) {
+	t.Helper()
 	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
-		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "live",
+		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "live", Site: site,
 	}.Build())
 	require.NoError(t, err)
 

@@ -51,6 +51,18 @@ by labels, which relays its producers should use
 ([§39.2](16-relay.md#392-assignment)). A tenant that does not use sites
 leaves the field empty and sees no difference.
 
+A **Reach** is a person's own list of cameras: a `name`, the person
+(`holder`), and `cameras`, the sites and the sources it names by
+identifier. It reaches every source of each site it names and each source
+it names; one that names nothing reaches nothing. A person's API token
+carries one by its identifier and then reaches, of what its person sees,
+only that ([§33.1](10-security.md#331-trust-model), *A key narrowed to
+some cameras*). The person adds, reads, changes and erases their own and
+nobody else's, and puts in one only sites and sources they see; changing
+one changes what every token that carries it reaches, and erasing one
+(a hard erase) leaves them reaching nothing. It carries no site of its own
+(field 3 is empty), since it may name several.
+
 A **Zone** is an optional label, assigned by people, for Sources whose fields
 of view overlap. A zone may cross sets. It describes redundancy between angles,
 not fate-sharing. The first scheduler does not use it, and zone-aware placement is

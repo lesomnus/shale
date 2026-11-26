@@ -592,3 +592,19 @@ ul.methods {
 	margin: 4px 0 0;
 	padding-left: 16px;
 }
+.make .cameras {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 6px 0;
+}
+.make .cameras label.whole {
+	margin: 0;
+}
+.make .cameras label.camera {
+	display: inline-block;
+	margin: 0 12px 0 22px;
+}
+.make .new-list {
+	margin: 6px 0;
+}

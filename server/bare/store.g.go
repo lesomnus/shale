@@ -35,6 +35,7 @@ import (
 	placementpolicy "github.com/lesomnus/shale/internal/ent/placementpolicy"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	producer "github.com/lesomnus/shale/internal/ent/producer"
+	reach "github.com/lesomnus/shale/internal/ent/reach"
 	reader "github.com/lesomnus/shale/internal/ent/reader"
 	relay "github.com/lesomnus/shale/internal/ent/relay"
 	rowseal "github.com/lesomnus/shale/internal/ent/rowseal"
@@ -568,6 +569,8 @@ func WithAdmission(check Admission, entities ...string) Option {
 		a.methods["/shale.UploadPolicyService"] = "shale.UploadPolicy"
 		a.types["AddressPolicy"] = "shale.AddressPolicy"
 		a.methods["/shale.AddressPolicyService"] = "shale.AddressPolicy"
+		a.types["Reach"] = "shale.Reach"
+		a.methods["/shale.ReachService"] = "shale.Reach"
 		for _, name := range entities {
 			found := false
 			for _, v := range a.types {
@@ -749,6 +752,7 @@ type Scope interface {
 	PlacementPolicyScope(ctx context.Context) (predicate.PlacementPolicy, error)
 	UploadPolicyScope(ctx context.Context) (predicate.UploadPolicy, error)
 	AddressPolicyScope(ctx context.Context) (predicate.AddressPolicy, error)
+	ReachScope(ctx context.Context) (predicate.Reach, error)
 }
 
 // Unscoped is a [Scope] that narrows nothing. Embed it and write out the
@@ -872,6 +876,9 @@ func (Unscoped) UploadPolicyScope(_ context.Context) (predicate.UploadPolicy, er
 	return nil, nil
 }
 func (Unscoped) AddressPolicyScope(_ context.Context) (predicate.AddressPolicy, error) {
+	return nil, nil
+}
+func (Unscoped) ReachScope(_ context.Context) (predicate.Reach, error) {
 	return nil, nil
 }
 
@@ -1634,6 +1641,26 @@ func (ss Scopes) AddressPolicyScope(ctx context.Context) (predicate.AddressPolic
 	return addresspolicy.And(ps...), nil
 }
 
+func (ss Scopes) ReachScope(ctx context.Context) (predicate.Reach, error) {
+	ps := make([]predicate.Reach, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ReachScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return reach.And(ps...), nil
+}
+
 // Minter decides the key a row is stored under. It is asked once per Add,
 // for an entity whose key is a uuid, and only for those.
 //
@@ -1876,3 +1903,4 @@ func (s Server) UploadPolicy() api.UploadPolicyServiceServer {
 func (s Server) AddressPolicy() api.AddressPolicyServiceServer {
 	return AddressPolicyServiceServer{Store: s.Store}
 }
+func (s Server) Reach() api.ReachServiceServer { return ReachServiceServer{Store: s.Store} }

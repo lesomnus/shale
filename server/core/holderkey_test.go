@@ -26,7 +26,7 @@ import (
 )
 
 // accountApp stands in for roster's account app, its four routes of a
-// terminal's sign-in (roster's `account/device.go` at 5436801f), each
+// terminal's sign-in (roster's `account/device.go` at cddc6753), each
 // answering what roster answers -- read there, and said beside each -- so
 // that Shale's side of the road is held to roster's own answers without a
 // roster. `yes` and `no` are the person at the front door: what
@@ -44,13 +44,16 @@ type waiting struct {
 	user   string
 	token  string
 	denied bool
+	// refused is roster's sentence where the person said yes and roster
+	// would not make the key (device.go:127-131).
+	refused string
 }
 
 func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.off {
-		// `App.offered`, device.go:381-389: every route of the four, with
+		// `App.offered`, device.go:405-411: every route of the four, with
 		// the switch off.
 		http.Error(w, "this deployment does not sign terminals in", http.StatusNotImplemented)
 		return
@@ -59,7 +62,7 @@ func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/device/begin":
 		var in map[string]json.RawMessage
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-			// device.go:458.
+			// device.go:482.
 			http.Error(w, "a name and what to allow", http.StatusBadRequest)
 			return
 		}
@@ -67,7 +70,7 @@ func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			switch k {
 			case "name", "app", "allow", "scope", "date_expired", "delegate":
 			default:
-				// device.go:453-456, `strictly`: a field it does not know.
+				// device.go:476-480, `strictly`: a field it does not know.
 				http.Error(w, fmt.Sprintf("%s: this request has no such field", k), http.StatusBadRequest)
 				return
 			}
@@ -76,7 +79,7 @@ func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			var v string
 			_ = json.Unmarshal(in["date_expired"], &v)
 			if t, err := time.Parse(time.RFC3339, v); err == nil && !t.After(time.Now()) {
-				// device.go:512-514.
+				// device.go:536-538.
 				http.Error(w, "date_expired: a key cannot have already expired", http.StatusBadRequest)
 				return
 			}
@@ -85,7 +88,7 @@ func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		code := fmt.Sprintf("device-%d", len(a.began))
 		user := fmt.Sprintf("BCDF-%04d", len(a.began))
 		a.codes[code] = &waiting{user: user}
-		// device.go:575-591: RFC 8628 §3.2's answer, the address being the
+		// device.go:599-615: RFC 8628 §3.2's answer, the address being the
 		// account app's own `/device`.
 		at := "http://" + r.Host + "/device"
 		w.Header().Set("content-type", "application/json")
@@ -103,25 +106,31 @@ func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			DeviceCode string `json:"device_code"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.DeviceCode == "" {
-			// device.go:620-623.
+			// device.go:656-658.
 			http.Error(w, "device_code", http.StatusBadRequest)
 			return
 		}
 		v, ok := a.codes[in.DeviceCode]
 		switch {
 		case !ok || a.lapseNow:
-			// `devices.polled`, device.go:276-279: no such row, or past its
+			// `devices.polled`, device.go:295-298: no such row, or past its
 			// fifteen minutes; and so is a code whose key was carried away.
-			deviceErr(w, "expired_token")
+			deviceErr(w, "expired_token", "")
 		case v.denied:
-			// device.go:286-288: the row goes with the answer.
+			// device.go:304-307: the row goes with the answer, and the
+			// person's own no carries no sentence.
 			delete(a.codes, in.DeviceCode)
-			deviceErr(w, "access_denied")
+			deviceErr(w, "access_denied", "")
+		case v.refused != "":
+			// device.go:308-312: roster's no to a yes, told once in the
+			// sentence the approval page showed, and the row goes with it.
+			delete(a.codes, in.DeviceCode)
+			deviceErr(w, "refused", v.refused)
 		case v.token == "":
-			// device.go:289-294.
-			deviceErr(w, "authorization_pending")
+			// device.go:313-318.
+			deviceErr(w, "authorization_pending", "")
 		default:
-			// device.go:297-302 and 631-633: once, and the row goes.
+			// device.go:320-326 and 666-669: once, and the row goes.
 			delete(a.codes, in.DeviceCode)
 			w.Header().Set("content-type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{"token": v.token})
@@ -131,17 +140,22 @@ func (a *accountApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// deviceErr is roster's own, device.go:636-641.
-func deviceErr(w http.ResponseWriter, why string) {
+// deviceErr is roster's own, device.go:672-681: `error_description` only
+// where there is a sentence.
+func deviceErr(w http.ResponseWriter, why, said string) {
+	out := map[string]any{"error": why}
+	if said != "" {
+		out["error_description"] = said
+	}
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	_ = json.NewEncoder(w).Encode(map[string]any{"error": why})
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 // answer is the person at the front door saying yes or no to the code
-// the page was shown: `/device/approve`, device.go:737-879, which mints as
+// the page was shown: `/device/approve`, device.go:778-915, which mints as
 // them on a yes (`settle` with the token) and settles the row denied on a
-// no (device.go:791-796).
+// no (device.go:830-836).
 func (a *accountApp) answer(user string, yes bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -152,6 +166,19 @@ func (a *accountApp) answer(user string, yes bool) {
 			} else {
 				v.denied = true
 			}
+		}
+	}
+}
+
+// refuse is the person saying yes and roster then not making the key:
+// `/device/approve`'s refusals, device.go:880-898 and 917-923, which finish
+// the code with the sentence the approval page was answered.
+func (a *accountApp) refuse(user, words string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for _, v := range a.codes {
+		if v.user == user {
+			v.refused = words
 		}
 	}
 }
@@ -182,9 +209,16 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	for i := range kek {
 		kek[i] = byte(i)
 	}
-	h := coreHolder{Core: Core{d: &Deps{Identity: open(srv.URL), Kek: func() Kek { return kek }}}}
+	// The rows a key's scope is read against: Bob's list of cameras.
+	f := newReaderFixture(t)
+	tenant, bob, carol := mustId(f.tenant.GetId()), pdid.New(DomHolder), pdid.New(DomHolder)
+	_, err := f.sink.Holder().Add(f.ctx, api.HolderAddRequest_builder{Id: bob.Bytes(), Tenant: tenantRef(tenant), Alias: "bob"}.Build())
+	require.NoError(t, err)
+	cams, err := f.sink.Reach().Add(f.ctx, api.ReachAddRequest_builder{Tenant: tenantRef(tenant), Name: "door", Holder: api.HolderRef_builder{Id: bob.Bytes()}.Build()}.Build())
+	require.NoError(t, err)
+	scope := ReachScope(mustId(cams.GetId()))
+	h := coreHolder{Core: Core{d: &Deps{Identity: open(srv.URL), Kek: func() Kek { return kek }, Ent: f.client}}}
 
-	tenant, bob, carol := pdid.New(DomTenant), pdid.New(DomHolder), pdid.New(DomHolder)
 	as := func(who pdid.Id, credential string) context.Context {
 		f := frame.New(who, tenant, frame.Grant{})
 		v := *f
@@ -196,7 +230,7 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	begin := func(ctx context.Context) (*api.HolderBeginKeyResponse, error) {
 		return h.BeginKey(ctx, api.HolderBeginKeyRequest_builder{
 			Name: "ci", Methods: []string{"/shale.SetService/List", "/shale.SetService/Get"},
-			DateExpired: timestamppb.New(ends), Scope: "cams:1",
+			DateExpired: timestamppb.New(ends), Scope: scope,
 		}.Build())
 	}
 	poll := func(ctx context.Context, handle string) (*api.HolderPollKeyResponse, error) {
@@ -212,7 +246,7 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	require.JSONEq(t, `"shale"`, string(said["app"]), "shale's name at roster")
 	require.JSONEq(t, `["/shale.SetService/List","/shale.SetService/Get"]`, string(said["allow"]))
 	require.JSONEq(t, `"`+ends.UTC().Format(time.RFC3339)+`"`, string(said["date_expired"]))
-	require.JSONEq(t, `"cams:1"`, string(said["scope"]))
+	require.JSONEq(t, `"`+scope+`"`, string(said["scope"]), "the list's identifier, as roster keeps it")
 	require.Equal(t, srv.URL+"/device?user_code=BCDF-0001", b.GetApproveAt())
 	require.Equal(t, "BCDF-0001", b.GetUserCode())
 	require.Equal(t, 5*time.Second, b.GetInterval().AsDuration())
@@ -251,6 +285,22 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	p, err = poll(bobs, b.GetHandle())
 	require.NoError(t, err)
 	require.Equal(t, api.HolderKeyState_HOLDER_KEY_STATE_REFUSED, p.GetState())
+	require.Empty(t, p.GetRefusal(), "the person's own no carries no sentence")
+
+	// A yes that roster would not make a key of: refused at once, in
+	// roster's sentence, rather than pending until the code lapses; and
+	// the code is over.
+	b, err = begin(bobs)
+	require.NoError(t, err)
+	app.refuse(b.GetUserCode(), "a terminal cannot be allowed more than you hold")
+	p, err = poll(bobs, b.GetHandle())
+	require.NoError(t, err)
+	require.Equal(t, api.HolderKeyState_HOLDER_KEY_STATE_REFUSED, p.GetState())
+	require.Equal(t, "a terminal cannot be allowed more than you hold", p.GetRefusal())
+	require.Empty(t, p.GetToken())
+	p, err = poll(bobs, b.GetHandle())
+	require.NoError(t, err)
+	require.Equal(t, api.HolderKeyState_HOLDER_KEY_STATE_LAPSED, p.GetState(), "nothing more comes of it")
 
 	// A code past its time.
 	b, err = begin(bobs)
@@ -286,6 +336,19 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: strings.Repeat("s", 257)}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 	require.Contains(t, status.Convert(err).Message(), "at most 256 bytes, and this is 257")
+	// A scope is a list of the caller's, and a key that carries one is
+	// given only what a list confines (§33.1).
+	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: "cams:1"}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
+	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: ReachScope(pdid.New(DomReach))}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "no such list: %v", err)
+	require.Contains(t, status.Convert(err).Message(), "no list of cameras of yours")
+	_, err = h.BeginKey(as(carol, "carol's session"), api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: scope}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "Bob's list, for Carol: %v", err)
+	require.Contains(t, status.Convert(err).Message(), "no list of cameras of yours")
+	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List", "/shale.SourceService/Erase", "/shale.HolderService/ListKeys"}, Scope: scope}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
+	require.Contains(t, status.Convert(err).Message(), "cannot carry /shale.SourceService/Erase, /shale.HolderService/ListKeys")
 	require.Equal(t, began, len(app.began), "none of them asked roster")
 
 	// The switch off at roster: the same status as no account app, and a

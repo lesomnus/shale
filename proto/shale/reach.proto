@@ -1,0 +1,107 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/payday/holder.proto";
+import "shale/payday/tenant.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Reach is a person's own list of cameras: the sites and the sources a key
+// of theirs reaches when it carries the list (§33.1, *A key narrowed to
+// some cameras*). It reaches every source of each site it names and each
+// source it names; one that names nothing reaches nothing.
+//
+// A key carries it by its identifier, written as roster keeps a key's
+// scope (`ApiKey.scope`): the identifier's written form. What a call made
+// with such a key may see is what its person may see and, of that, what
+// this names, worked out at every call; so changing a list changes what
+// every key that carries it reaches, and erasing one leaves them reaching
+// nothing.
+//
+// Every row is its person's: they add, read, change and erase their own
+// and nobody else's, and what they put in one is what they see.
+message Reach {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // What its person calls it, which the Tokens page shows beside a key
+  // that carries it.
+  string name = 5;
+
+  // Whose it is: the person who made it, and the only one who reads it.
+  Holder holder = 8 [(orm.edge) = {immutable: true}];
+
+  // What it reaches: the sites and the sources it names. One message, so
+  // that a change of it is the whole of what it names, said again: a
+  // patch that names only sources leaves no site behind.
+  ReachCameras cameras = 9;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      erase: {}
+    }
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "tenant", number: 2},
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "holder"
+        refs: [
+          {name: "holder", number: 8},
+          {name: "date_created", number: 15}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 44
+    // Erasing one is the point: its keys reach nothing from then on, and
+    // the trail says what it held.
+    erase: {hard: {}}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "holder"}
+      ]
+      size: 50
+      max: 100
+    }
+  };
+}
+
+// ReachCameras is what a Reach names, by identifier: the sites it reaches
+// every source of, and the sources it reaches besides, each one its person
+// saw when it was written. A source of a site it names is reached whether
+// or not it is named too.
+message ReachCameras {
+  repeated bytes sites = 1;
+  repeated bytes sources = 2;
+}

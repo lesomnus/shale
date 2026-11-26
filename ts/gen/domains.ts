@@ -87,6 +87,9 @@ export const PlacementPolicyDomain = 16
 /** The domain identifiers of shale.Producer carry. */
 export const ProducerDomain = 22
 
+/** The domain identifiers of shale.Reach carry. */
+export const ReachDomain = 44
+
 /** The domain identifiers of shale.Reader carry. */
 export const ReaderDomain = 23
 
@@ -150,6 +153,7 @@ pdid.register("shale.Outbox", OutboxDomain, "outbox")
 pdid.register("shale.Owed", OwedDomain, "owed")
 pdid.register("shale.PlacementPolicy", PlacementPolicyDomain, "placement-policy")
 pdid.register("shale.Producer", ProducerDomain, "producer")
+pdid.register("shale.Reach", ReachDomain, "reach")
 pdid.register("shale.Reader", ReaderDomain, "reader")
 pdid.register("shale.Relay", RelayDomain, "relay")
 pdid.register("shale.RowSeal", RowSealDomain, "row-seal")

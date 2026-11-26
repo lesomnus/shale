@@ -225,6 +225,11 @@ func (s coreHolder) BeginKey(ctx context.Context, req *api.HolderBeginKeyRequest
 	if err != nil {
 		return nil, err
 	}
+	// A scope is a list of cameras of the caller's, and a key that carries
+	// one is given only what a list confines (§33.1).
+	if err := s.keyReach(ctx, tenant, holder, k); err != nil {
+		return nil, err
+	}
 
 	if s.d.Identity.Embedded() {
 		// This console is roster's front door, so the person's yes is the
@@ -281,7 +286,7 @@ func (s coreHolder) PollKey(ctx context.Context, req *api.HolderPollKeyRequest) 
 	if !s.d.now().Before(v.lapses) {
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_LAPSED}.Build(), nil
 	}
-	token, why, err := s.d.Identity.PollTerminal(ctx, v.code)
+	token, why, said, err := s.d.Identity.PollTerminal(ctx, v.code)
 	if err != nil {
 		return nil, keyErr(err)
 	}
@@ -293,7 +298,16 @@ func (s coreHolder) PollKey(ctx context.Context, req *api.HolderPollKeyRequest) 
 	case identity.PollSlowDown:
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_PENDING, Interval: durationpb.New(10 * time.Second)}.Build(), nil
 	case identity.PollDenied:
+		// The person's own no, which carries no sentence.
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_REFUSED}.Build(), nil
+	case identity.PollRefused:
+		// Their yes, and roster's no to it -- a method they do not hold at
+		// Shale, a name they already use -- in the sentence roster's
+		// approval page showed them. The code is over at roster too.
+		if said == "" {
+			said = "the identity service would not make the key"
+		}
+		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_REFUSED, Refusal: said}.Build(), nil
 	default:
 		// `expired_token`: lapsed, or carried away by an earlier poll.
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_LAPSED}.Build(), nil
@@ -319,14 +333,17 @@ func (s coreHolder) ListKeys(ctx context.Context, _ *api.HolderListKeysRequest) 
 		return nil, status.Errorf(codes.Unavailable, "cannot ask roster what you hold at Shale right now: %v", err)
 	}
 	holds := heldMethods(held)
-	var reads []string
+	var reads, narrowed []string
 	for _, m := range holds {
 		if personMay[m] {
 			reads = append(reads, m)
 		}
+		if keyScopeMay[m] {
+			narrowed = append(narrowed, m)
+		}
 	}
 
-	b := api.HolderListKeysResponse_builder{Keys: keys, Holds: holds, Reads: reads, Remembered: durationpb.New(s.remembered())}
+	b := api.HolderListKeysResponse_builder{Keys: keys, Holds: holds, Reads: reads, Narrowed: narrowed, Remembered: durationpb.New(s.remembered())}
 	if len(holds) == 0 && s.d.Identity.Embedded() && s.d.Operators == nil {
 		// Nobody here can hold a role of Shale's: they are written at the
 		// roster in this process only where operators are named (`shale

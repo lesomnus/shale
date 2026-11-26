@@ -63,6 +63,7 @@ import (
 	entPlacementPolicy "github.com/lesomnus/shale/internal/ent/placementpolicy"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	entProducer "github.com/lesomnus/shale/internal/ent/producer"
+	entReach "github.com/lesomnus/shale/internal/ent/reach"
 	entReader "github.com/lesomnus/shale/internal/ent/reader"
 	entRelay "github.com/lesomnus/shale/internal/ent/relay"
 	entRowSeal "github.com/lesomnus/shale/internal/ent/rowseal"
@@ -147,6 +148,7 @@ const (
 	OwedDomain                    pdid.Domain = 254 // "owed"
 	PlacementPolicyDomain         pdid.Domain = 16  // "placement-policy"
 	ProducerDomain                pdid.Domain = 22  // "producer"
+	ReachDomain                   pdid.Domain = 44  // "reach"
 	ReaderDomain                  pdid.Domain = 23  // "reader"
 	RelayDomain                   pdid.Domain = 24  // "relay"
 	RowSealDomain                 pdid.Domain = 255 // "row-seal"
@@ -187,6 +189,7 @@ func init() {
 	pdid.Register("shale.Owed", OwedDomain, "owed")
 	pdid.Register("shale.PlacementPolicy", PlacementPolicyDomain, "placement-policy")
 	pdid.Register("shale.Producer", ProducerDomain, "producer")
+	pdid.Register("shale.Reach", ReachDomain, "reach")
 	pdid.Register("shale.Reader", ReaderDomain, "reader")
 	pdid.Register("shale.Relay", RelayDomain, "relay")
 	pdid.Register("shale.RowSeal", RowSealDomain, "row-seal")
@@ -231,6 +234,7 @@ var Domains = map[string]pdid.Domain{
 	"shale.Owed":                    OwedDomain,
 	"shale.PlacementPolicy":         PlacementPolicyDomain,
 	"shale.Producer":                ProducerDomain,
+	"shale.Reach":                   ReachDomain,
 	"shale.Reader":                  ReaderDomain,
 	"shale.Relay":                   RelayDomain,
 	"shale.RowSeal":                 RowSealDomain,
@@ -623,6 +627,20 @@ func (wall) ProducerScope(ctx context.Context) (predicate.Producer, error) {
 	}
 
 	return entProducer.TenantIdIn(vs...), nil
+}
+
+// ReachScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) ReachScope(ctx context.Context) (predicate.Reach, error) {
+	if _, ok := frame.AccountOf(ctx); ok {
+		return nothing[predicate.Reach](), nil
+	}
+
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entReach.TenantIdIn(vs...), nil
 }
 
 // ReaderScope: a row belongs to the tenant its "tenant" reaches.
@@ -1044,6 +1062,11 @@ func (x grouped) ProducerScope(ctx context.Context) (predicate.Producer, error) 
 	}
 
 	return entProducer.SiteIdIn(vs...), nil
+}
+
+// ReachScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) ReachScope(ctx context.Context) (predicate.Reach, error) {
+	return nil, nil
 }
 
 // ReaderScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -11520,6 +11543,298 @@ func (s sinkProducer) Get(ctx context.Context, req *api.ProducerGetRequest) (*ap
 	return v, nil
 }
 
+type sinkReach struct {
+	api.ReachServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Reach() api.ReachServiceServer {
+	return sinkReach{s.Server.Reach(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkReach) Erase(ctx context.Context, req *api.ReachRef) (*api.ReachEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "Reach", req)
+
+	return s.ReachServiceServer.Erase(ctx, req)
+}
+
+// Patch forgets what the transaction was told about the row, before it is
+// written: a request may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkReach) Patch(ctx context.Context, req *api.ReachPatchRequest) (*api.Reach, error) {
+	seen.Forget(s.store.Db.Driver(), "Reach", req.GetRef())
+
+	return s.ReachServiceServer.Patch(ctx, req)
+}
+
+// orderReach is how Reachs come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderReach = []sqlpage.Order{
+	{Column: entReach.FieldDateCreated, Desc: false},
+	{Column: entReach.FieldId, Desc: false},
+}
+
+func afterReach(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextReach(last *ent.Reach, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByReach is an order as ent orders a query by it.
+func orderByReach(by []sqlpage.Order) []entReach.OrderOption {
+	out := make([]entReach.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// ReachPageSize is what a request that did not say gets, and
+	// ReachPageLimit is the most it gets however loudly it asks.
+	ReachPageSize  = 50
+	ReachPageLimit = 100
+
+	// ReachFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	ReachFilterLimit = 32
+)
+
+// List answers with the Reachs that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkReach) List(ctx context.Context, req *api.ReachListRequest) (*api.ReachListResponse, error) {
+	q := s.store.Db.Reach.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.ReachNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > ReachFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), ReachFilterLimit)
+		}
+
+		ps := make([]predicate.Reach, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterReach(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entReach.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderReach, afterReach, nextReach, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	if sel := req.GetSelect(); sel != nil {
+		if err := pdSelectDepthOf(sel.ProtoReflect()); err != nil {
+			return nil, err
+		}
+
+		// As a Get with it reads one row, each edge through the narrowing of
+		// the entity it reaches; one query for the rows and one for each
+		// edge, whatever the size of the page.
+		if err := bare.ReachSelect(ctx, s.store.Scope, q, sel); err != nil {
+			return nil, err
+		}
+		if !sel.GetAll() {
+			// And the columns the order walks, which the cursor is made of,
+			// whether or not the select asked for them.
+			have := bare.ReachSelectedFields(sel)
+			for _, o := range by {
+				if !slices.Contains(have, o.Column) {
+					q.Select(o.Column)
+					have = append(have, o.Column)
+				}
+			}
+		}
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), ReachPageSize, ReachPageLimit)
+	us, err := q.Order(orderByReach(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.Reach, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.ReachListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	// And without what the select did not ask for, as a Get answers, now
+	// that the cursor -- which may be made of a column it did not ask
+	// for -- is made.
+	if m := req.GetSelect(); m != nil {
+		for _, v := range items {
+			pdUnselect(v.ProtoReflect(), m.ProtoReflect())
+		}
+	}
+
+	return res, nil
+}
+
+// filterReach turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterReach(f *api.ReachFilter) (predicate.Reach, error) {
+	ps := make([]predicate.Reach, 0, 1)
+	if f.HasRef() {
+		p, err := bare.ReachPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entReach.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entReach.HasTenantWith(q))
+		}
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, entReach.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entReach.HasHolderWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entReach.And(ps...), nil
+}
+
+// Get answers with the Reach as the generated one reads it, and without
+// what its select did not ask for; see [pdUnselect].
+func (s sinkReach) Get(ctx context.Context, req *api.ReachGetRequest) (*api.Reach, error) {
+	if err := pdSelectDepthOf(req.GetSelect().ProtoReflect()); err != nil {
+		return nil, err
+	}
+	v, err := s.ReachServiceServer.Get(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if m := req.GetSelect(); m != nil {
+		pdUnselect(v.ProtoReflect(), m.ProtoReflect())
+	}
+
+	return v, nil
+}
+
 type sinkReader struct {
 	api.ReaderServiceServer
 	store  bare.Store
@@ -18266,6 +18581,65 @@ func (s gateProducer) Patch(ctx context.Context, req *api.ProducerPatchRequest) 
 	return s.ProducerServiceServer.Patch(ctx, req)
 }
 
+type gateReach struct {
+	Gate
+	api.ReachServiceServer
+}
+
+func (s Gate) Reach() api.ReachServiceServer {
+	v := gateReach{s, s.Next().Reach()}
+	v.ReachServiceServer = bare.ReachWithAddRule(v.ReachServiceServer, v.admit)
+	return guardedReach{v}
+}
+
+// admit refuses a Reach put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.Reach].
+func (s gateReach) admit(ctx context.Context, req *api.ReachAddRequest) (*api.ReachAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetHolder(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
+			_, err := s.Gate.Next().Holder().Get(ctx, api.HolderGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
 type gateReader struct {
 	Gate
 	api.ReaderServiceServer
@@ -20869,6 +21243,49 @@ func (s guardedAddressPolicy) Activate(ctx context.Context, req *api.AddressPoli
 	return s.AddressPolicyServiceServer.Activate(ctx, req)
 }
 
+// guardedReach enforces method declarations on in-process calls too.
+type guardedReach struct{ api.ReachServiceServer }
+
+func (s guardedReach) Add(ctx context.Context, req *api.ReachAddRequest) (*api.Reach, error) {
+	if err := gate.Direct(ctx, api.ReachService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.ReachServiceServer.Add(ctx, req)
+}
+
+func (s guardedReach) Get(ctx context.Context, req *api.ReachGetRequest) (*api.Reach, error) {
+	if err := gate.Direct(ctx, api.ReachService_Get_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.ReachServiceServer.Get(ctx, req)
+}
+
+func (s guardedReach) Patch(ctx context.Context, req *api.ReachPatchRequest) (*api.Reach, error) {
+	if err := gate.Direct(ctx, api.ReachService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.ReachServiceServer.Patch(ctx, req)
+}
+
+func (s guardedReach) Erase(ctx context.Context, req *api.ReachRef) (*api.ReachEraseResponse, error) {
+	if err := gate.Direct(ctx, api.ReachService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.ReachServiceServer.Erase(ctx, req)
+}
+
+func (s guardedReach) List(ctx context.Context, req *api.ReachListRequest) (*api.ReachListResponse, error) {
+	if err := gate.Direct(ctx, api.ReachService_List_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.ReachServiceServer.List(ctx, req)
+}
+
 // Audit is the layer that refuses a trail row written by hand.
 //
 // The RPCs exist because the trail is an entity like any other and a test is
@@ -21173,6 +21590,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedPlacementPolicy.md, describedPlacementPolicy.secret, describedPlacementPolicy.personal
 	case ProducerDomain:
 		return describedProducer.md, describedProducer.secret, describedProducer.personal
+	case ReachDomain:
+		return describedReach.md, describedReach.secret, describedReach.personal
 	case ReaderDomain:
 		return describedReader.md, describedReader.secret, describedReader.personal
 	case RelayDomain:
@@ -21297,6 +21716,9 @@ var (
 	describedProducer = describe((*api.Producer)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
+	describedReach = describe((*api.Reach)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
 	describedReader = describe((*api.Reader)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -21374,6 +21796,7 @@ func added(by string) bool {
 		api.NodeService_Add_FullMethodName,
 		api.PlacementPolicyService_Add_FullMethodName,
 		api.ProducerService_Add_FullMethodName,
+		api.ReachService_Add_FullMethodName,
 		api.ReaderService_Add_FullMethodName,
 		api.RelayService_Add_FullMethodName,
 		api.SatelliteService_Add_FullMethodName,
@@ -21869,6 +22292,33 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 
 		return k, b, nil
 
+	case ReachDomain:
+		row, ok := image.(*api.Reach)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
 	case ReaderDomain:
 		row, ok := image.(*api.Reader)
 		if !ok {
@@ -22087,6 +22537,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsPlacementPolicy(ctx, s.Db, entPlacementPolicy.IdEQ(uuid.UUID(key)))
 	case ProducerDomain:
 		vs, err = rowsProducer(ctx, s.Db, entProducer.IdEQ(uuid.UUID(key)))
+	case ReachDomain:
+		vs, err = rowsReach(ctx, s.Db, entReach.IdEQ(uuid.UUID(key)))
 	case ReaderDomain:
 		vs, err = rowsReader(ctx, s.Db, entReader.IdEQ(uuid.UUID(key)))
 	case RelayDomain:
@@ -22530,6 +22982,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	}
 	if err := audit.CheckKind(ctx, d, checkedProducer(db), archived, &out); err != nil {
 		return out, fmt.Errorf("producer: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedReach(db), archived, &out); err != nil {
+		return out, fmt.Errorf("reach: %w", err)
 	}
 	if err := audit.CheckKind(ctx, d, checkedReader(db), archived, &out); err != nil {
 		return out, fmt.Errorf("reader: %w", err)
@@ -23494,6 +23949,52 @@ func checkedProducer(db *ent.Client) audit.Kind {
 	}
 }
 
+// checkedReach is what a check of the rows reads of the reach kind.
+func checkedReach(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.Reach) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsReach(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: ReachDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entReach.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entReach.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, ReachDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsReach(ctx, db, entReach.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
 // checkedReader is what a check of the rows reads of the reader kind.
 func checkedReader(db *ent.Client) audit.Kind {
 	read := func(ctx context.Context, ps ...predicate.Reader) (audit.Page, error) {
@@ -24440,6 +24941,28 @@ func rowsProducer(ctx context.Context, db *ent.Client, ps ...predicate.Producer)
 	return out, nil
 }
 
+// rowsReach is the rows `ps` says of the reach kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsReach(ctx context.Context, db *ent.Client, ps ...predicate.Reach) ([]audit.Live, error) {
+	q := db.Reach.Query().Where(ps...)
+	if err := bare.ReachSelectInit(ctx, nil, q, nil); err != nil {
+		return nil, err
+	}
+
+	vs, err := q.Order(entReach.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsReader is the rows `ps` says of the reader kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -24945,6 +25468,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsPlacementPolicy(ctx, db, entPlacementPolicy.IdIn(uuids(page)...))
 			case ProducerDomain:
 				rows, err = rowsProducer(ctx, db, entProducer.IdIn(uuids(page)...))
+			case ReachDomain:
+				rows, err = rowsReach(ctx, db, entReach.IdIn(uuids(page)...))
 			case ReaderDomain:
 				rows, err = rowsReader(ctx, db, entReader.IdIn(uuids(page)...))
 			case RelayDomain:
@@ -25121,6 +25646,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsPlacementPolicy(ctx, s.db, entPlacementPolicy.IdIn(uuids(ids)...))
 		case ProducerDomain:
 			rows, err = rowsProducer(ctx, s.db, entProducer.IdIn(uuids(ids)...))
+		case ReachDomain:
+			rows, err = rowsReach(ctx, s.db, entReach.IdIn(uuids(ids)...))
 		case ReaderDomain:
 			rows, err = rowsReader(ctx, s.db, entReader.IdIn(uuids(ids)...))
 		case RelayDomain:
@@ -27512,6 +28039,40 @@ func (s interceptAddressPolicy) Activate(ctx context.Context, req *api.AddressPo
 		api.AddressPolicyService_Activate_FullMethodName, req, s.AddressPolicyServiceServer.Activate)
 }
 
+func (s Intercept) Reach() api.ReachServiceServer {
+	return interceptReach{s, s.Next().Reach()}
+}
+
+type interceptReach struct {
+	Intercept
+	api.ReachServiceServer
+}
+
+func (s interceptReach) Add(ctx context.Context, req *api.ReachAddRequest) (*api.Reach, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ReachServiceServer,
+		api.ReachService_Add_FullMethodName, req, s.ReachServiceServer.Add)
+}
+
+func (s interceptReach) Get(ctx context.Context, req *api.ReachGetRequest) (*api.Reach, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ReachServiceServer,
+		api.ReachService_Get_FullMethodName, req, s.ReachServiceServer.Get)
+}
+
+func (s interceptReach) Patch(ctx context.Context, req *api.ReachPatchRequest) (*api.Reach, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ReachServiceServer,
+		api.ReachService_Patch_FullMethodName, req, s.ReachServiceServer.Patch)
+}
+
+func (s interceptReach) Erase(ctx context.Context, req *api.ReachRef) (*api.ReachEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ReachServiceServer,
+		api.ReachService_Erase_FullMethodName, req, s.ReachServiceServer.Erase)
+}
+
+func (s interceptReach) List(ctx context.Context, req *api.ReachListRequest) (*api.ReachListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ReachServiceServer,
+		api.ReachService_List_FullMethodName, req, s.ReachServiceServer.List)
+}
+
 // routingSnapshots captures notification metadata in the write transaction.
 func routingSnapshots(method string) bare.SnapshotOptions {
 	return bare.SnapshotOptions{}
@@ -29107,6 +29668,7 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 		&api.Owed{},
 		&api.PlacementPolicy{},
 		&api.Producer{},
+		&api.Reach{},
 		&api.Reader{},
 		&api.Relay{},
 		&api.RowSeal{},
@@ -30073,6 +30635,39 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				return nil, err
 			}
 			return publicResource(v), nil
+		case *api.Reach:
+			ctx, err := guard.Allow(ctx, api.ReachService_Get_FullMethodName)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.ReachNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entReach.Table, []resourcesql.Column{
+				{Number: 1, Name: entReach.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entReach.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 5, Name: entReach.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entReach.HolderColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 13, Name: entReach.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 15, Name: entReach.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.Reach.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
 		case *api.Reader:
 			ctx, err := guard.Allow(ctx, api.ReaderService_Get_FullMethodName)
 			if err != nil {
@@ -30644,6 +31239,12 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case api.ProducerService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.ReachService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.ReachService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.ReachService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case api.ReaderService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case api.ReaderService_Patch_FullMethodName:
@@ -30720,7 +31321,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraCredential", "shale.CameraCredentialVersion", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraPolicy", "shale.CameraPreset", "shale.CameraWorker", "shale.CertificateAuthority", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Satellite", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
+	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraCredential", "shale.CameraCredentialVersion", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraPolicy", "shale.CameraPreset", "shale.CameraWorker", "shale.CertificateAuthority", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reach", "shale.Reader", "shale.Relay", "shale.Satellite", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
 	default:
 		return nil
 	}
@@ -30801,6 +31402,7 @@ func Admission(policy admission.Policy, options admission.Options) bare.Option {
 			"shale.Node",
 			"shale.PlacementPolicy",
 			"shale.Producer",
+			"shale.Reach",
 			"shale.Reader",
 			"shale.Relay",
 			"shale.Satellite",
@@ -30924,6 +31526,11 @@ func Admission(policy admission.Policy, options admission.Options) bare.Option {
 				&api.ProducerRef{},
 				&api.ProducerAddRequest{},
 				&api.ProducerPatchRequest{},
+			}},
+			{Row: &api.Reach{}, Requests: []proto.Message{
+				&api.ReachRef{},
+				&api.ReachAddRequest{},
+				&api.ReachPatchRequest{},
 			}},
 			{Row: &api.Reader{}, Requests: []proto.Message{
 				&api.ReaderRef{},

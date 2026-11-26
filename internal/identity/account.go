@@ -89,12 +89,16 @@ type TerminalKey struct {
 }
 
 // The RFC's words for a poll that carries no key (§3.5), as the account
-// app answers them (roster's `account/device.go`, `devices.polled`).
+// app answers them (roster's `account/device.go`, `devices.polled`), and
+// one of roster's own: [PollRefused], the person's yes that roster would
+// not make a key of, with roster's sentence as `error_description`.
+// [PollDenied] is the person's own no, and carries no sentence.
 const (
 	PollPending  = "authorization_pending"
 	PollSlowDown = "slow_down"
 	PollDenied   = "access_denied"
 	PollExpired  = "expired_token"
+	PollRefused  = "refused"
 )
 
 // Account says whether this deployment names roster's account app, where
@@ -220,27 +224,30 @@ func (s *Store) BeginTerminal(ctx context.Context, k TerminalKey) (Terminal, err
 }
 
 // PollTerminal asks the account app whether the person said yes
-// (`POST /device/poll`): the key's token, once, or the RFC's word for why
-// not ([PollPending], [PollSlowDown], [PollDenied], [PollExpired]).
-func (s *Store) PollTerminal(ctx context.Context, code string) (token, why string, err error) {
+// (`POST /device/poll`): the key's token, once, or the word for why not
+// ([PollPending], [PollSlowDown], [PollDenied], [PollExpired],
+// [PollRefused]), and for [PollRefused] roster's sentence for it, which
+// the approval page showed the person.
+func (s *Store) PollTerminal(ctx context.Context, code string) (token, why, said string, err error) {
 	if s.account == nil {
-		return "", "", ErrNoAccount
+		return "", "", "", ErrNoAccount
 	}
 	var out struct {
-		Token string `json:"token"`
-		Error string `json:"error"`
+		Token       string `json:"token"`
+		Error       string `json:"error"`
+		Description string `json:"error_description"`
 	}
 	if err := s.account.post(ctx, "/device/poll", map[string]string{"device_code": code}, &out); err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	if out.Error != "" {
-		return "", out.Error, nil
+		return "", out.Error, out.Description, nil
 	}
 	if out.Token == "" {
-		return "", "", fmt.Errorf("the identity service's account app at %s answered neither a key nor why not", s.account.base)
+		return "", "", "", fmt.Errorf("the identity service's account app at %s answered neither a key nor why not", s.account.base)
 	}
 
-	return out.Token, "", nil
+	return out.Token, "", "", nil
 }
 
 // ownKeys is what a person's keys for Shale are read by at roster: theirs,

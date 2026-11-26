@@ -213,6 +213,20 @@ func ProducerOrErr(p Producer, err error) Producer {
 	}
 }
 
+// Reach is the predicate function for reach builders.
+type Reach func(*sql.Selector)
+
+// ReachOrErr calls the predicate only if the error is not nit.
+func ReachOrErr(p Reach, err error) Reach {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Reader is the predicate function for reader builders.
 type Reader func(*sql.Selector)
 

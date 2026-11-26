@@ -132,12 +132,13 @@ func holderFrame(ctx context.Context, own api.Server, ref *api.HolderRef) (*fram
 // minted, answered back by `Introspect` (`ApiKey.scope`, payday's
 // `TokenIntrospectResponse.scope`) -- is not put here. payday's
 // interceptor puts it on the frame each call is served with, beside the
-// grant and over whatever this answered, so a later change that narrows a
-// key to some cameras reads `frame.Must(ctx).TokenScope()`, from a scope
-// beside `pd.Wall` and `pd.Grouped`. Nothing reads it yet. It is the
-// key's, not the person's: nothing that is kept per person (`Sites.Of`,
-// `identity.Operators`, the standing of sessions) may hold it, and what
-// [keys] keeps is per key.
+// grant and over whatever this answered; the scope beside `pd.Wall` and
+// `pd.Grouped` reads it there (`core.Reaches`: a list of cameras the key
+// is narrowed to), and so does the gate, which refuses such a key every
+// method a list does not confine. It is the key's, not the person's:
+// nothing that is kept per person (`Sites.Of`, `identity.Operators`, the
+// standing of sessions) may hold it, what [keys] keeps is per key, and
+// the list is remembered by its own identifier.
 func keyFrame(ctx context.Context, s *Server, k pdid.Id, id auth.Identity) (*frame.Frame, error) {
 	own := s.Ungated
 	ref := api.HolderRef_builder{Id: k.Bytes()}.Build()
