@@ -55,7 +55,8 @@ service HolderService {
   // one there.
   rpc BeginKey(HolderBeginKeyRequest) returns (HolderBeginKeyResponse);
   // PollKey asks whether the key BeginKey began is made yet: not yet,
-  // refused, lapsed, or made, with its token this once. Only the session
+  // refused -- by the person, or by roster after their yes, in roster's
+  // sentence -- lapsed, or made, with its token this once. Only the session
   // or the key that began it may ask.
   rpc PollKey(HolderPollKeyRequest) returns (HolderPollKeyResponse);
   // ListKeys is the caller's own keys for Shale, as roster holds them.
@@ -324,6 +325,9 @@ message HolderPollKeyResponse {
   string token = 2 [features.field_presence = IMPLICIT];
   // How long to wait before asking again, when `state` is PENDING.
   google.protobuf.Duration interval = 3;
+  // Why roster would not make the key, in its sentence, when `state` is
+  // REFUSED after the person's yes; empty for the person's own no.
+  string refusal = 4 [features.field_presence = IMPLICIT];
 }
 
 // HolderKeyState is where a key BeginKey began is.
@@ -333,7 +337,10 @@ enum HolderKeyState {
   HOLDER_KEY_STATE_PENDING = 1;
   // Made: `token` is the key's, answered this once.
   HOLDER_KEY_STATE_MADE = 2;
-  // The person said no at the identity service. Nothing was made.
+  // Nothing was made, and nothing more comes of this handle: the person
+  // said no at the identity service, or said yes and roster would not make
+  // the key -- a method they do not hold at Shale, a name they already
+  // use -- which `refusal` says in roster's words.
   HOLDER_KEY_STATE_REFUSED = 3;
   // Nobody said yes in time, or the key was carried away already by an
   // earlier PollKey. Nothing more comes of this handle.

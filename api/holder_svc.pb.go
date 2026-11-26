@@ -32,7 +32,10 @@ const (
 	HolderKeyState_HOLDER_KEY_STATE_PENDING HolderKeyState = 1
 	// Made: `token` is the key's, answered this once.
 	HolderKeyState_HOLDER_KEY_STATE_MADE HolderKeyState = 2
-	// The person said no at the identity service. Nothing was made.
+	// Nothing was made, and nothing more comes of this handle: the person
+	// said no at the identity service, or said yes and roster would not make
+	// the key -- a method they do not hold at Shale, a name they already
+	// use -- which `refusal` says in roster's words.
 	HolderKeyState_HOLDER_KEY_STATE_REFUSED HolderKeyState = 3
 	// Nobody said yes in time, or the key was carried away already by an
 	// earlier PollKey. Nothing more comes of this handle.
@@ -2643,6 +2646,7 @@ type HolderPollKeyResponse struct {
 	xxx_hidden_State    HolderKeyState         `protobuf:"varint,1,opt,name=state,enum=shale.HolderKeyState"`
 	xxx_hidden_Token    string                 `protobuf:"bytes,2,opt,name=token"`
 	xxx_hidden_Interval *durationpb.Duration   `protobuf:"bytes,3,opt,name=interval"`
+	xxx_hidden_Refusal  string                 `protobuf:"bytes,4,opt,name=refusal"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -2693,6 +2697,13 @@ func (x *HolderPollKeyResponse) GetInterval() *durationpb.Duration {
 	return nil
 }
 
+func (x *HolderPollKeyResponse) GetRefusal() string {
+	if x != nil {
+		return x.xxx_hidden_Refusal
+	}
+	return ""
+}
+
 func (x *HolderPollKeyResponse) SetState(v HolderKeyState) {
 	x.xxx_hidden_State = v
 }
@@ -2703,6 +2714,10 @@ func (x *HolderPollKeyResponse) SetToken(v string) {
 
 func (x *HolderPollKeyResponse) SetInterval(v *durationpb.Duration) {
 	x.xxx_hidden_Interval = v
+}
+
+func (x *HolderPollKeyResponse) SetRefusal(v string) {
+	x.xxx_hidden_Refusal = v
 }
 
 func (x *HolderPollKeyResponse) HasInterval() bool {
@@ -2724,6 +2739,9 @@ type HolderPollKeyResponse_builder struct {
 	Token string
 	// How long to wait before asking again, when `state` is PENDING.
 	Interval *durationpb.Duration
+	// Why roster would not make the key, in its sentence, when `state` is
+	// REFUSED after the person's yes; empty for the person's own no.
+	Refusal string
 }
 
 func (b0 HolderPollKeyResponse_builder) Build() *HolderPollKeyResponse {
@@ -2733,6 +2751,7 @@ func (b0 HolderPollKeyResponse_builder) Build() *HolderPollKeyResponse {
 	x.xxx_hidden_State = b.State
 	x.xxx_hidden_Token = b.Token
 	x.xxx_hidden_Interval = b.Interval
+	x.xxx_hidden_Refusal = b.Refusal
 	return m0
 }
 
@@ -3160,11 +3179,12 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12\x1b\n" +
 	"\x05scope\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\x05scope\"5\n" +
 	"\x14HolderPollKeyRequest\x12\x1d\n" +
-	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\x9f\x01\n" +
+	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\xc0\x01\n" +
 	"\x15HolderPollKeyResponse\x122\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x15.shale.HolderKeyStateB\x05\xaa\x01\x02\b\x02R\x05state\x12\x1b\n" +
 	"\x05token\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x125\n" +
-	"\binterval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\binterval\"\x17\n" +
+	"\binterval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12\x1f\n" +
+	"\arefusal\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\arefusal\"\x17\n" +
 	"\x15HolderListKeysRequest\"\xc9\x01\n" +
 	"\x16HolderListKeysResponse\x12$\n" +
 	"\x04keys\x18\x01 \x03(\v2\x10.shale.HolderKeyR\x04keys\x12\x14\n" +

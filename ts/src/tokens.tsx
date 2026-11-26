@@ -330,7 +330,11 @@ function Waiting(props: { at: string; code: string; handle: string; every: numbe
 							props.made(r.token)
 							return
 						case HolderKeyState.REFUSED:
-							props.over('You said no at the identity service, so no token was made. Make it again if you meant yes.')
+							props.over(
+								r.refusal !== ''
+									? `The identity service would not make the token: ${r.refusal}. Nothing was made; make it again with what it would allow.`
+									: 'You said no at the identity service, so no token was made. Make it again if you meant yes.',
+							)
 							return
 						case HolderKeyState.LAPSED:
 							props.over('Nobody said yes at the identity service in time, so no token was made. Make it again, and say yes within a quarter of an hour.')

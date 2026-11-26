@@ -124,8 +124,8 @@ github.com/lesomnus/payday v0.0.0-20261126111838-dc958082a988 h1:pKS5zvZ9fKZJkBz
 github.com/lesomnus/payday v0.0.0-20261126111838-dc958082a988/go.mod h1:Z9CvTwDq4iKI7pOhI0a5eUs5VyVQ8o+gO65kDvEsdzE=
 github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da h1:qPsmOLxmKDgZHCggUNE4pv5Ay1TtO1Chn/OzN5JNKqQ=
 github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
-github.com/lesomnus/roster v0.1.2-0.20261126122550-5436801f5e7e h1:IpXd/LVO11P0snOnkTzdm4yafAI0kx+4OzMTKrS4qKY=
-github.com/lesomnus/roster v0.1.2-0.20261126122550-5436801f5e7e/go.mod h1:7/fNpYvI3IFV49wSYWEvmnrRbtFW15IkKV0074hTOZE=
+github.com/lesomnus/roster v0.1.2-0.20261126135548-cddc67534d7b h1:oyUmo4dUrhT7ArTr8ijrVr2FekxVfWWbdmqrSDqdjSY=
+github.com/lesomnus/roster v0.1.2-0.20261126135548-cddc67534d7b/go.mod h1:7/fNpYvI3IFV49wSYWEvmnrRbtFW15IkKV0074hTOZE=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e h1:S272MwPLsKMFJ7Xl75vVixiZ6QpN9tLuJXH4Q3GsKJk=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e/go.mod h1:OT2wkw6444ni+rf0+zlh9T8IQhOWy5x04ArBbqv3Lu0=
 github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c h1:C3QoREkgt4tivmakukKKPdfaVUZb5zy3gF+LOsMoybY=

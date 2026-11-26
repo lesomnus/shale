@@ -281,7 +281,7 @@ func (s coreHolder) PollKey(ctx context.Context, req *api.HolderPollKeyRequest) 
 	if !s.d.now().Before(v.lapses) {
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_LAPSED}.Build(), nil
 	}
-	token, why, err := s.d.Identity.PollTerminal(ctx, v.code)
+	token, why, said, err := s.d.Identity.PollTerminal(ctx, v.code)
 	if err != nil {
 		return nil, keyErr(err)
 	}
@@ -293,7 +293,16 @@ func (s coreHolder) PollKey(ctx context.Context, req *api.HolderPollKeyRequest) 
 	case identity.PollSlowDown:
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_PENDING, Interval: durationpb.New(10 * time.Second)}.Build(), nil
 	case identity.PollDenied:
+		// The person's own no, which carries no sentence.
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_REFUSED}.Build(), nil
+	case identity.PollRefused:
+		// Their yes, and roster's no to it -- a method they do not hold at
+		// Shale, a name they already use -- in the sentence roster's
+		// approval page showed them. The code is over at roster too.
+		if said == "" {
+			said = "the identity service would not make the key"
+		}
+		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_REFUSED, Refusal: said}.Build(), nil
 	default:
 		// `expired_token`: lapsed, or carried away by an earlier poll.
 		return api.HolderPollKeyResponse_builder{State: api.HolderKeyState_HOLDER_KEY_STATE_LAPSED}.Build(), nil

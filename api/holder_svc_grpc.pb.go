@@ -81,7 +81,8 @@ type HolderServiceClient interface {
 	// one there.
 	BeginKey(ctx context.Context, in *HolderBeginKeyRequest, opts ...grpc.CallOption) (*HolderBeginKeyResponse, error)
 	// PollKey asks whether the key BeginKey began is made yet: not yet,
-	// refused, lapsed, or made, with its token this once. Only the session
+	// refused -- by the person, or by roster after their yes, in roster's
+	// sentence -- lapsed, or made, with its token this once. Only the session
 	// or the key that began it may ask.
 	PollKey(ctx context.Context, in *HolderPollKeyRequest, opts ...grpc.CallOption) (*HolderPollKeyResponse, error)
 	// ListKeys is the caller's own keys for Shale, as roster holds them.
@@ -268,7 +269,8 @@ type HolderServiceServer interface {
 	// one there.
 	BeginKey(context.Context, *HolderBeginKeyRequest) (*HolderBeginKeyResponse, error)
 	// PollKey asks whether the key BeginKey began is made yet: not yet,
-	// refused, lapsed, or made, with its token this once. Only the session
+	// refused -- by the person, or by roster after their yes, in roster's
+	// sentence -- lapsed, or made, with its token this once. Only the session
 	// or the key that began it may ask.
 	PollKey(context.Context, *HolderPollKeyRequest) (*HolderPollKeyResponse, error)
 	// ListKeys is the caller's own keys for Shale, as roster holds them.
