@@ -345,6 +345,10 @@ func (s *Server) ssoCallback(surface Surface, w http.ResponseWriter, r *http.Req
 		}
 	}
 	if _, err := s.Provision(ctx, p); err != nil {
+		if v, ok := errors.AsType[elsewhereError](err); ok {
+			no(http.StatusConflict, "You are known here by another identifier", v.Message()+".", err)
+			return
+		}
 		no(http.StatusInternalServerError, "The sign-in did not complete", "Try again in a moment.", err)
 		return
 	}
@@ -436,6 +440,10 @@ func (s *Server) ssoToken(surface Surface, w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if _, err := s.Provision(ctx, p); err != nil {
+		if v, ok := errors.AsType[elsewhereError](err); ok {
+			refuse(http.StatusConflict, v.Message(), err)
+			return
+		}
 		refuse(http.StatusInternalServerError, "the sign-in did not complete", err)
 		return
 	}

@@ -56,7 +56,7 @@ func migrateIdentity(ctx context.Context, c *cmd.Config, self *xli.Command) erro
 		return err
 	}
 	if !s.Identity.Embedded() {
-		return fmt.Errorf("%w: give roster's operator the identifiers `shale tenant ls` and `shale holder ls` print", identity.ErrExternal)
+		return fmt.Errorf("%w: give roster's operator the identifiers `shale tenant ls` and `shale holder ls` print (§32.1)", identity.ErrExternal)
 	}
 
 	tenants, err := every(ctx, func(after string) ([]*api.Tenant, string, error) {
