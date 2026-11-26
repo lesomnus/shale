@@ -31,6 +31,7 @@ import { HolderSchema } from './shale/payday/holder_pb.js'
 import { NodeSchema, ProducerSchema, ReaderSchema, RelaySchema, SatelliteSchema } from './shale/host_pb.js'
 import { OutboxSchema } from './shale/payday/outbox_pb.js'
 import { OwedSchema } from './shale/payday/owed_pb.js'
+import { ReachSchema } from './shale/reach_pb.js'
 import { RowSealSchema } from './shale/payday/rowseal_pb.js'
 import { SetSchema, SourceSchema } from './shale/set_pb.js'
 import { SiteSchema } from './shale/site_pb.js'
@@ -54,6 +55,7 @@ import { HolderService } from './shale/payday/holder_svc_pb.js'
 import { NodeService, ProducerService, ReaderService, RelayService, SatelliteService } from './shale/host_svc_pb.js'
 import { OutboxService } from './shale/payday/outbox_svc_pb.js'
 import { OwedService } from './shale/payday/owed_svc_pb.js'
+import { ReachService } from './shale/reach_svc_pb.js'
 import { RowSealService } from './shale/payday/rowseal_svc_pb.js'
 import { SetService, SourceService } from './shale/set_svc_pb.js'
 import { SiteService } from './shale/site_svc_pb.js'
@@ -366,6 +368,18 @@ export const Producer = {
 	service: ProducerService,
 } as const satisfies EntityDesc
 
+/** shale.Reach, as the store holds it. */
+export const Reach = {
+	typeName: "shale.Reach",
+	schema: ReachSchema,
+	domain: 44,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "holder", to: "shale.Holder" }],
+	key: "id",
+	ids: ["id"],
+	service: ReachService,
+} as const satisfies EntityDesc
+
 /** shale.Reader, as the store holds it. */
 export const Reader = {
 	typeName: "shale.Reader",
@@ -515,5 +529,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Satellite, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reach, Reader, Relay, RowSeal, Satellite, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
+	"github.com/lesomnus/shale/internal/ent/reach"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/satellite"
@@ -186,6 +187,11 @@ func init() {
 	producerDescCaHash := producerFields[19].Descriptor()
 	// producer.DefaultCaHash holds the default value on creation for the ca_hash field.
 	producer.DefaultCaHash = producerDescCaHash.Default.(string)
+	reachFields := schema.Reach{}.Fields()
+	_ = reachFields
+	// reachDescCameras is the schema descriptor for cameras field.
+	reachDescCameras := reachFields[2].Descriptor()
+	reach.ValueScanner.Cameras = reachDescCameras.ValueScanner.(field.TypeValueScanner[*api.ReachCameras])
 	readerFields := schema.Reader{}.Fields()
 	_ = readerFields
 	// readerDescJoin is the schema descriptor for join field.

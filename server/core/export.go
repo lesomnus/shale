@@ -96,6 +96,9 @@ func (s coreLamina) Export(ctx context.Context, req *api.LaminaExportRequest) (*
 	if req.GetSource() == nil {
 		return nil, invalid("source", "one source is required")
 	}
+	if err := s.reachGone(ctx); err != nil {
+		return nil, err
+	}
 	from, to, err := exportRange(req.GetFrom(), req.GetTo())
 	if err != nil {
 		return nil, err

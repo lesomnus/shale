@@ -326,14 +326,18 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	if c.Auth.Delegation.On() {
 		deps.Delegations, deps.DelegationConfig = delegations{s}, c.Auth.Delegation.core()
 	}
+	deps.Reaches = core.NewReaches(deps)
 	s.Deps = deps
 	s.Sites = core.NewSites(deps)
 	s.Sites.Operators = s.operators()
 
 	// The stack a caller reaches: the wall and the site axis on the sink,
-	// then Shale's own layer, the trail, secrets cleared on the way out, and
-	// the gate outermost so nothing behind it asks again.
-	walled, err := pd.NewSink(client, append(opts, bare.WithScope(bare.Scopes{pd.Wall(), pd.Grouped(s.Sites.Of)}))...)
+	// and beside them a key's list of cameras (§33.1: a call made with a
+	// key that carries one sees what its person sees and, of that, what
+	// the list names; a person's lists are their own); then Shale's own
+	// layer, the trail, secrets cleared on the way out, and the gate
+	// outermost so nothing behind it asks again.
+	walled, err := pd.NewSink(client, append(opts, bare.WithScope(bare.Scopes{pd.Wall(), pd.Grouped(s.Sites.Of), deps.Reaches.Scope()}))...)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -792,6 +796,7 @@ func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 	api.RegisterCameraCredentialServiceServer(g, s.CameraCredential())
 	api.RegisterCameraCredentialVersionServiceServer(g, s.CameraCredentialVersion())
+	api.RegisterReachServiceServer(g, s.Reach())
 }
 
 // registerCluster mounts the cluster API: its own services, and the tenant

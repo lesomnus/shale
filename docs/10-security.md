@@ -141,7 +141,7 @@ holds a credential.
   | | roster elsewhere | roster in this process |
   |---|---|---|
   | **made** (`BeginKey`, `PollKey`) | a terminal's sign-in for one key at roster's account app (`auth.roster.account`, with `account.terminal` on there): Shale's server posts `/device/begin` naming the app `shale`, the key's name, methods, end and scope, and answers the caller where their browser says yes at the identity service, and a handle; `PollKey` posts `/device/poll` and answers *not yet*, *refused*, *lapsed* or the token, once; *refused* is the person's no, or their yes that roster would not make a key of (a method they do not hold at Shale, a name they already use), which roster's poll answers at once (`refused`, with `error_description`) and `PollKey` passes on in roster's sentence. Nothing is made without the person's yes at roster's front door, held there to what they hold at Shale | `ApiKeyService/Issue` as the person, in this process, answered at once by `BeginKey`: the console is roster's front door here. Held to what they hold at Shale, as roster holds it |
-  | **listed** (`ListKeys`) | `ApiKeyService/List` asked as Shale, by the caller and the app `shale`: name, methods, end, last used, made, scope; beside them what the caller holds at Shale (`HolderService/Reaches`' `everywhere`, as the tenant API's methods), which is all a key of theirs may be given | the same |
+  | **listed** (`ListKeys`) | `ApiKeyService/List` asked as Shale, by the caller and the app `shale`: name, methods, end, last used, made, scope; beside them what the caller holds at Shale (`HolderService/Reaches`' `everywhere`, as the tenant API's methods), which is all a key of theirs may be given, and of that what a key that carries a list of cameras may be given (`narrowed`) | the same |
   | **ended** (`EndKey`) | read as Shale and found the caller's and for Shale (anything else is `NOT_FOUND`), then `ApiKeyService/Erase` as Shale; answers how long what was opened with it lives on, `auth.operators.ttl` | the same |
   | **by a key** | lists and ends where its methods name `ListKeys` and `EndKey`, and begins one where they name `BeginKey` and `PollKey`, since the yes is the person's at roster's front door | lists and ends as elsewhere, and **does not begin one** |
 
@@ -197,7 +197,9 @@ holds a credential.
   (`PERMISSION_DENIED`, *this credential is not for that*), and the gate
   decides for the person as for a session, `auth.operators` and its
   `reads` included. Nothing is closed to a key that is open to the person
-  but one: making a key where roster runs in this process (above).
+  but one: making a key where roster runs in this process (above) -- and,
+  for a key that carries a list of cameras, everything a list does not
+  confine (below).
   **A key that watches names `Get` beside `Watch`**: payday reads each row
   a stream sends as the entity's `Get` would (`/shale.SetService/Watch`
   and `/shale.SetService/Get`), so a key naming `Watch` alone opens a
@@ -222,6 +224,73 @@ holds a credential.
   read tokens of `Timeline` and an export's ticket end no later than the
   key, and a relay ends a live view at its token's end
   ([§39.4](16-relay.md#394-viewers)).
+
+  **A key narrowed to some cameras.** A key may carry a list of cameras: a
+  `Reach`, a person's own row of a name, sites and sources
+  ([§7](02-data-model.md#7-source-set-zone-epoch)), which they add, read,
+  change and erase on `ReachService` for themselves and nobody else, of
+  sites they are a member of and sources they can read -- each resolved
+  through their own walled view when it is written, as a delegation's
+  sets and sources are. The key carries it by its identifier, the UUID
+  written out, as the scope roster keeps on a key (`ApiKey.scope`,
+  `BeginKey`'s `scope`), and roster answers it back at every
+  `Introspect`; payday puts it on the frame of every call made with the
+  key. `BeginKey` refuses a scope that is no list of the caller's
+  (`INVALID_ARGUMENT`, *no list of cameras of yours*), and a key whose
+  scope is set and whose methods name one outside the table below,
+  naming those methods. A key with no scope reaches what its person
+  reaches, as before.
+
+  What a call made with such a key may see is **what its person may see
+  and, of that, what the list names**: every source of each site it names
+  and each source it names -- sites and sources are one rule, so a list of
+  a site and of a camera of another site reaches both -- and one that names
+  nothing reaches nothing. It is a scope beside the wall and the sites
+  (`cmd/serve.go`: `bare.Scopes{pd.Wall(), pd.Grouped(…), Reaches}`), not
+  the tenant's second axis, so every generated read and stream honours
+  it:
+
+  | path | held by |
+  |---|---|
+  | `SourceService` `Get`, `List`, `Watch` | the scope: a source named, or of a site named; another is `NOT_FOUND`, as a row outside the wall |
+  | `SetService` `Get`, `List`, `Watch` | the scope: a set of a site named, or with a source named among its members |
+  | `LaminaService` `Get`, `List`, `Watch`; `AttemptService` `Get`, `List` | the scope, by the source each names (an attempt by its lamina's), or its site |
+  | `CameraBindingService` | refused to such a key at the door, though it names a source: the scope covers a binding by its source too, but nothing is offered to a narrowed key without a test of its path |
+  | `SetService/Live`, `SourceService/Live` | the sources are read through the scope, so a view token is signed for a source the list reaches and for no other; the relay trusts the token's `source` |
+  | `LaminaService/Timeline` | the sources through the scope; the laminae, read raw, are cut to those sources in the query and again per row, and read tokens are signed for theirs alone; the nodes trust the token |
+  | `LaminaService/Export` | the source through the scope, so a ticket is signed for a source the list reaches alone, and the download, which trusts its ticket, needs nothing more |
+  | a `Watch` | a row the list does not reach is never sent; one that leaves it -- the list changed -- is said once, at its next write, as gone (an item with no value), as a row that leaves the caller's sight is, and then not again |
+
+  **A key that carries a list calls only what the list can hold**: the
+  methods below, and is refused every other at `BeginKey` and at the door
+  (`PERMISSION_DENIED`, *this key carries a list of cameras*), whatever
+  its methods say -- `HolderService`'s own keys and `ReachService`
+  included. A key said to reach two cameras that could erase a third
+  source, read a producer's inventory or change a policy would not be
+  narrowed: the scope confines what it can be shown to confine, and
+  nothing else is let through on its word.
+
+  | service | methods |
+  |---|---|
+  | `SourceService` | `Get`, `List`, `Watch`, `Live` |
+  | `SetService` | `Get`, `List`, `Watch`, `Live` |
+  | `LaminaService` | `Get`, `List`, `Watch`, `Timeline`, `Export` |
+  | `AttemptService` | `Get`, `List` |
+
+  A method joins this table only with a test of its path.
+
+  The list is read at the call, by its identifier, **never per person**,
+  and remembered no longer than what roster said of the key is
+  (`auth.operators.ttl`, 30 s); writing it here forgets it at once in the
+  process that wrote it, so a list changed is what its keys reach from
+  their next call, and within `auth.operators.ttl` at another control
+  plane. It must be the key's person's at the time of the call: a list
+  **erased**, or another's, leaves the key reaching nothing -- a list is
+  empty, and a call that names a source is `FAILED_PRECONDITION`, *this
+  key's list of cameras is gone* -- and nothing else of the key changes;
+  its person ends it, or makes another with a list. Sessions, hosts, keys
+  without a list and an app's delegated viewing
+  ([§33.8](#338-viewing-on-a-persons-behalf)) are as they were.
 - **roster runs in the control plane's process or elsewhere.** With nothing
   configured, `shale serve all` and `shale serve control` run roster inside
   the process on a database of its own, reachable from that process only,
@@ -823,7 +892,7 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
 | A reader's key | read the laminae of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds; for up to 24 h, unless its person stops being in good standing at roster | sign the person out everywhere at roster, or suspend them: every session minted before it is refused within `auth.operators.ttl` (30 s) ([§33.1](#331-trust-model)); reset the password |
-| A person's key for Shale | what that person may do, of the methods the key names, inside **their tenant only**, on the tenant API alone, until the key ends | its person ends it on the console's *Tokens* page, or it is revoked at roster (the account page, or Shale's administrators there), or the person is suspended: refused within `auth.operators.ttl` (30 s), which *end* says, at once where Shale follows roster's sync stream; streams opened with it end with it ([§33.1](#331-trust-model), [§32](09-operations.md#32-cli--processes)) |
+| A person's key for Shale | what that person may do, of the methods the key names, inside **their tenant only**, on the tenant API alone, until the key ends; a key that carries a list of cameras, the reads and views of the cameras it names, of those its person sees, and nothing else | its person ends it on the console's *Tokens* page, or it is revoked at roster (the account page, or Shale's administrators there), or the person is suspended: refused within `auth.operators.ttl` (30 s), which *end* says, at once where Shale follows roster's sync stream; streams opened with it end with it ([§33.1](#331-trust-model), [§32](09-operations.md#32-cli--processes)) |
 | A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks. A report about a sink or a device another live node holds changes nothing, its SMART and pressure included, and a sink's capacity is stored clamped to `max_sink_capacity` ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
 | A hardware identity | request adoption as a known host | nothing until an operator adopts it; with `readopt: auto`, impersonate that host, which is why the default is `manual` |
 | A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the operators' tenant) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | sign the operator out everywhere at roster, or suspend them: refused within `auth.operators.ttl`; take their grant of all of Shale away, which ends it on the cluster API within the same; keep the listener where the operators are |

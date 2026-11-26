@@ -195,7 +195,7 @@ var tenantGroups = map[string]bool{
 	"producer": true, "reader": true, "holder": true, "audit": true, "delegation": true,
 	"camera-network": true, "camera-device": true, "camera-assignment": true, "camera-binding": true,
 	"camera-job": true, "camera-worker": true, "camera-preset": true, "camera-policy": true,
-	"camera-credential": true, "camera-credential-version": true,
+	"camera-credential": true, "camera-credential-version": true, "reach": true,
 }
 
 // unserved are the groups of entities neither surface mounts, which a

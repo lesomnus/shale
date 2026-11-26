@@ -67,8 +67,10 @@ message HolderKey {
   google.protobuf.Timestamp date_used = 5;
   // When it was made.
   google.protobuf.Timestamp date_created = 6;
-  // The word Shale had roster keep on it when it was made, as roster
-  // holds it (`ApiKey.scope`); empty for none. Nothing reads it yet.
+  // The list of cameras it reaches (a Reach, §33.1), by the identifier
+  // roster keeps on it (`ApiKey.scope`): the list's identifier, written as
+  // a UUID. Empty is a key that reaches what its person reaches. The list
+  // may since have been erased, and then the key reaches nothing.
   string scope = 7 [features.field_presence = IMPLICIT];
 }
 
@@ -81,8 +83,11 @@ message HolderBeginKeyRequest {
   repeated string methods = 2;
   // When it stops working, after now; unset is a key that does not.
   google.protobuf.Timestamp date_expired = 3;
-  // Shale's own word about the key, which roster keeps on it and answers
-  // back when it is used (`ApiKey.scope`); empty for none.
+  // Which cameras it reaches: the identifier of a list of cameras of the
+  // caller's (a Reach, §33.1), written as a UUID, which roster keeps on the
+  // key (`ApiKey.scope`); empty for every camera the caller sees. A key
+  // that carries a list may be given only the methods a list confines
+  // (§33.1, *A key narrowed to some cameras*), and is refused the others.
   string scope = 4 [features.field_presence = IMPLICIT];
 }
 
@@ -169,6 +174,11 @@ message HolderListKeysResponse {
   // operators (`auth.operators`), so no role of Shale's exists for anybody
   // to hold. Empty otherwise.
   string none_held = 5 [features.field_presence = IMPLICIT];
+  // Of `holds`, what a key that carries a list of cameras may be given:
+  // the reads and views a list confines (§33.1, *A key narrowed to some
+  // cameras*). A key that carries a list is refused every other method,
+  // whatever it names.
+  repeated string narrowed = 6;
 }
 
 message HolderEndKeyRequest {

@@ -62,6 +62,8 @@ type Tx struct {
 	PlacementPolicy *PlacementPolicyClient
 	// Producer is the client for interacting with the Producer builders.
 	Producer *ProducerClient
+	// Reach is the client for interacting with the Reach builders.
+	Reach *ReachClient
 	// Reader is the client for interacting with the Reader builders.
 	Reader *ReaderClient
 	// Relay is the client for interacting with the Relay builders.
@@ -242,6 +244,7 @@ func (tx *Tx) init() {
 	tx.Owed = NewOwedClient(tx.config)
 	tx.PlacementPolicy = NewPlacementPolicyClient(tx.config)
 	tx.Producer = NewProducerClient(tx.config)
+	tx.Reach = NewReachClient(tx.config)
 	tx.Reader = NewReaderClient(tx.config)
 	tx.Relay = NewRelayClient(tx.config)
 	tx.RowSeal = NewRowSealClient(tx.config)

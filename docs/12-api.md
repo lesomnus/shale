@@ -117,6 +117,7 @@ each surface that is made without a credential.
 | `Producer` | tenant | 22 | Get, Patch, List, Erase, Watch | tenant |
 | `Reader` | tenant | 23 | Get, Patch, List, Erase, Watch | tenant |
 | `Delegation` | tenant | 25 | none served: written by `DelegationService`'s own verbs | tenant |
+| `Reach` | tenant | 44 | Add, Get, Patch, Erase, List: each person their own ([§33.1](10-security.md#331-trust-model)) | tenant |
 | `Node` | **global** | 12 | Get, Patch, List, Erase, Watch | cluster |
 | `Relay` | **global** | 24 | Get, Patch, List, Erase, Watch | cluster |
 | `Satellite` | **global** | 43 | Get, Patch, List, Erase, Watch | cluster |
@@ -196,6 +197,9 @@ Delegation       holder (the person), app (its holder at roster), client_id,
                  secret_hash, live, recordings, sets, sources,
                  recordings_from/to, date_ends, date_revoked, date_used
                  (§33.8)
+Reach            name, holder (its person), cameras (sites, sources): a
+                 person's own list of cameras, which a key may carry
+                 (§33.1)
 Lamina           source, set, sink, lamina_key, date_started, date_ended, size,
                  site, state, incomplete, date_expired, date_deleted,
                  dates_synced (§20.3), placement_version, date_committed

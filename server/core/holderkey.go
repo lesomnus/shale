@@ -225,6 +225,11 @@ func (s coreHolder) BeginKey(ctx context.Context, req *api.HolderBeginKeyRequest
 	if err != nil {
 		return nil, err
 	}
+	// A scope is a list of cameras of the caller's, and a key that carries
+	// one is given only what a list confines (§33.1).
+	if err := s.keyReach(ctx, tenant, holder, k); err != nil {
+		return nil, err
+	}
 
 	if s.d.Identity.Embedded() {
 		// This console is roster's front door, so the person's yes is the
@@ -328,14 +333,17 @@ func (s coreHolder) ListKeys(ctx context.Context, _ *api.HolderListKeysRequest) 
 		return nil, status.Errorf(codes.Unavailable, "cannot ask roster what you hold at Shale right now: %v", err)
 	}
 	holds := heldMethods(held)
-	var reads []string
+	var reads, narrowed []string
 	for _, m := range holds {
 		if personMay[m] {
 			reads = append(reads, m)
 		}
+		if keyScopeMay[m] {
+			narrowed = append(narrowed, m)
+		}
 	}
 
-	b := api.HolderListKeysResponse_builder{Keys: keys, Holds: holds, Reads: reads, Remembered: durationpb.New(s.remembered())}
+	b := api.HolderListKeysResponse_builder{Keys: keys, Holds: holds, Reads: reads, Narrowed: narrowed, Remembered: durationpb.New(s.remembered())}
 	if len(holds) == 0 && s.d.Identity.Embedded() && s.d.Operators == nil {
 		// Nobody here can hold a role of Shale's: they are written at the
 		// roster in this process only where operators are named (`shale

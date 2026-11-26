@@ -224,7 +224,8 @@ func TestPersonsKeyStreamsFollowTheKey(t *testing.T) {
 // (§33.1): roster answers it beside the key's methods, it is kept with
 // the rest of what roster said of that key, and payday puts it on the
 // frame each call is served with -- so two keys of one person carry two,
-// whatever the resolver keeps by the person. Nothing reads it yet.
+// whatever the resolver keeps by the person; the scope beside the wall
+// reads it there (core.Reaches).
 func TestPersonsKeyScopeIsTheCallsAndNotThePersons(t *testing.T) {
 	tenant, bob := pdid.New(1), pdid.New(2)
 	reads := frame.Whole().To("/shale.SetService/List")

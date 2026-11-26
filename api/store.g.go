@@ -63,6 +63,7 @@ type Server interface {
 	PlacementPolicy() PlacementPolicyServiceServer
 	UploadPolicy() UploadPolicyServiceServer
 	AddressPolicy() AddressPolicyServiceServer
+	Reach() ReachServiceServer
 }
 
 // RegisterServer registers every service of `s` with `g`.
@@ -107,6 +108,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterPlacementPolicyServiceServer(g, s.PlacementPolicy())
 	RegisterUploadPolicyServiceServer(g, s.UploadPolicy())
 	RegisterAddressPolicyServiceServer(g, s.AddressPolicy())
+	RegisterReachServiceServer(g, s.Reach())
 }
 
 type UnimplementedServer struct {
@@ -147,6 +149,7 @@ type UnimplementedServer struct {
 	PlacementPolicyServer         PlacementPolicyServiceServer
 	UploadPolicyServer            UploadPolicyServiceServer
 	AddressPolicyServer           AddressPolicyServiceServer
+	ReachServer                   ReachServiceServer
 }
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
@@ -226,6 +229,7 @@ func (UnimplementedServer) UploadPolicy() UploadPolicyServiceServer {
 func (UnimplementedServer) AddressPolicy() AddressPolicyServiceServer {
 	return UnimplementedAddressPolicyServiceServer{}
 }
+func (UnimplementedServer) Reach() ReachServiceServer { return UnimplementedReachServiceServer{} }
 
 type StaticServer struct {
 	TenantServer                  TenantServiceServer
@@ -265,6 +269,7 @@ type StaticServer struct {
 	PlacementPolicyServer         PlacementPolicyServiceServer
 	UploadPolicyServer            UploadPolicyServiceServer
 	AddressPolicyServer           AddressPolicyServiceServer
+	ReachServer                   ReachServiceServer
 }
 
 func (s StaticServer) Tenant() TenantServiceServer               { return s.TenantServer }
@@ -312,6 +317,7 @@ func (s StaticServer) SigningKey() SigningKeyServiceServer           { return s.
 func (s StaticServer) PlacementPolicy() PlacementPolicyServiceServer { return s.PlacementPolicyServer }
 func (s StaticServer) UploadPolicy() UploadPolicyServiceServer       { return s.UploadPolicyServer }
 func (s StaticServer) AddressPolicy() AddressPolicyServiceServer     { return s.AddressPolicyServer }
+func (s StaticServer) Reach() ReachServiceServer                     { return s.ReachServer }
 
 type Client interface {
 	Tenant() TenantServiceClient
@@ -351,6 +357,7 @@ type Client interface {
 	PlacementPolicy() PlacementPolicyServiceClient
 	UploadPolicy() UploadPolicyServiceClient
 	AddressPolicy() AddressPolicyServiceClient
+	Reach() ReachServiceClient
 }
 
 func NewClient(c *grpc.ClientConn) Client {
@@ -392,6 +399,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_PlacementPolicy:         NewPlacementPolicyServiceClient(c),
 		_UploadPolicy:            NewUploadPolicyServiceClient(c),
 		_AddressPolicy:           NewAddressPolicyServiceClient(c),
+		_Reach:                   NewReachServiceClient(c),
 	}
 }
 
@@ -433,6 +441,7 @@ type client struct {
 	_PlacementPolicy         PlacementPolicyServiceClient
 	_UploadPolicy            UploadPolicyServiceClient
 	_AddressPolicy           AddressPolicyServiceClient
+	_Reach                   ReachServiceClient
 }
 
 func (c *client) Tenant() TenantServiceClient                     { return c._Tenant }
@@ -476,6 +485,7 @@ func (c *client) SigningKey() SigningKeyServiceClient           { return c._Sign
 func (c *client) PlacementPolicy() PlacementPolicyServiceClient { return c._PlacementPolicy }
 func (c *client) UploadPolicy() UploadPolicyServiceClient       { return c._UploadPolicy }
 func (c *client) AddressPolicy() AddressPolicyServiceClient     { return c._AddressPolicy }
+func (c *client) Reach() ReachServiceClient                     { return c._Reach }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {

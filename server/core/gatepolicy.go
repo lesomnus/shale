@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -42,6 +43,7 @@ var tenantServices = []string{
 	"/shale.CameraBindingService/", "/shale.CameraJobService/", "/shale.CameraWorkerService/",
 	"/shale.CameraPresetService/", "/shale.CameraPolicyService/",
 	"/shale.CameraCredentialService/", "/shale.CameraCredentialVersionService/",
+	"/shale.ReachService/",
 }
 
 // IsClusterService says whether a method belongs to the cluster surface.
@@ -276,6 +278,69 @@ var ownKeys = map[string]bool{
 	api.HolderService_EndKey_FullMethodName:   true,
 }
 
+// ownReaches is a person's own lists of cameras (Reach, §33.1): every
+// person adds, reads, changes and erases their own, whatever roles they
+// hold, and nobody else's -- which the scope holds them to (Reaches), as
+// the core layer holds what they put in one to what they see. The cluster
+// API serves none of it.
+func ownReaches(m string) bool { return strings.HasPrefix(m, "/shale.ReachService/") }
+
+// keyScopeMay is what a key that carries a list of cameras may call
+// (§33.1, *A key narrowed to some cameras*): the reads and views a list
+// confines, each held to it by the scope beside the wall (Reaches) and,
+// where a token is signed, by what the scope answers when it is signed.
+//
+// A key that carries a list is refused everything else, at BeginKey and at
+// the door, whatever its methods say: a key said to reach two cameras that
+// could erase a third source, read a producer's inventory or change a
+// policy would not be narrowed. The scope confines what it can be shown to
+// confine, and nothing else is let through on its word.
+//
+// A method is added here only with a test of its row in §33.1's table of
+// paths (TestKeyNarrowedToCameras): the scope covers more entities than
+// this offers -- a camera's binding, by its source -- and holds them if the
+// table grows, but a path with no test is not offered to a narrowed key.
+var keyScopeMay = map[string]bool{
+	api.SourceService_Get_FullMethodName:      true,
+	api.SourceService_List_FullMethodName:     true,
+	api.SourceService_Watch_FullMethodName:    true,
+	api.SourceService_Live_FullMethodName:     true,
+	api.SetService_Get_FullMethodName:         true,
+	api.SetService_List_FullMethodName:        true,
+	api.SetService_Watch_FullMethodName:       true,
+	api.SetService_Live_FullMethodName:        true,
+	api.LaminaService_Get_FullMethodName:      true,
+	api.LaminaService_List_FullMethodName:     true,
+	api.LaminaService_Watch_FullMethodName:    true,
+	api.LaminaService_Timeline_FullMethodName: true,
+	api.LaminaService_Export_FullMethodName:   true,
+	api.AttemptService_Get_FullMethodName:     true,
+	api.AttemptService_List_FullMethodName:    true,
+}
+
+// KeyScopeMay says whether a key that carries a list of cameras may call a
+// method (keyScopeMay).
+func KeyScopeMay(method string) bool { return keyScopeMay[method] }
+
+// KeyScopeMethods is every method a key that carries a list of cameras may
+// call, sorted.
+func KeyScopeMethods() []string {
+	out := make([]string, 0, len(keyScopeMay))
+	for m := range keyScopeMay {
+		out = append(out, m)
+	}
+	slices.Sort(out)
+
+	return out
+}
+
+// scopedKey says whether a call came with a key that carries a scope.
+func scopedKey(ctx context.Context) bool {
+	f, ok := frame.From(ctx)
+
+	return ok && f.TokenScope() != ""
+}
+
 // OwnKeys says whether a method is one of a person's own keys' (ownKeys).
 func OwnKeys(method string) bool { return ownKeys[method] }
 
@@ -287,6 +352,12 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
 	if IsClusterService(m) {
 		return denied(m, "not served on the tenant API")
+	}
+	if scopedKey(ctx) && !keyScopeMay[m] {
+		// Whatever the key's methods say: what a list of cameras cannot
+		// confine, a key that carries one does not call.
+		return denied(m, "this key carries a list of cameras, and such a key calls only the reads and views a list confines: "+
+			"sources, sets, laminae and attempts, their live view, timeline and export")
 	}
 	if closedToEveryone(m) {
 		return denied(m, "written by the system, not by a caller")
@@ -309,7 +380,7 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 			return denied(m, "not something a reader does")
 		}
 	case DomHolder:
-		if ownKeys[m] {
+		if ownKeys[m] || ownReaches(m) {
 			return nil
 		}
 		if p.Operators != nil {
@@ -421,6 +492,9 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	}
 	if ownKeys[m] {
 		return denied(m, "a person's keys for Shale are their own, on the tenant API; an operator ends somebody else's at roster")
+	}
+	if ownReaches(m) {
+		return denied(m, "a person's lists of cameras are their own, on the tenant API")
 	}
 	switch kindOf(c.Actor) {
 	case DomNode:

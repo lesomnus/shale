@@ -824,6 +824,9 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 	)
 	switch {
 	case req.GetSource() != nil:
+		if err := s.reachGone(ctx); err != nil {
+			return nil, err
+		}
 		src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{Ref: req.GetSource()}.Build())
 		if err != nil {
 			return nil, err
@@ -864,7 +867,16 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 	if req.GetSource() != nil {
 		q = q.Where(lamina.SourceIdEQ(mustId(members[0].GetId()).Uuid()))
 	} else {
-		q = q.Where(lamina.SetIdEQ(mustId(set.GetId()).Uuid()))
+		// Read raw, so cut here to the members read through the wall and
+		// the scope beside it: a key that carries a list of cameras is
+		// answered the laminae of the set's sources it reaches, and no
+		// other's (§33.1). The members are what the caller sees; and each
+		// row is cut to them again below.
+		ids := make([]pdid.Id, 0, len(members))
+		for _, m := range members {
+			ids = append(ids, mustId(m.GetId()))
+		}
+		q = q.Where(lamina.SetIdEQ(mustId(set.GetId()).Uuid()), lamina.SourceIdIn(uuidsOf(ids, pdid.Id.Uuid)...))
 	}
 	var ends map[pdid.Id]time.Time
 	if req.GetAfter() != "" {

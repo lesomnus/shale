@@ -65,6 +65,7 @@ const (
 	DomCameraCredential        pdid.Domain = 32
 	DomCameraCredentialVersion pdid.Domain = 33
 	DomSatellite               pdid.Domain = 43
+	DomReach                   pdid.Domain = 44
 )
 
 // Deps is what the layer needs besides the servers below it.
@@ -151,6 +152,12 @@ type Deps struct {
 	// believed (`auth.operators.ttl`): what EndKey says a stream opened
 	// with the key may still run (§33.1). Zero is identity.OperatorsTtl.
 	KeyRemembered time.Duration
+	// Reaches is what the scope beside the wall holds a key that carries a
+	// list of cameras to (§33.1): the lists, remembered no longer than
+	// KeyRemembered and dropped when one is written. cmd/serve.go mounts
+	// its scope; nil is a layer built without it (a test), where nothing
+	// is remembered to drop.
+	Reaches *Reaches
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger

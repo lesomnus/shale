@@ -26,7 +26,7 @@ import (
 )
 
 // accountApp stands in for roster's account app, its four routes of a
-// terminal's sign-in (roster's `account/device.go` at 5436801f), each
+// terminal's sign-in (roster's `account/device.go` at cddc6753), each
 // answering what roster answers -- read there, and said beside each -- so
 // that Shale's side of the road is held to roster's own answers without a
 // roster. `yes` and `no` are the person at the front door: what
@@ -209,9 +209,16 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	for i := range kek {
 		kek[i] = byte(i)
 	}
-	h := coreHolder{Core: Core{d: &Deps{Identity: open(srv.URL), Kek: func() Kek { return kek }}}}
+	// The rows a key's scope is read against: Bob's list of cameras.
+	f := newReaderFixture(t)
+	tenant, bob, carol := mustId(f.tenant.GetId()), pdid.New(DomHolder), pdid.New(DomHolder)
+	_, err := f.sink.Holder().Add(f.ctx, api.HolderAddRequest_builder{Id: bob.Bytes(), Tenant: tenantRef(tenant), Alias: "bob"}.Build())
+	require.NoError(t, err)
+	cams, err := f.sink.Reach().Add(f.ctx, api.ReachAddRequest_builder{Tenant: tenantRef(tenant), Name: "door", Holder: api.HolderRef_builder{Id: bob.Bytes()}.Build()}.Build())
+	require.NoError(t, err)
+	scope := ReachScope(mustId(cams.GetId()))
+	h := coreHolder{Core: Core{d: &Deps{Identity: open(srv.URL), Kek: func() Kek { return kek }, Ent: f.client}}}
 
-	tenant, bob, carol := pdid.New(DomTenant), pdid.New(DomHolder), pdid.New(DomHolder)
 	as := func(who pdid.Id, credential string) context.Context {
 		f := frame.New(who, tenant, frame.Grant{})
 		v := *f
@@ -223,7 +230,7 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	begin := func(ctx context.Context) (*api.HolderBeginKeyResponse, error) {
 		return h.BeginKey(ctx, api.HolderBeginKeyRequest_builder{
 			Name: "ci", Methods: []string{"/shale.SetService/List", "/shale.SetService/Get"},
-			DateExpired: timestamppb.New(ends), Scope: "cams:1",
+			DateExpired: timestamppb.New(ends), Scope: scope,
 		}.Build())
 	}
 	poll := func(ctx context.Context, handle string) (*api.HolderPollKeyResponse, error) {
@@ -239,7 +246,7 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	require.JSONEq(t, `"shale"`, string(said["app"]), "shale's name at roster")
 	require.JSONEq(t, `["/shale.SetService/List","/shale.SetService/Get"]`, string(said["allow"]))
 	require.JSONEq(t, `"`+ends.UTC().Format(time.RFC3339)+`"`, string(said["date_expired"]))
-	require.JSONEq(t, `"cams:1"`, string(said["scope"]))
+	require.JSONEq(t, `"`+scope+`"`, string(said["scope"]), "the list's identifier, as roster keeps it")
 	require.Equal(t, srv.URL+"/device?user_code=BCDF-0001", b.GetApproveAt())
 	require.Equal(t, "BCDF-0001", b.GetUserCode())
 	require.Equal(t, 5*time.Second, b.GetInterval().AsDuration())
@@ -329,6 +336,19 @@ func TestOwnKeyWhereRosterIsElsewhere(t *testing.T) {
 	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: strings.Repeat("s", 257)}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 	require.Contains(t, status.Convert(err).Message(), "at most 256 bytes, and this is 257")
+	// A scope is a list of the caller's, and a key that carries one is
+	// given only what a list confines (§33.1).
+	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: "cams:1"}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
+	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: ReachScope(pdid.New(DomReach))}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "no such list: %v", err)
+	require.Contains(t, status.Convert(err).Message(), "no list of cameras of yours")
+	_, err = h.BeginKey(as(carol, "carol's session"), api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List"}, Scope: scope}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "Bob's list, for Carol: %v", err)
+	require.Contains(t, status.Convert(err).Message(), "no list of cameras of yours")
+	_, err = h.BeginKey(bobs, api.HolderBeginKeyRequest_builder{Name: "x", Methods: []string{"/shale.SetService/List", "/shale.SourceService/Erase", "/shale.HolderService/ListKeys"}, Scope: scope}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
+	require.Contains(t, status.Convert(err).Message(), "cannot carry /shale.SourceService/Erase, /shale.HolderService/ListKeys")
 	require.Equal(t, began, len(app.began), "none of them asked roster")
 
 	// The switch off at roster: the same status as no account app, and a

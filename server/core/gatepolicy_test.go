@@ -364,3 +364,54 @@ func TestOwnKeysAreEveryPersonsOnTheTenantApi(t *testing.T) {
 	}
 	require.Zero(t, ops.asked, "roster is not asked about a person's own keys")
 }
+
+// A key that carries a list of cameras (§33.1) calls only what a list
+// confines, whatever its methods say and whatever its person may: every
+// other method is refused at the door, ReachService and the person's own
+// keys included; a key that carries none, and a session, are as before.
+// A person's lists are every person's own on the tenant API, and the
+// cluster API serves none of them.
+func TestScopedKeyCallsOnlyWhatAListConfines(t *testing.T) {
+	ctx := context.Background()
+	tenant, person := pdid.New(DomTenant), pdid.New(DomHolder)
+	ops := &fakeOperators{tenant: tenant}
+	ops.grant(tenant, person, "/shale.*/*")
+	scoped := func(scope string) context.Context {
+		return frame.Into(ctx, frame.New(person, tenant, frame.Whole()).WithTokenScope(scope))
+	}
+	call := func(m string) gate.Call { return gate.Call{Actor: person, Tenant: tenant, Action: m} }
+
+	require.Len(t, KeyScopeMethods(), 15)
+	for _, m := range KeyScopeMethods() {
+		for _, p := range []TenantPolicy{{}, {Operators: ops}} {
+			require.NoError(t, p.May(scoped("x"), call(m)), "%s, %+v", m, p)
+		}
+	}
+	for _, m := range []string{
+		api.SourceService_Add_FullMethodName, api.SourceService_Erase_FullMethodName, api.SetService_Patch_FullMethodName,
+		api.ProducerService_List_FullMethodName, api.SiteService_List_FullMethodName, api.CameraPolicyService_List_FullMethodName,
+		api.HolderService_ListKeys_FullMethodName, api.HolderService_BeginKey_FullMethodName,
+		api.ReachService_List_FullMethodName, api.ReachService_Patch_FullMethodName,
+		api.CameraDeviceService_List_FullMethodName, api.SetService_Negotiate_FullMethodName,
+		api.CameraBindingService_List_FullMethodName, api.CameraBindingService_Get_FullMethodName, api.CameraBindingService_Watch_FullMethodName,
+	} {
+		for _, p := range []TenantPolicy{{}, {Operators: ops}} {
+			err := p.May(scoped("x"), call(m))
+			require.Equal(t, codes.PermissionDenied, status.Code(err), "%s, %+v: %v", m, p, err)
+			require.Contains(t, status.Convert(err).Message(), "carries a list of cameras")
+			require.NoError(t, p.May(scoped(""), call(m)), "a key that carries none: %s", m)
+		}
+	}
+
+	// A person's own lists.
+	ops.asked = 0
+	for _, m := range []string{api.ReachService_Add_FullMethodName, api.ReachService_Get_FullMethodName, api.ReachService_Patch_FullMethodName, api.ReachService_Erase_FullMethodName, api.ReachService_List_FullMethodName} {
+		require.True(t, IsTenantService(m), m)
+		for _, p := range []TenantPolicy{{}, {Operators: ops}, {Operators: ops, Reads: true}} {
+			require.NoError(t, p.May(ctx, call(m)), "%s, %+v", m, p)
+		}
+		require.Equal(t, codes.PermissionDenied, status.Code(TenantPolicy{}.May(ctx, gate.Call{Actor: pdid.New(DomProducer), Tenant: tenant, Action: m})), m)
+		require.Equal(t, codes.PermissionDenied, status.Code(ClusterPolicy{ClusterTenant: tenant, Operators: ops}.May(ctx, call(m))), "%s on the cluster API", m)
+	}
+	require.Zero(t, ops.asked, "roster is not asked about a person's own lists")
+}

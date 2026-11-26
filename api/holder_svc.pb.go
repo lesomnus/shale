@@ -2188,8 +2188,11 @@ type HolderBeginKeyRequest_builder struct {
 	Methods []string
 	// When it stops working, after now; unset is a key that does not.
 	DateExpired *timestamppb.Timestamp
-	// Shale's own word about the key, which roster keeps on it and answers
-	// back when it is used (`ApiKey.scope`); empty for none.
+	// Which cameras it reaches: the identifier of a list of cameras of the
+	// caller's (a Reach, §33.1), written as a UUID, which roster keeps on the
+	// key (`ApiKey.scope`); empty for every camera the caller sees. A key
+	// that carries a list may be given only the methods a list confines
+	// (§33.1, *A key narrowed to some cameras*), and is refused the others.
 	Scope string
 }
 
@@ -2565,8 +2568,10 @@ type HolderKey_builder struct {
 	DateUsed *timestamppb.Timestamp
 	// When it was made.
 	DateCreated *timestamppb.Timestamp
-	// The word Shale had roster keep on it when it was made, as roster
-	// holds it (`ApiKey.scope`); empty for none. Nothing reads it yet.
+	// The list of cameras it reaches (a Reach, §33.1), by the identifier
+	// roster keeps on it (`ApiKey.scope`): the list's identifier, written as
+	// a UUID. Empty is a key that reaches what its person reaches. The list
+	// may since have been erased, and then the key reaches nothing.
 	Scope string
 }
 
@@ -2805,6 +2810,7 @@ type HolderListKeysResponse struct {
 	xxx_hidden_Reads      []string               `protobuf:"bytes,3,rep,name=reads"`
 	xxx_hidden_Remembered *durationpb.Duration   `protobuf:"bytes,4,opt,name=remembered"`
 	xxx_hidden_NoneHeld   string                 `protobuf:"bytes,5,opt,name=none_held,json=noneHeld"`
+	xxx_hidden_Narrowed   []string               `protobuf:"bytes,6,rep,name=narrowed"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2871,6 +2877,13 @@ func (x *HolderListKeysResponse) GetNoneHeld() string {
 	return ""
 }
 
+func (x *HolderListKeysResponse) GetNarrowed() []string {
+	if x != nil {
+		return x.xxx_hidden_Narrowed
+	}
+	return nil
+}
+
 func (x *HolderListKeysResponse) SetKeys(v []*HolderKey) {
 	x.xxx_hidden_Keys = &v
 }
@@ -2889,6 +2902,10 @@ func (x *HolderListKeysResponse) SetRemembered(v *durationpb.Duration) {
 
 func (x *HolderListKeysResponse) SetNoneHeld(v string) {
 	x.xxx_hidden_NoneHeld = v
+}
+
+func (x *HolderListKeysResponse) SetNarrowed(v []string) {
+	x.xxx_hidden_Narrowed = v
 }
 
 func (x *HolderListKeysResponse) HasRemembered() bool {
@@ -2923,6 +2940,11 @@ type HolderListKeysResponse_builder struct {
 	// operators (`auth.operators`), so no role of Shale's exists for anybody
 	// to hold. Empty otherwise.
 	NoneHeld string
+	// Of `holds`, what a key that carries a list of cameras may be given:
+	// the reads and views a list confines (§33.1, *A key narrowed to some
+	// cameras*). A key that carries a list is refused every other method,
+	// whatever it names.
+	Narrowed []string
 }
 
 func (b0 HolderListKeysResponse_builder) Build() *HolderListKeysResponse {
@@ -2934,6 +2956,7 @@ func (b0 HolderListKeysResponse_builder) Build() *HolderListKeysResponse {
 	x.xxx_hidden_Reads = b.Reads
 	x.xxx_hidden_Remembered = b.Remembered
 	x.xxx_hidden_NoneHeld = b.NoneHeld
+	x.xxx_hidden_Narrowed = b.Narrowed
 	return m0
 }
 
@@ -3185,7 +3208,7 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x05token\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x125\n" +
 	"\binterval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12\x1f\n" +
 	"\arefusal\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\arefusal\"\x17\n" +
-	"\x15HolderListKeysRequest\"\xc9\x01\n" +
+	"\x15HolderListKeysRequest\"\xe5\x01\n" +
 	"\x16HolderListKeysResponse\x12$\n" +
 	"\x04keys\x18\x01 \x03(\v2\x10.shale.HolderKeyR\x04keys\x12\x14\n" +
 	"\x05holds\x18\x02 \x03(\tR\x05holds\x12\x14\n" +
@@ -3193,7 +3216,8 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"remembered\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\n" +
 	"remembered\x12\"\n" +
-	"\tnone_held\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\bnoneHeld\",\n" +
+	"\tnone_held\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\bnoneHeld\x12\x1a\n" +
+	"\bnarrowed\x18\x06 \x03(\tR\bnarrowed\",\n" +
 	"\x13HolderEndKeyRequest\x12\x15\n" +
 	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\"Q\n" +
 	"\x14HolderEndKeyResponse\x129\n" +

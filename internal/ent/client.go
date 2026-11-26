@@ -36,6 +36,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/owed"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
+	"github.com/lesomnus/shale/internal/ent/reach"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/rowseal"
@@ -107,6 +108,8 @@ type Client struct {
 	PlacementPolicy *PlacementPolicyClient
 	// Producer is the client for interacting with the Producer builders.
 	Producer *ProducerClient
+	// Reach is the client for interacting with the Reach builders.
+	Reach *ReachClient
 	// Reader is the client for interacting with the Reader builders.
 	Reader *ReaderClient
 	// Relay is the client for interacting with the Relay builders.
@@ -166,6 +169,7 @@ func (c *Client) init() {
 	c.Owed = NewOwedClient(c.config)
 	c.PlacementPolicy = NewPlacementPolicyClient(c.config)
 	c.Producer = NewProducerClient(c.config)
+	c.Reach = NewReachClient(c.config)
 	c.Reader = NewReaderClient(c.config)
 	c.Relay = NewRelayClient(c.config)
 	c.RowSeal = NewRowSealClient(c.config)
@@ -295,6 +299,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Owed:                    NewOwedClient(cfg),
 		PlacementPolicy:         NewPlacementPolicyClient(cfg),
 		Producer:                NewProducerClient(cfg),
+		Reach:                   NewReachClient(cfg),
 		Reader:                  NewReaderClient(cfg),
 		Relay:                   NewRelayClient(cfg),
 		RowSeal:                 NewRowSealClient(cfg),
@@ -351,6 +356,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Owed:                    NewOwedClient(cfg),
 		PlacementPolicy:         NewPlacementPolicyClient(cfg),
 		Producer:                NewProducerClient(cfg),
+		Reach:                   NewReachClient(cfg),
 		Reader:                  NewReaderClient(cfg),
 		Relay:                   NewRelayClient(cfg),
 		RowSeal:                 NewRowSealClient(cfg),
@@ -442,9 +448,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.CameraBinding, c.CameraCredential, c.CameraCredentialVersion, c.CameraDevice,
 		c.CameraJob, c.CameraNetwork, c.CameraPolicy, c.CameraPreset, c.CameraWorker,
 		c.CertificateAuthority, c.Delegation, c.Device, c.Holder, c.Lamina, c.Node,
-		c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal,
-		c.Satellite, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source,
-		c.Tenant, c.UploadPolicy,
+		c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reach, c.Reader, c.Relay,
+		c.RowSeal, c.Satellite, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember,
+		c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Use(hooks...)
 	}
@@ -458,9 +464,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.CameraBinding, c.CameraCredential, c.CameraCredentialVersion, c.CameraDevice,
 		c.CameraJob, c.CameraNetwork, c.CameraPolicy, c.CameraPreset, c.CameraWorker,
 		c.CertificateAuthority, c.Delegation, c.Device, c.Holder, c.Lamina, c.Node,
-		c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal,
-		c.Satellite, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source,
-		c.Tenant, c.UploadPolicy,
+		c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reach, c.Reader, c.Relay,
+		c.RowSeal, c.Satellite, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember,
+		c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -519,6 +525,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PlacementPolicy.mutate(ctx, m)
 	case *ProducerMutation:
 		return c.Producer.mutate(ctx, m)
+	case *ReachMutation:
+		return c.Reach.mutate(ctx, m)
 	case *ReaderMutation:
 		return c.Reader.mutate(ctx, m)
 	case *RelayMutation:
@@ -4737,6 +4745,171 @@ func (c *ProducerClient) mutate(ctx context.Context, m *ProducerMutation) (Value
 	}
 }
 
+// ReachClient is a client for the Reach schema.
+type ReachClient struct {
+	config
+}
+
+// NewReachClient returns a client for the Reach from the given config.
+func NewReachClient(c config) *ReachClient {
+	return &ReachClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `reach.Hooks(f(g(h())))`.
+func (c *ReachClient) Use(hooks ...Hook) {
+	c.hooks.Reach = append(c.hooks.Reach, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `reach.Intercept(f(g(h())))`.
+func (c *ReachClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Reach = append(c.inters.Reach, interceptors...)
+}
+
+// Create returns a builder for creating a Reach entity.
+func (c *ReachClient) Create() *ReachCreate {
+	mutation := newReachMutation(c.config, OpCreate)
+	return &ReachCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Reach entities.
+func (c *ReachClient) CreateBulk(builders ...*ReachCreate) *ReachCreateBulk {
+	return &ReachCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ReachClient) MapCreateBulk(slice any, setFunc func(*ReachCreate, int)) *ReachCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ReachCreateBulk{err: fmt.Errorf("calling to ReachClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ReachCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ReachCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Reach.
+func (c *ReachClient) Update() *ReachUpdate {
+	mutation := newReachMutation(c.config, OpUpdate)
+	return &ReachUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReachClient) UpdateOne(_m *Reach) *ReachUpdateOne {
+	mutation := newReachMutation(c.config, OpUpdateOne, withReach(_m))
+	return &ReachUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *ReachClient) UpdateOneId(id uuid.UUID) *ReachUpdateOne {
+	mutation := newReachMutation(c.config, OpUpdateOne, withReachId(id))
+	return &ReachUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Reach.
+func (c *ReachClient) Delete() *ReachDelete {
+	mutation := newReachMutation(c.config, OpDelete)
+	return &ReachDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ReachClient) DeleteOne(_m *Reach) *ReachDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *ReachClient) DeleteOneId(id uuid.UUID) *ReachDeleteOne {
+	builder := c.Delete().Where(reach.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &ReachDeleteOne{builder}
+}
+
+// Query returns a query builder for Reach.
+func (c *ReachClient) Query() *ReachQuery {
+	return &ReachQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeReach},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Reach entity by its id.
+func (c *ReachClient) Get(ctx context.Context, id uuid.UUID) (*Reach, error) {
+	return c.Query().Where(reach.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReachClient) GetX(ctx context.Context, id uuid.UUID) *Reach {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a Reach.
+func (c *ReachClient) QueryTenant(_m *Reach) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reach.Table, reach.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, reach.TenantTable, reach.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHolder queries the holder edge of a Reach.
+func (c *ReachClient) QueryHolder(_m *Reach) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reach.Table, reach.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, reach.HolderTable, reach.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReachClient) Hooks() []Hook {
+	return c.hooks.Reach
+}
+
+// Interceptors returns the client interceptors.
+func (c *ReachClient) Interceptors() []Interceptor {
+	return c.inters.Reach
+}
+
+func (c *ReachClient) mutate(ctx context.Context, m *ReachMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ReachCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ReachUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ReachUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ReachDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Reach mutation op: %q", m.Op())
+	}
+}
+
 // ReaderClient is a client for the Reader schema.
 type ReaderClient struct {
 	config
@@ -6548,15 +6721,16 @@ type (
 		CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice,
 		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker,
 		CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed,
-		PlacementPolicy, Producer, Reader, Relay, RowSeal, Satellite, Set, SigningKey,
-		Sink, Site, SiteMember, Source, Tenant, UploadPolicy []ent.Hook
+		PlacementPolicy, Producer, Reach, Reader, Relay, RowSeal, Satellite, Set,
+		SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy []ent.Hook
 	}
 	inters struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
 		CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice,
 		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker,
 		CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed,
-		PlacementPolicy, Producer, Reader, Relay, RowSeal, Satellite, Set, SigningKey,
-		Sink, Site, SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
+		PlacementPolicy, Producer, Reach, Reader, Relay, RowSeal, Satellite, Set,
+		SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		UploadPolicy []ent.Interceptor
 	}
 )

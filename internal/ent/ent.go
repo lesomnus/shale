@@ -34,6 +34,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/owed"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
+	"github.com/lesomnus/shale/internal/ent/reach"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/rowseal"
@@ -134,6 +135,7 @@ func checkColumn(t, c string) error {
 			owed.Table:                    owed.ValidColumn,
 			placementpolicy.Table:         placementpolicy.ValidColumn,
 			producer.Table:                producer.ValidColumn,
+			reach.Table:                   reach.ValidColumn,
 			reader.Table:                  reader.ValidColumn,
 			relay.Table:                   relay.ValidColumn,
 			rowseal.Table:                 rowseal.ValidColumn,
