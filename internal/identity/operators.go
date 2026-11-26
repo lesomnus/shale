@@ -19,7 +19,8 @@ import (
 //
 // Empty is the rule a deployment had before it: the people of
 // `control.cluster_tenant` operate the cluster, and every person
-// administers their own tenant.
+// administers their own tenant, but nobody recovers a camera's credential
+// (core.TenantPolicy).
 type OperatorsConfig struct {
 	// Tenant is the alias of the tenant whose people the cluster API
 	// serves, which is a tenant this deployment serves: a person of it may

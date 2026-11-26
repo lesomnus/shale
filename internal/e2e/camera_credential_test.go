@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -151,6 +152,60 @@ func TestCameraCredentialDurabilityAndOrdinaryRedaction(t *testing.T) {
 	clear(lease.GetMaterial())
 }
 
+// The sentence a person is refused recovery with where no operators are
+// named (§33.1).
+const recoveryNamesNoOperators = "/shale.CameraCredentialService/Resolve: recovering a camera's credential is an operator's act, and this deployment names no operators (auth.operators)"
+
+// Without auth.operators nobody recovers a camera's credential: not a
+// member of the camera's site, not a person who sees every site, not the
+// tenant's first administrator. Preparing one still answers a reference.
+// A camera worker and a producer receive theirs in the same deployment
+// (TestCameraCredentialWorkerProducerAndPurposeGrants, which runs without
+// operators); with operators, the grant decides
+// (TestCameraCredentialDurabilityAndOrdinaryRedaction).
+func TestCameraCredentialRecoveryWithoutOperators(t *testing.T) {
+	c := start(t)
+	ctx := t.Context()
+	admin := c.dial("@acme/admin")
+	tenant := api.TenantRef_builder{Alias: z.Ptr("acme")}.Build()
+	west, err := api.NewSiteServiceClient(admin).Add(ctx, api.SiteAddRequest_builder{Tenant: tenant, Alias: "west"}.Build())
+	require.NoError(t, err)
+	n := cameraNetwork(t, admin, "recovery-lan", api.SiteRef_builder{Id: west.GetId()}.Build())
+	d, err := api.NewCameraDeviceServiceClient(admin).Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: "recovery-device"}.Build())
+	require.NoError(t, err)
+	prepared, err := api.NewCameraCredentialServiceClient(admin).Prepare(ctx, api.CameraCredentialPrepareRequest_builder{Device: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), Purpose: "initial_admin", IntentKey: "recovery-initial", Username: []byte("recovery-admin")}.Build())
+	require.NoError(t, err)
+
+	holders := api.NewHolderServiceClient(admin)
+	person := func(alias string) *api.Holder {
+		p, err := c.running.CP.Identity.AddPerson(ctx, "acme", alias, alias)
+		require.NoError(t, err)
+		_, err = api.NewHolderServiceClient(c.dial("@acme/"+alias)).Get(ctx, api.HolderGetRequest_builder{Ref: api.HolderRef_builder{Id: p.Id.Bytes()}.Build()}.Build())
+		require.NoError(t, err)
+		row, err := holders.Get(ctx, api.HolderGetRequest_builder{Ref: api.HolderRef_builder{Id: p.Id.Bytes()}.Build()}.Build())
+		require.NoError(t, err)
+		return row
+	}
+	member := person("west-member")
+	require.False(t, member.GetAllSites())
+	_, err = api.NewSiteMemberServiceClient(admin).Add(ctx, api.SiteMemberAddRequest_builder{Tenant: tenant, Site: api.SiteRef_builder{Id: west.GetId()}.Build(), Holder: api.HolderRef_builder{Id: member.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	everywhere := person("every-site")
+	_, err = holders.Patch(ctx, api.HolderPatchRequest_builder{Ref: api.HolderRef_builder{Id: everywhere.GetId()}.Build(), DateUpdated: everywhere.GetDateUpdated(), AllSites: z.Ptr(true)}.Build())
+	require.NoError(t, err)
+
+	for _, as := range []string{"@acme/west-member", "@acme/every-site", "@acme/admin"} {
+		t.Run(as, func(t *testing.T) {
+			lease, err := api.NewCameraCredentialServiceClient(c.dial(as)).Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: prepared.GetCredential()}.Build())
+			got := len(lease.GetMaterial())
+			clear(lease.GetMaterial())
+			require.Zero(t, got, "%s was handed the material", as)
+			require.Equal(t, codes.PermissionDenied, status.Code(err))
+			require.Equal(t, recoveryNamesNoOperators, status.Convert(err).Message())
+		})
+	}
+}
+
 // This exercises authority and real machine certificates. Media evidence below
 // is an operator/Worker checkpoint fixture; real independent decode is #202.
 func TestCameraCredentialWorkerProducerAndPurposeGrants(t *testing.T) {
@@ -222,6 +277,11 @@ func cameraCredentialMachineGrants(t *testing.T, scoped bool) {
 		require.Equal(t, codes.PermissionDenied, status.Code(resolveErr), "the exact current device/version grant must reject a substituted credential")
 		require.False(t, hasMaterial, "a rejected credential resolve returned material")
 	}
+	// No operators are named here: the person is refused recovery while
+	// the worker and the producer below receive theirs.
+	_, err = credentials.Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential()}.Build())
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
+	require.Equal(t, recoveryNamesNoOperators, status.Convert(err).Message())
 	profile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 1280, Height: 720, Fps: 30, MaxBitrateBps: 2_000_000}.Build()
 	jobs := api.NewCameraJobServiceClient(workerConn)
 	job, err := api.NewCameraJobServiceClient(admin).Create(ctx, api.CameraJobCreateRequest_builder{Binding: bref, RequestKey: "credential-job", Inputs: api.CameraJobInputs_builder{Desired: profile, AllowActivation: true, InitialCredential: initial.GetCredential(), ManagementCredential: management.GetCredential(), StreamingCredential: stream.GetCredential()}.Build()}.Build())

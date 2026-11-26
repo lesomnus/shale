@@ -263,7 +263,12 @@ next start and is recognized by its hardware identity
   under the cookie's name, and the name is the surface's since the console
   ([§40.1](17-console.md#401-two-surfaces-two-sign-ins)): a session minted
   before that is not read after the upgrade, so people — the CLI included —
-  sign in again once.
+  sign in again once. Recovering a camera's credential is an operator's
+  act now ([§33.1](10-security.md#331-trust-model)). Without
+  `auth.operators`, nobody may recover a credential after the upgrade, so a
+  deployment that used recovery names operators first and grants
+  `/shale.CameraCredentialService/Resolve` at roster. Camera workers and
+  producers are not affected.
 
 ### 34.6 Ubuntu with systemd
 

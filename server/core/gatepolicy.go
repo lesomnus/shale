@@ -169,7 +169,8 @@ func granted(ctx context.Context, may func(context.Context, pdid.Id, pdid.Id, st
 // With Operators, a person reads what the console's pages read (personMay)
 // and calls the rest as far as roster grants them; with Reads too, the
 // reads are as far as roster grants them as well. Without Operators, the
-// rule before it: a person may do anything inside their tenant.
+// rule before it: a person may do anything inside their tenant, but for
+// what hands somebody a secret (May).
 //
 // DelegationService is an app's (§33.8): its four entries are served to
 // nobody with a credential the interceptor knows, and its generated verbs
@@ -301,10 +302,21 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 
 			return granted(ctx, p.Operators.May, c)
 		}
-		// A person may do the rest, inside their tenant; giving somebody a
-		// password is an administrator's act (§33.1).
-		if m == api.HolderService_IssuePassword_FullMethodName && !seesEverySite(ctx) {
-			return denied(m, "only a person who sees every site issues a password")
+		// A person may do the rest, inside their tenant, except what
+		// hands somebody a secret (§33.1). Giving somebody a password is an
+		// administrator's act. Recovering a camera's credential hands the
+		// caller its plaintext -- the administrator, management or
+		// streaming password of a camera -- and it is an operator's: with
+		// nobody named one, nobody has it, whoever they are of the tenant.
+		// A camera worker's and a producer's delivery are decided above, by
+		// their kind.
+		switch m {
+		case api.HolderService_IssuePassword_FullMethodName:
+			if !seesEverySite(ctx) {
+				return denied(m, "only a person who sees every site issues a password")
+			}
+		case api.CameraCredentialService_Resolve_FullMethodName:
+			return denied(m, "recovering a camera's credential is an operator's act, and this deployment names no operators (auth.operators)")
 		}
 	default:
 		return denied(m, "not served to this kind of host")

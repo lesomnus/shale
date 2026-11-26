@@ -32,6 +32,9 @@ data:
       #   addr: roster-data.app-roster.svc.cluster.local:8080
       #   insecure: true
       #   key: file:/run/shale/roster/key
+      # # Without operators nobody recovers a camera's credential
+      # # (CameraCredentialService.Resolve as a person): name them, and
+      # # grant the method at roster, before anybody needs to.
       # operators:
       #   tenant: hday
       # oidc:

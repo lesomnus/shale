@@ -150,8 +150,9 @@ func TestTenantPolicyByWhatRosterGrants(t *testing.T) {
 }
 
 // Without operators the tenant API is the rule before it: a person may do
-// anything in their tenant, and only one who sees every site issues a
-// password.
+// anything in their tenant, only one who sees every site issues a
+// password, and nobody recovers a camera's credential
+// (TestCredentialRecoveryIsAnOperators).
 func TestTenantPolicyWithoutOperators(t *testing.T) {
 	tenant, person := pdid.New(DomTenant), pdid.New(DomHolder)
 	p := TenantPolicy{}
@@ -166,6 +167,56 @@ func TestTenantPolicyWithoutOperators(t *testing.T) {
 	require.Equal(t, codes.PermissionDenied, status.Code(p.May(context.Background(), call)))
 	admin := frame.New(person, tenant, frame.Grant{}).WithRow(api.Holder_builder{AllSites: true}.Build())
 	require.NoError(t, p.May(frame.Into(context.Background(), admin), call))
+}
+
+// Recovering a camera's credential hands a person its plaintext (§33.1):
+// without operators nobody has it -- a site's member, a person who sees
+// every site, the tenant's first person alike -- while a camera worker and a
+// producer still receive theirs, which are decided by their kind; with
+// operators it is roster's grant of the method, like any other call.
+func TestCredentialRecoveryIsAnOperators(t *testing.T) {
+	ctx := context.Background()
+	tenant := pdid.New(DomTenant)
+	m := api.CameraCredentialService_Resolve_FullMethodName
+	const sentence = "recovering a camera's credential is an operator's act, and this deployment names no operators (auth.operators)"
+
+	p := TenantPolicy{}
+	member := pdid.New(DomHolder)
+	everySite := pdid.New(DomHolder)
+	first := pdid.New(DomHolder)
+	for _, who := range []struct {
+		name string
+		ctx  context.Context
+		id   pdid.Id
+	}{
+		{"a site's member", frame.Into(ctx, frame.New(member, tenant, frame.Grant{}).WithRow(api.Holder_builder{AllSites: false}.Build())), member},
+		{"a person who sees every site", frame.Into(ctx, frame.New(everySite, tenant, frame.Grant{}).WithRow(api.Holder_builder{AllSites: true}.Build())), everySite},
+		{"the tenant's first person", frame.Into(ctx, frame.New(first, tenant, frame.Grant{}).WithRow(api.Holder_builder{AllSites: true}.Build())), first},
+	} {
+		err := p.May(who.ctx, gate.Call{Actor: who.id, Tenant: tenant, Action: m})
+		require.Equal(t, codes.PermissionDenied, status.Code(err), who.name)
+		require.Equal(t, m+": "+sentence, status.Convert(err).Message(), who.name)
+	}
+	for _, d := range []pdid.Domain{DomCameraWorker, DomProducer} {
+		require.NoError(t, p.May(ctx, gate.Call{Actor: pdid.New(d), Tenant: tenant, Action: m}), "a machine's delivery is its kind's")
+	}
+	// Preparing and importing answer a reference and no material.
+	for _, other := range []string{api.CameraCredentialService_Prepare_FullMethodName, api.CameraCredentialService_Import_FullMethodName} {
+		require.NoError(t, p.May(ctx, gate.Call{Actor: member, Tenant: tenant, Action: other}), other)
+	}
+
+	ops := &fakeOperators{}
+	granted, other := pdid.New(DomHolder), pdid.New(DomHolder)
+	ops.grant(tenant, granted, m)
+	ops.grant(tenant, other, api.CameraCredentialService_Prepare_FullMethodName)
+	p = TenantPolicy{Operators: ops}
+	require.NoError(t, p.May(ctx, gate.Call{Actor: granted, Tenant: tenant, Action: m}))
+	err := p.May(ctx, gate.Call{Actor: other, Tenant: tenant, Action: m})
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
+	require.NotContains(t, err.Error(), sentence)
+	for _, d := range []pdid.Domain{DomCameraWorker, DomProducer} {
+		require.NoError(t, p.May(ctx, gate.Call{Actor: pdid.New(d), Tenant: tenant, Action: m}))
+	}
 }
 
 // The cluster API: where roster says what people may change, a person of
