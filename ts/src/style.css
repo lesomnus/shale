@@ -548,3 +548,47 @@ td.actions button + button {
 .player .under a {
 	margin-left: 8px;
 }
+
+/* ---- tokens ---- */
+.make {
+	max-width: 760px;
+}
+.make label {
+	display: block;
+	margin: 4px 0;
+}
+.make fieldset {
+	border: 1px solid var(--line-2);
+	border-radius: 6px;
+	padding: 8px 12px;
+	margin: 6px 0;
+}
+.make legend {
+	color: var(--muted);
+	padding: 0 4px;
+}
+.make .choose {
+	margin: 6px 0 0 22px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.make label.method {
+	display: inline-block;
+	margin: 0 10px 0 0;
+}
+.token {
+	margin: 0 0 12px;
+	max-width: 760px;
+	border-color: var(--ok, currentColor);
+}
+.token code {
+	display: block;
+	padding: 6px 8px;
+	background: var(--line-2);
+	border-radius: 4px;
+}
+ul.methods {
+	margin: 4px 0 0;
+	padding-left: 16px;
+}
