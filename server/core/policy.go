@@ -62,6 +62,10 @@ func (s coreSigningKey) Rotate(ctx context.Context, req *api.SigningKeyRotateReq
 	if err != nil {
 		return nil, err
 	}
+	// The row as Create wrote it, through a server with no Secret layer:
+	// what it answers of `private_key` is the key as stored, which no
+	// answer carries. The CA's Rotate clears its own the same way.
+	out.SetPrivateKey(nil)
 
 	return out, nil
 }
