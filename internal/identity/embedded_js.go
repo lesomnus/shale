@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/lesomnus/payday/pdid"
+
+	"github.com/lesomnus/roster/rstr"
 )
 
 // A page runs no roster: the console's sandbox seeds its people itself and
@@ -45,3 +47,6 @@ func (s *Store) Grant(context.Context, string, string, []string, pdid.Id) (pdid.
 	return pdid.Nil, ErrExternal
 }
 func (s *Store) Ungrant(context.Context, pdid.Id) error { return ErrExternal }
+func (s *Store) IssueKeyAs(context.Context, pdid.Id, pdid.Id, TerminalKey) (string, *rstr.ApiKey, error) {
+	return "", nil, ErrExternal
+}

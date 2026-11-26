@@ -218,6 +218,16 @@ next start and is recognized by its hardware identity
   naming the console's origin. `shale init --k8s-secret` then makes the CA,
   the KEK, the CP certificate and the first signing key, and the Secret
   holding them, and **makes nobody** at roster ([§33.4](10-security.md#334-joining-and-adoption)).
+  People's keys for Shale, for their scripts, are made on the console's
+  *Tokens* page through roster's account app, the front door: roster's
+  operator turns the terminal's sign-in on there (`account.terminal`, off
+  unless said), and `auth.roster.account` is the account app's address as
+  the control plane reaches it, at a name roster serves the tenant at --
+  the account app tells whose front door a request is by that name -- and
+  the person is sent to the address the account app answers to say yes.
+  Listing and ending them is Shale's own at roster, through the
+  `app-administrator` `app install --serves` binds it, and needs neither
+  ([§33.1](10-security.md#331-trust-model)).
   For the wed cluster:
 
   ```yaml
@@ -229,6 +239,12 @@ next start and is recognized by its hardware identity
       #   roster --as <operator> control key add --allow /roster.NominationService/List shale
       # and answered in each tenant that nominated it (roster app install, §33.1).
       key: file:/run/shale/roster/key
+      # roster's account app, where a person's key for Shale is made from
+      # the console's Tokens page: a terminal's sign-in for one key, which
+      # roster's operator turns on there (account.terminal: true), at a name
+      # roster serves the tenant at. Without it the page says to make one on
+      # the account page; listing and ending need none (§33.1).
+      # account: https://<the account app's name>
     operators:
       tenant: hday                   # whose people operate the cluster
     oidc:

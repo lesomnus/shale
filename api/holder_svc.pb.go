@@ -10,6 +10,7 @@ import (
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -21,6 +22,62 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// HolderKeyState is where a key BeginKey began is.
+type HolderKeyState int32
+
+const (
+	HolderKeyState_HOLDER_KEY_STATE_UNSPECIFIED HolderKeyState = 0
+	// Nobody has said yes or no yet: ask again after the interval.
+	HolderKeyState_HOLDER_KEY_STATE_PENDING HolderKeyState = 1
+	// Made: `token` is the key's, answered this once.
+	HolderKeyState_HOLDER_KEY_STATE_MADE HolderKeyState = 2
+	// The person said no at the identity service. Nothing was made.
+	HolderKeyState_HOLDER_KEY_STATE_REFUSED HolderKeyState = 3
+	// Nobody said yes in time, or the key was carried away already by an
+	// earlier PollKey. Nothing more comes of this handle.
+	HolderKeyState_HOLDER_KEY_STATE_LAPSED HolderKeyState = 4
+)
+
+// Enum value maps for HolderKeyState.
+var (
+	HolderKeyState_name = map[int32]string{
+		0: "HOLDER_KEY_STATE_UNSPECIFIED",
+		1: "HOLDER_KEY_STATE_PENDING",
+		2: "HOLDER_KEY_STATE_MADE",
+		3: "HOLDER_KEY_STATE_REFUSED",
+		4: "HOLDER_KEY_STATE_LAPSED",
+	}
+	HolderKeyState_value = map[string]int32{
+		"HOLDER_KEY_STATE_UNSPECIFIED": 0,
+		"HOLDER_KEY_STATE_PENDING":     1,
+		"HOLDER_KEY_STATE_MADE":        2,
+		"HOLDER_KEY_STATE_REFUSED":     3,
+		"HOLDER_KEY_STATE_LAPSED":      4,
+	}
+)
+
+func (x HolderKeyState) Enum() *HolderKeyState {
+	p := new(HolderKeyState)
+	*p = x
+	return p
+}
+
+func (x HolderKeyState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (HolderKeyState) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_payday_holder_svc_g_proto_enumTypes[0].Descriptor()
+}
+
+func (HolderKeyState) Type() protoreflect.EnumType {
+	return &file_shale_payday_holder_svc_g_proto_enumTypes[0]
+}
+
+func (x HolderKeyState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
 
 type HolderAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
@@ -2027,11 +2084,978 @@ func (b0 HolderIssuePasswordResponse_builder) Build() *HolderIssuePasswordRespon
 	return m0
 }
 
+type HolderBeginKeyRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,1,opt,name=name"`
+	xxx_hidden_Methods     []string               `protobuf:"bytes,2,rep,name=methods"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_expired,json=dateExpired"`
+	xxx_hidden_Scope       string                 `protobuf:"bytes,4,opt,name=scope"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *HolderBeginKeyRequest) Reset() {
+	*x = HolderBeginKeyRequest{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderBeginKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderBeginKeyRequest) ProtoMessage() {}
+
+func (x *HolderBeginKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderBeginKeyRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *HolderBeginKeyRequest) GetMethods() []string {
+	if x != nil {
+		return x.xxx_hidden_Methods
+	}
+	return nil
+}
+
+func (x *HolderBeginKeyRequest) GetDateExpired() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateExpired
+	}
+	return nil
+}
+
+func (x *HolderBeginKeyRequest) GetScope() string {
+	if x != nil {
+		return x.xxx_hidden_Scope
+	}
+	return ""
+}
+
+func (x *HolderBeginKeyRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *HolderBeginKeyRequest) SetMethods(v []string) {
+	x.xxx_hidden_Methods = v
+}
+
+func (x *HolderBeginKeyRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
+}
+
+func (x *HolderBeginKeyRequest) SetScope(v string) {
+	x.xxx_hidden_Scope = v
+}
+
+func (x *HolderBeginKeyRequest) HasDateExpired() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateExpired != nil
+}
+
+func (x *HolderBeginKeyRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
+}
+
+type HolderBeginKeyRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What the key is called, in the spelling roster keeps a name in:
+	// small letters, digits and single hyphens, beginning with a letter.
+	Name string
+	// The methods of Shale's it may call, in full: each one the caller
+	// holds at Shale, by a role of Shale's at roster, or roster refuses it.
+	Methods []string
+	// When it stops working, after now; unset is a key that does not.
+	DateExpired *timestamppb.Timestamp
+	// Shale's own word about the key, which roster keeps on it and answers
+	// back when it is used (`ApiKey.scope`); empty for none.
+	Scope string
+}
+
+func (b0 HolderBeginKeyRequest_builder) Build() *HolderBeginKeyRequest {
+	m0 := &HolderBeginKeyRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_DateExpired = b.DateExpired
+	x.xxx_hidden_Scope = b.Scope
+	return m0
+}
+
+// HolderBeginKeyResponse is one answer of two shapes, told apart by
+// `token`.
+//
+// Where roster is elsewhere `token` is empty, and `approve_at`,
+// `user_code`, `handle`, `interval` and `date_lapses` are said: the
+// caller's browser goes to `approve_at` to say yes, and PollKey is asked
+// with `handle` every `interval` until it answers otherwise than pending.
+//
+// Where roster runs in this process `token` and `key` are said and the
+// rest is empty: the key is made, and there is nothing to poll.
+type HolderBeginKeyResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ApproveAt  string                 `protobuf:"bytes,1,opt,name=approve_at,json=approveAt"`
+	xxx_hidden_UserCode   string                 `protobuf:"bytes,2,opt,name=user_code,json=userCode"`
+	xxx_hidden_Handle     string                 `protobuf:"bytes,3,opt,name=handle"`
+	xxx_hidden_Interval   *durationpb.Duration   `protobuf:"bytes,4,opt,name=interval"`
+	xxx_hidden_DateLapses *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=date_lapses,json=dateLapses"`
+	xxx_hidden_Token      string                 `protobuf:"bytes,6,opt,name=token"`
+	xxx_hidden_Key        *HolderKey             `protobuf:"bytes,7,opt,name=key"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *HolderBeginKeyResponse) Reset() {
+	*x = HolderBeginKeyResponse{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderBeginKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderBeginKeyResponse) ProtoMessage() {}
+
+func (x *HolderBeginKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderBeginKeyResponse) GetApproveAt() string {
+	if x != nil {
+		return x.xxx_hidden_ApproveAt
+	}
+	return ""
+}
+
+func (x *HolderBeginKeyResponse) GetUserCode() string {
+	if x != nil {
+		return x.xxx_hidden_UserCode
+	}
+	return ""
+}
+
+func (x *HolderBeginKeyResponse) GetHandle() string {
+	if x != nil {
+		return x.xxx_hidden_Handle
+	}
+	return ""
+}
+
+func (x *HolderBeginKeyResponse) GetInterval() *durationpb.Duration {
+	if x != nil {
+		return x.xxx_hidden_Interval
+	}
+	return nil
+}
+
+func (x *HolderBeginKeyResponse) GetDateLapses() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateLapses
+	}
+	return nil
+}
+
+func (x *HolderBeginKeyResponse) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *HolderBeginKeyResponse) GetKey() *HolderKey {
+	if x != nil {
+		return x.xxx_hidden_Key
+	}
+	return nil
+}
+
+func (x *HolderBeginKeyResponse) SetApproveAt(v string) {
+	x.xxx_hidden_ApproveAt = v
+}
+
+func (x *HolderBeginKeyResponse) SetUserCode(v string) {
+	x.xxx_hidden_UserCode = v
+}
+
+func (x *HolderBeginKeyResponse) SetHandle(v string) {
+	x.xxx_hidden_Handle = v
+}
+
+func (x *HolderBeginKeyResponse) SetInterval(v *durationpb.Duration) {
+	x.xxx_hidden_Interval = v
+}
+
+func (x *HolderBeginKeyResponse) SetDateLapses(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateLapses = v
+}
+
+func (x *HolderBeginKeyResponse) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *HolderBeginKeyResponse) SetKey(v *HolderKey) {
+	x.xxx_hidden_Key = v
+}
+
+func (x *HolderBeginKeyResponse) HasInterval() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Interval != nil
+}
+
+func (x *HolderBeginKeyResponse) HasDateLapses() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateLapses != nil
+}
+
+func (x *HolderBeginKeyResponse) HasKey() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Key != nil
+}
+
+func (x *HolderBeginKeyResponse) ClearInterval() {
+	x.xxx_hidden_Interval = nil
+}
+
+func (x *HolderBeginKeyResponse) ClearDateLapses() {
+	x.xxx_hidden_DateLapses = nil
+}
+
+func (x *HolderBeginKeyResponse) ClearKey() {
+	x.xxx_hidden_Key = nil
+}
+
+type HolderBeginKeyResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Where the person says yes at the identity service, the code in it:
+	// roster's account app's `verification_uri_complete`.
+	ApproveAt string
+	// The code that page asks for, for a person who opens it by hand.
+	UserCode string
+	// What PollKey takes: sealed by Shale, opaque to whoever holds it, and
+	// answered only to the session or the key that began it.
+	Handle string
+	// How long to wait between two PollKey.
+	Interval *durationpb.Duration
+	// When the code lapses unless somebody said yes.
+	DateLapses *timestamppb.Timestamp
+	// The key's token, this once; only where roster runs in this process.
+	Token string
+	// The key, as roster holds it; only beside `token`.
+	Key *HolderKey
+}
+
+func (b0 HolderBeginKeyResponse_builder) Build() *HolderBeginKeyResponse {
+	m0 := &HolderBeginKeyResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ApproveAt = b.ApproveAt
+	x.xxx_hidden_UserCode = b.UserCode
+	x.xxx_hidden_Handle = b.Handle
+	x.xxx_hidden_Interval = b.Interval
+	x.xxx_hidden_DateLapses = b.DateLapses
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_Key = b.Key
+	return m0
+}
+
+// HolderKey is a key of the caller's for Shale, as roster holds it; never
+// its token, which is answered once, when it is made.
+type HolderKey struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,2,opt,name=name"`
+	xxx_hidden_Methods     []string               `protobuf:"bytes,3,rep,name=methods"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_expired,json=dateExpired"`
+	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=date_used,json=dateUsed"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Scope       string                 `protobuf:"bytes,7,opt,name=scope"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *HolderKey) Reset() {
+	*x = HolderKey{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderKey) ProtoMessage() {}
+
+func (x *HolderKey) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderKey) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *HolderKey) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *HolderKey) GetMethods() []string {
+	if x != nil {
+		return x.xxx_hidden_Methods
+	}
+	return nil
+}
+
+func (x *HolderKey) GetDateExpired() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateExpired
+	}
+	return nil
+}
+
+func (x *HolderKey) GetDateUsed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUsed
+	}
+	return nil
+}
+
+func (x *HolderKey) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *HolderKey) GetScope() string {
+	if x != nil {
+		return x.xxx_hidden_Scope
+	}
+	return ""
+}
+
+func (x *HolderKey) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *HolderKey) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *HolderKey) SetMethods(v []string) {
+	x.xxx_hidden_Methods = v
+}
+
+func (x *HolderKey) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
+}
+
+func (x *HolderKey) SetDateUsed(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUsed = v
+}
+
+func (x *HolderKey) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *HolderKey) SetScope(v string) {
+	x.xxx_hidden_Scope = v
+}
+
+func (x *HolderKey) HasDateExpired() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateExpired != nil
+}
+
+func (x *HolderKey) HasDateUsed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUsed != nil
+}
+
+func (x *HolderKey) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *HolderKey) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
+}
+
+func (x *HolderKey) ClearDateUsed() {
+	x.xxx_hidden_DateUsed = nil
+}
+
+func (x *HolderKey) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type HolderKey_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// roster's identifier of the key: what EndKey takes.
+	Id []byte
+	// What the person called it.
+	Name string
+	// The methods of Shale's it may call, in full.
+	Methods []string
+	// When it stops working; unset is a key that does not.
+	DateExpired *timestamppb.Timestamp
+	// When it was last used; unset is never.
+	DateUsed *timestamppb.Timestamp
+	// When it was made.
+	DateCreated *timestamppb.Timestamp
+	// The word Shale had roster keep on it when it was made, as roster
+	// holds it (`ApiKey.scope`); empty for none. Nothing reads it yet.
+	Scope string
+}
+
+func (b0 HolderKey_builder) Build() *HolderKey {
+	m0 := &HolderKey{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_DateExpired = b.DateExpired
+	x.xxx_hidden_DateUsed = b.DateUsed
+	x.xxx_hidden_DateCreated = b.DateCreated
+	x.xxx_hidden_Scope = b.Scope
+	return m0
+}
+
+type HolderPollKeyRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Handle string                 `protobuf:"bytes,1,opt,name=handle"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *HolderPollKeyRequest) Reset() {
+	*x = HolderPollKeyRequest{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderPollKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderPollKeyRequest) ProtoMessage() {}
+
+func (x *HolderPollKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderPollKeyRequest) GetHandle() string {
+	if x != nil {
+		return x.xxx_hidden_Handle
+	}
+	return ""
+}
+
+func (x *HolderPollKeyRequest) SetHandle(v string) {
+	x.xxx_hidden_Handle = v
+}
+
+type HolderPollKeyRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Handle string
+}
+
+func (b0 HolderPollKeyRequest_builder) Build() *HolderPollKeyRequest {
+	m0 := &HolderPollKeyRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Handle = b.Handle
+	return m0
+}
+
+type HolderPollKeyResponse struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_State    HolderKeyState         `protobuf:"varint,1,opt,name=state,enum=shale.HolderKeyState"`
+	xxx_hidden_Token    string                 `protobuf:"bytes,2,opt,name=token"`
+	xxx_hidden_Interval *durationpb.Duration   `protobuf:"bytes,3,opt,name=interval"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *HolderPollKeyResponse) Reset() {
+	*x = HolderPollKeyResponse{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderPollKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderPollKeyResponse) ProtoMessage() {}
+
+func (x *HolderPollKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderPollKeyResponse) GetState() HolderKeyState {
+	if x != nil {
+		return x.xxx_hidden_State
+	}
+	return HolderKeyState_HOLDER_KEY_STATE_UNSPECIFIED
+}
+
+func (x *HolderPollKeyResponse) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *HolderPollKeyResponse) GetInterval() *durationpb.Duration {
+	if x != nil {
+		return x.xxx_hidden_Interval
+	}
+	return nil
+}
+
+func (x *HolderPollKeyResponse) SetState(v HolderKeyState) {
+	x.xxx_hidden_State = v
+}
+
+func (x *HolderPollKeyResponse) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *HolderPollKeyResponse) SetInterval(v *durationpb.Duration) {
+	x.xxx_hidden_Interval = v
+}
+
+func (x *HolderPollKeyResponse) HasInterval() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Interval != nil
+}
+
+func (x *HolderPollKeyResponse) ClearInterval() {
+	x.xxx_hidden_Interval = nil
+}
+
+type HolderPollKeyResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	State HolderKeyState
+	// The key's token, this once, when `state` is MADE.
+	Token string
+	// How long to wait before asking again, when `state` is PENDING.
+	Interval *durationpb.Duration
+}
+
+func (b0 HolderPollKeyResponse_builder) Build() *HolderPollKeyResponse {
+	m0 := &HolderPollKeyResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_State = b.State
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_Interval = b.Interval
+	return m0
+}
+
+type HolderListKeysRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HolderListKeysRequest) Reset() {
+	*x = HolderListKeysRequest{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderListKeysRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderListKeysRequest) ProtoMessage() {}
+
+func (x *HolderListKeysRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type HolderListKeysRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 HolderListKeysRequest_builder) Build() *HolderListKeysRequest {
+	m0 := &HolderListKeysRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type HolderListKeysResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Keys       *[]*HolderKey          `protobuf:"bytes,1,rep,name=keys"`
+	xxx_hidden_Holds      []string               `protobuf:"bytes,2,rep,name=holds"`
+	xxx_hidden_Reads      []string               `protobuf:"bytes,3,rep,name=reads"`
+	xxx_hidden_Remembered *durationpb.Duration   `protobuf:"bytes,4,opt,name=remembered"`
+	xxx_hidden_NoneHeld   string                 `protobuf:"bytes,5,opt,name=none_held,json=noneHeld"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *HolderListKeysResponse) Reset() {
+	*x = HolderListKeysResponse{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderListKeysResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderListKeysResponse) ProtoMessage() {}
+
+func (x *HolderListKeysResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderListKeysResponse) GetKeys() []*HolderKey {
+	if x != nil {
+		if x.xxx_hidden_Keys != nil {
+			return *x.xxx_hidden_Keys
+		}
+	}
+	return nil
+}
+
+func (x *HolderListKeysResponse) GetHolds() []string {
+	if x != nil {
+		return x.xxx_hidden_Holds
+	}
+	return nil
+}
+
+func (x *HolderListKeysResponse) GetReads() []string {
+	if x != nil {
+		return x.xxx_hidden_Reads
+	}
+	return nil
+}
+
+func (x *HolderListKeysResponse) GetRemembered() *durationpb.Duration {
+	if x != nil {
+		return x.xxx_hidden_Remembered
+	}
+	return nil
+}
+
+func (x *HolderListKeysResponse) GetNoneHeld() string {
+	if x != nil {
+		return x.xxx_hidden_NoneHeld
+	}
+	return ""
+}
+
+func (x *HolderListKeysResponse) SetKeys(v []*HolderKey) {
+	x.xxx_hidden_Keys = &v
+}
+
+func (x *HolderListKeysResponse) SetHolds(v []string) {
+	x.xxx_hidden_Holds = v
+}
+
+func (x *HolderListKeysResponse) SetReads(v []string) {
+	x.xxx_hidden_Reads = v
+}
+
+func (x *HolderListKeysResponse) SetRemembered(v *durationpb.Duration) {
+	x.xxx_hidden_Remembered = v
+}
+
+func (x *HolderListKeysResponse) SetNoneHeld(v string) {
+	x.xxx_hidden_NoneHeld = v
+}
+
+func (x *HolderListKeysResponse) HasRemembered() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Remembered != nil
+}
+
+func (x *HolderListKeysResponse) ClearRemembered() {
+	x.xxx_hidden_Remembered = nil
+}
+
+type HolderListKeysResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Keys []*HolderKey
+	// The methods of Shale's the caller holds across their tenant, by a role
+	// of Shale's at roster, of those the tenant API serves: what a key of
+	// theirs may be given, and nothing else. Empty is a person who holds
+	// none, who can make no key (roster's rule: a key acts as its person).
+	Holds []string
+	// The console's reads, with Get beside every Watch: what every person
+	// reads where roster says what people may change (§33.1), and what a key
+	// that views and reads names, of those the caller holds.
+	Reads []string
+	// How long a call made with a key may still be served, and a stream
+	// opened with it still run, once it is ended (`auth.operators.ttl`).
+	Remembered *durationpb.Duration
+	// Why `holds` is empty where that is this deployment's doing and not the
+	// person's: roster runs in this process and the deployment names no
+	// operators (`auth.operators`), so no role of Shale's exists for anybody
+	// to hold. Empty otherwise.
+	NoneHeld string
+}
+
+func (b0 HolderListKeysResponse_builder) Build() *HolderListKeysResponse {
+	m0 := &HolderListKeysResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Keys = &b.Keys
+	x.xxx_hidden_Holds = b.Holds
+	x.xxx_hidden_Reads = b.Reads
+	x.xxx_hidden_Remembered = b.Remembered
+	x.xxx_hidden_NoneHeld = b.NoneHeld
+	return m0
+}
+
+type HolderEndKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id []byte                 `protobuf:"bytes,1,opt,name=id"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HolderEndKeyRequest) Reset() {
+	*x = HolderEndKeyRequest{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderEndKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderEndKeyRequest) ProtoMessage() {}
+
+func (x *HolderEndKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderEndKeyRequest) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *HolderEndKeyRequest) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+type HolderEndKeyRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The key, by roster's identifier (`HolderKey.id`).
+	Id []byte
+}
+
+func (b0 HolderEndKeyRequest_builder) Build() *HolderEndKeyRequest {
+	m0 := &HolderEndKeyRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	return m0
+}
+
+type HolderEndKeyResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Remembered *durationpb.Duration   `protobuf:"bytes,1,opt,name=remembered"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *HolderEndKeyResponse) Reset() {
+	*x = HolderEndKeyResponse{}
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderEndKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderEndKeyResponse) ProtoMessage() {}
+
+func (x *HolderEndKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderEndKeyResponse) GetRemembered() *durationpb.Duration {
+	if x != nil {
+		return x.xxx_hidden_Remembered
+	}
+	return nil
+}
+
+func (x *HolderEndKeyResponse) SetRemembered(v *durationpb.Duration) {
+	x.xxx_hidden_Remembered = v
+}
+
+func (x *HolderEndKeyResponse) HasRemembered() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Remembered != nil
+}
+
+func (x *HolderEndKeyResponse) ClearRemembered() {
+	x.xxx_hidden_Remembered = nil
+}
+
+type HolderEndKeyResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// How long a call made with the key may still be served, and a stream
+	// opened with it still run: what roster said of a key is believed for
+	// `auth.operators.ttl` (30 s), and a key with a stream open is asked
+	// about again when that runs out (§33.1).
+	Remembered *durationpb.Duration
+}
+
+func (b0 HolderEndKeyResponse_builder) Build() *HolderEndKeyResponse {
+	m0 := &HolderEndKeyResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Remembered = b.Remembered
+	return m0
+}
+
 var File_shale_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/payday/holder_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x19shale/payday/holder.proto\x1a\x1fshale/payday/tenant_svc.g.proto\"\x82\x03\n" +
+	"\x1fshale/payday/holder_svc.g.proto\x12\x05shale\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x19shale/payday/holder.proto\x1a\x1fshale/payday/tenant_svc.g.proto\"\x82\x03\n" +
 	"\x10HolderAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\x1b\n" +
@@ -2111,7 +3135,57 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x1aHolderIssuePasswordRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.HolderRefR\x03ref\"@\n" +
 	"\x1bHolderIssuePasswordResponse\x12!\n" +
-	"\bpassword\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\bpassword2\xae\x03\n" +
+	"\bpassword\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\bpassword\"\xa8\x01\n" +
+	"\x15HolderBeginKeyRequest\x12\x19\n" +
+	"\x04name\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x18\n" +
+	"\amethods\x18\x02 \x03(\tR\amethods\x12=\n" +
+	"\fdate_expired\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12\x1b\n" +
+	"\x05scope\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05scope\"\xb6\x02\n" +
+	"\x16HolderBeginKeyResponse\x12$\n" +
+	"\n" +
+	"approve_at\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\tapproveAt\x12\"\n" +
+	"\tuser_code\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\buserCode\x12\x1d\n" +
+	"\x06handle\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\x125\n" +
+	"\binterval\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12;\n" +
+	"\vdate_lapses\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateLapses\x12\x1b\n" +
+	"\x05token\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12\"\n" +
+	"\x03key\x18\a \x01(\v2\x10.shale.HolderKeyR\x03key\"\xab\x02\n" +
+	"\tHolderKey\x12\x15\n" +
+	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\x12\x19\n" +
+	"\x04name\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x18\n" +
+	"\amethods\x18\x03 \x03(\tR\amethods\x12=\n" +
+	"\fdate_expired\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x127\n" +
+	"\tdate_used\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\x12=\n" +
+	"\fdate_created\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12\x1b\n" +
+	"\x05scope\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\x05scope\"5\n" +
+	"\x14HolderPollKeyRequest\x12\x1d\n" +
+	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\x9f\x01\n" +
+	"\x15HolderPollKeyResponse\x122\n" +
+	"\x05state\x18\x01 \x01(\x0e2\x15.shale.HolderKeyStateB\x05\xaa\x01\x02\b\x02R\x05state\x12\x1b\n" +
+	"\x05token\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x125\n" +
+	"\binterval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\binterval\"\x17\n" +
+	"\x15HolderListKeysRequest\"\xc9\x01\n" +
+	"\x16HolderListKeysResponse\x12$\n" +
+	"\x04keys\x18\x01 \x03(\v2\x10.shale.HolderKeyR\x04keys\x12\x14\n" +
+	"\x05holds\x18\x02 \x03(\tR\x05holds\x12\x14\n" +
+	"\x05reads\x18\x03 \x03(\tR\x05reads\x129\n" +
+	"\n" +
+	"remembered\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\n" +
+	"remembered\x12\"\n" +
+	"\tnone_held\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\bnoneHeld\",\n" +
+	"\x13HolderEndKeyRequest\x12\x15\n" +
+	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\"Q\n" +
+	"\x14HolderEndKeyResponse\x129\n" +
+	"\n" +
+	"remembered\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\n" +
+	"remembered*\xa6\x01\n" +
+	"\x0eHolderKeyState\x12 \n" +
+	"\x1cHOLDER_KEY_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18HOLDER_KEY_STATE_PENDING\x10\x01\x12\x19\n" +
+	"\x15HOLDER_KEY_STATE_MADE\x10\x02\x12\x1c\n" +
+	"\x18HOLDER_KEY_STATE_REFUSED\x10\x03\x12\x1b\n" +
+	"\x17HOLDER_KEY_STATE_LAPSED\x10\x042\xc9\x05\n" +
 	"\rHolderService\x12-\n" +
 	"\x03Add\x12\x17.shale.HolderAddRequest\x1a\r.shale.Holder\x12-\n" +
 	"\x03Get\x12\x17.shale.HolderGetRequest\x1a\r.shale.Holder\x121\n" +
@@ -2119,74 +3193,110 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x10.shale.HolderRef\x1a\x1a.shale.HolderEraseResponse\x12;\n" +
 	"\x04List\x12\x18.shale.HolderListRequest\x1a\x19.shale.HolderListResponse\x12@\n" +
 	"\x05Watch\x12\x19.shale.HolderWatchRequest\x1a\x1a.shale.HolderWatchResponse0\x01\x12V\n" +
-	"\rIssuePassword\x12!.shale.HolderIssuePasswordRequest\x1a\".shale.HolderIssuePasswordResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
+	"\rIssuePassword\x12!.shale.HolderIssuePasswordRequest\x1a\".shale.HolderIssuePasswordResponse\x12G\n" +
+	"\bBeginKey\x12\x1c.shale.HolderBeginKeyRequest\x1a\x1d.shale.HolderBeginKeyResponse\x12D\n" +
+	"\aPollKey\x12\x1b.shale.HolderPollKeyRequest\x1a\x1c.shale.HolderPollKeyResponse\x12G\n" +
+	"\bListKeys\x12\x1c.shale.HolderListKeysRequest\x1a\x1d.shale.HolderListKeysResponse\x12A\n" +
+	"\x06EndKey\x12\x1a.shale.HolderEndKeyRequest\x1a\x1b.shale.HolderEndKeyResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_shale_payday_holder_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_shale_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_shale_payday_holder_svc_g_proto_goTypes = []any{
-	(*HolderAddRequest)(nil),            // 0: shale.HolderAddRequest
-	(*HolderGetRequest)(nil),            // 1: shale.HolderGetRequest
-	(*HolderRef)(nil),                   // 2: shale.HolderRef
-	(*HolderRefBySlug)(nil),             // 3: shale.HolderRefBySlug
-	(*HolderSelect)(nil),                // 4: shale.HolderSelect
-	(*HolderPatchRequest)(nil),          // 5: shale.HolderPatchRequest
-	(*HolderEraseResponse)(nil),         // 6: shale.HolderEraseResponse
-	(*HolderListRequest)(nil),           // 7: shale.HolderListRequest
-	(*HolderListResponse)(nil),          // 8: shale.HolderListResponse
-	(*HolderFilter)(nil),                // 9: shale.HolderFilter
-	(*HolderWatchRequest)(nil),          // 10: shale.HolderWatchRequest
-	(*HolderWatchResponse)(nil),         // 11: shale.HolderWatchResponse
-	(*HolderWatchItem)(nil),             // 12: shale.HolderWatchItem
-	(*HolderIssuePasswordRequest)(nil),  // 13: shale.HolderIssuePasswordRequest
-	(*HolderIssuePasswordResponse)(nil), // 14: shale.HolderIssuePasswordResponse
-	nil,                                 // 15: shale.HolderAddRequest.LabelsEntry
-	nil,                                 // 16: shale.HolderPatchRequest.LabelsEntry
-	nil,                                 // 17: shale.HolderFilter.LabelsEntry
-	(*TenantRef)(nil),                   // 18: shale.TenantRef
-	(*timestamppb.Timestamp)(nil),       // 19: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                // 20: shale.TenantSelect
-	(*Holder)(nil),                      // 21: shale.Holder
+	(HolderKeyState)(0),                 // 0: shale.HolderKeyState
+	(*HolderAddRequest)(nil),            // 1: shale.HolderAddRequest
+	(*HolderGetRequest)(nil),            // 2: shale.HolderGetRequest
+	(*HolderRef)(nil),                   // 3: shale.HolderRef
+	(*HolderRefBySlug)(nil),             // 4: shale.HolderRefBySlug
+	(*HolderSelect)(nil),                // 5: shale.HolderSelect
+	(*HolderPatchRequest)(nil),          // 6: shale.HolderPatchRequest
+	(*HolderEraseResponse)(nil),         // 7: shale.HolderEraseResponse
+	(*HolderListRequest)(nil),           // 8: shale.HolderListRequest
+	(*HolderListResponse)(nil),          // 9: shale.HolderListResponse
+	(*HolderFilter)(nil),                // 10: shale.HolderFilter
+	(*HolderWatchRequest)(nil),          // 11: shale.HolderWatchRequest
+	(*HolderWatchResponse)(nil),         // 12: shale.HolderWatchResponse
+	(*HolderWatchItem)(nil),             // 13: shale.HolderWatchItem
+	(*HolderIssuePasswordRequest)(nil),  // 14: shale.HolderIssuePasswordRequest
+	(*HolderIssuePasswordResponse)(nil), // 15: shale.HolderIssuePasswordResponse
+	(*HolderBeginKeyRequest)(nil),       // 16: shale.HolderBeginKeyRequest
+	(*HolderBeginKeyResponse)(nil),      // 17: shale.HolderBeginKeyResponse
+	(*HolderKey)(nil),                   // 18: shale.HolderKey
+	(*HolderPollKeyRequest)(nil),        // 19: shale.HolderPollKeyRequest
+	(*HolderPollKeyResponse)(nil),       // 20: shale.HolderPollKeyResponse
+	(*HolderListKeysRequest)(nil),       // 21: shale.HolderListKeysRequest
+	(*HolderListKeysResponse)(nil),      // 22: shale.HolderListKeysResponse
+	(*HolderEndKeyRequest)(nil),         // 23: shale.HolderEndKeyRequest
+	(*HolderEndKeyResponse)(nil),        // 24: shale.HolderEndKeyResponse
+	nil,                                 // 25: shale.HolderAddRequest.LabelsEntry
+	nil,                                 // 26: shale.HolderPatchRequest.LabelsEntry
+	nil,                                 // 27: shale.HolderFilter.LabelsEntry
+	(*TenantRef)(nil),                   // 28: shale.TenantRef
+	(*timestamppb.Timestamp)(nil),       // 29: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                // 30: shale.TenantSelect
+	(*Holder)(nil),                      // 31: shale.Holder
+	(*durationpb.Duration)(nil),         // 32: google.protobuf.Duration
 }
 var file_shale_payday_holder_svc_g_proto_depIdxs = []int32{
-	18, // 0: shale.HolderAddRequest.tenant:type_name -> shale.TenantRef
-	15, // 1: shale.HolderAddRequest.labels:type_name -> shale.HolderAddRequest.LabelsEntry
-	19, // 2: shale.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: shale.HolderGetRequest.ref:type_name -> shale.HolderRef
-	4,  // 4: shale.HolderGetRequest.select:type_name -> shale.HolderSelect
-	3,  // 5: shale.HolderRef.slug:type_name -> shale.HolderRefBySlug
-	18, // 6: shale.HolderRefBySlug.tenant:type_name -> shale.TenantRef
-	20, // 7: shale.HolderSelect.tenant:type_name -> shale.TenantSelect
-	2,  // 8: shale.HolderPatchRequest.ref:type_name -> shale.HolderRef
-	16, // 9: shale.HolderPatchRequest.labels:type_name -> shale.HolderPatchRequest.LabelsEntry
-	19, // 10: shale.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	9,  // 11: shale.HolderListRequest.filters:type_name -> shale.HolderFilter
-	4,  // 12: shale.HolderListRequest.select:type_name -> shale.HolderSelect
-	21, // 13: shale.HolderListResponse.items:type_name -> shale.Holder
-	2,  // 14: shale.HolderFilter.ref:type_name -> shale.HolderRef
-	18, // 15: shale.HolderFilter.tenant:type_name -> shale.TenantRef
-	17, // 16: shale.HolderFilter.labels:type_name -> shale.HolderFilter.LabelsEntry
-	9,  // 17: shale.HolderWatchRequest.filters:type_name -> shale.HolderFilter
-	12, // 18: shale.HolderWatchResponse.items:type_name -> shale.HolderWatchItem
-	21, // 19: shale.HolderWatchItem.value:type_name -> shale.Holder
-	2,  // 20: shale.HolderIssuePasswordRequest.ref:type_name -> shale.HolderRef
-	0,  // 21: shale.HolderService.Add:input_type -> shale.HolderAddRequest
-	1,  // 22: shale.HolderService.Get:input_type -> shale.HolderGetRequest
-	5,  // 23: shale.HolderService.Patch:input_type -> shale.HolderPatchRequest
-	2,  // 24: shale.HolderService.Erase:input_type -> shale.HolderRef
-	7,  // 25: shale.HolderService.List:input_type -> shale.HolderListRequest
-	10, // 26: shale.HolderService.Watch:input_type -> shale.HolderWatchRequest
-	13, // 27: shale.HolderService.IssuePassword:input_type -> shale.HolderIssuePasswordRequest
-	21, // 28: shale.HolderService.Add:output_type -> shale.Holder
-	21, // 29: shale.HolderService.Get:output_type -> shale.Holder
-	21, // 30: shale.HolderService.Patch:output_type -> shale.Holder
-	6,  // 31: shale.HolderService.Erase:output_type -> shale.HolderEraseResponse
-	8,  // 32: shale.HolderService.List:output_type -> shale.HolderListResponse
-	11, // 33: shale.HolderService.Watch:output_type -> shale.HolderWatchResponse
-	14, // 34: shale.HolderService.IssuePassword:output_type -> shale.HolderIssuePasswordResponse
-	28, // [28:35] is the sub-list for method output_type
-	21, // [21:28] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	28, // 0: shale.HolderAddRequest.tenant:type_name -> shale.TenantRef
+	25, // 1: shale.HolderAddRequest.labels:type_name -> shale.HolderAddRequest.LabelsEntry
+	29, // 2: shale.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	3,  // 3: shale.HolderGetRequest.ref:type_name -> shale.HolderRef
+	5,  // 4: shale.HolderGetRequest.select:type_name -> shale.HolderSelect
+	4,  // 5: shale.HolderRef.slug:type_name -> shale.HolderRefBySlug
+	28, // 6: shale.HolderRefBySlug.tenant:type_name -> shale.TenantRef
+	30, // 7: shale.HolderSelect.tenant:type_name -> shale.TenantSelect
+	3,  // 8: shale.HolderPatchRequest.ref:type_name -> shale.HolderRef
+	26, // 9: shale.HolderPatchRequest.labels:type_name -> shale.HolderPatchRequest.LabelsEntry
+	29, // 10: shale.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 11: shale.HolderListRequest.filters:type_name -> shale.HolderFilter
+	5,  // 12: shale.HolderListRequest.select:type_name -> shale.HolderSelect
+	31, // 13: shale.HolderListResponse.items:type_name -> shale.Holder
+	3,  // 14: shale.HolderFilter.ref:type_name -> shale.HolderRef
+	28, // 15: shale.HolderFilter.tenant:type_name -> shale.TenantRef
+	27, // 16: shale.HolderFilter.labels:type_name -> shale.HolderFilter.LabelsEntry
+	10, // 17: shale.HolderWatchRequest.filters:type_name -> shale.HolderFilter
+	13, // 18: shale.HolderWatchResponse.items:type_name -> shale.HolderWatchItem
+	31, // 19: shale.HolderWatchItem.value:type_name -> shale.Holder
+	3,  // 20: shale.HolderIssuePasswordRequest.ref:type_name -> shale.HolderRef
+	29, // 21: shale.HolderBeginKeyRequest.date_expired:type_name -> google.protobuf.Timestamp
+	32, // 22: shale.HolderBeginKeyResponse.interval:type_name -> google.protobuf.Duration
+	29, // 23: shale.HolderBeginKeyResponse.date_lapses:type_name -> google.protobuf.Timestamp
+	18, // 24: shale.HolderBeginKeyResponse.key:type_name -> shale.HolderKey
+	29, // 25: shale.HolderKey.date_expired:type_name -> google.protobuf.Timestamp
+	29, // 26: shale.HolderKey.date_used:type_name -> google.protobuf.Timestamp
+	29, // 27: shale.HolderKey.date_created:type_name -> google.protobuf.Timestamp
+	0,  // 28: shale.HolderPollKeyResponse.state:type_name -> shale.HolderKeyState
+	32, // 29: shale.HolderPollKeyResponse.interval:type_name -> google.protobuf.Duration
+	18, // 30: shale.HolderListKeysResponse.keys:type_name -> shale.HolderKey
+	32, // 31: shale.HolderListKeysResponse.remembered:type_name -> google.protobuf.Duration
+	32, // 32: shale.HolderEndKeyResponse.remembered:type_name -> google.protobuf.Duration
+	1,  // 33: shale.HolderService.Add:input_type -> shale.HolderAddRequest
+	2,  // 34: shale.HolderService.Get:input_type -> shale.HolderGetRequest
+	6,  // 35: shale.HolderService.Patch:input_type -> shale.HolderPatchRequest
+	3,  // 36: shale.HolderService.Erase:input_type -> shale.HolderRef
+	8,  // 37: shale.HolderService.List:input_type -> shale.HolderListRequest
+	11, // 38: shale.HolderService.Watch:input_type -> shale.HolderWatchRequest
+	14, // 39: shale.HolderService.IssuePassword:input_type -> shale.HolderIssuePasswordRequest
+	16, // 40: shale.HolderService.BeginKey:input_type -> shale.HolderBeginKeyRequest
+	19, // 41: shale.HolderService.PollKey:input_type -> shale.HolderPollKeyRequest
+	21, // 42: shale.HolderService.ListKeys:input_type -> shale.HolderListKeysRequest
+	23, // 43: shale.HolderService.EndKey:input_type -> shale.HolderEndKeyRequest
+	31, // 44: shale.HolderService.Add:output_type -> shale.Holder
+	31, // 45: shale.HolderService.Get:output_type -> shale.Holder
+	31, // 46: shale.HolderService.Patch:output_type -> shale.Holder
+	7,  // 47: shale.HolderService.Erase:output_type -> shale.HolderEraseResponse
+	9,  // 48: shale.HolderService.List:output_type -> shale.HolderListResponse
+	12, // 49: shale.HolderService.Watch:output_type -> shale.HolderWatchResponse
+	15, // 50: shale.HolderService.IssuePassword:output_type -> shale.HolderIssuePasswordResponse
+	17, // 51: shale.HolderService.BeginKey:output_type -> shale.HolderBeginKeyResponse
+	20, // 52: shale.HolderService.PollKey:output_type -> shale.HolderPollKeyResponse
+	22, // 53: shale.HolderService.ListKeys:output_type -> shale.HolderListKeysResponse
+	24, // 54: shale.HolderService.EndKey:output_type -> shale.HolderEndKeyResponse
+	44, // [44:55] is the sub-list for method output_type
+	33, // [33:44] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_shale_payday_holder_svc_g_proto_init() }
@@ -2205,13 +3315,14 @@ func file_shale_payday_holder_svc_g_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_payday_holder_svc_g_proto_rawDesc), len(file_shale_payday_holder_svc_g_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   18,
+			NumEnums:      1,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_shale_payday_holder_svc_g_proto_goTypes,
 		DependencyIndexes: file_shale_payday_holder_svc_g_proto_depIdxs,
+		EnumInfos:         file_shale_payday_holder_svc_g_proto_enumTypes,
 		MessageInfos:      file_shale_payday_holder_svc_g_proto_msgTypes,
 	}.Build()
 	File_shale_payday_holder_svc_g_proto = out.File

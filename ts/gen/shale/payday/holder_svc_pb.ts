@@ -2,10 +2,10 @@
 // @generated from file shale/payday/holder_svc.g.proto (package shale, edition 2023)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Duration, Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_duration, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../../orm_pb.js";
 import type { Holder, HolderSchema } from "./holder_pb.js";
 import { file_shale_payday_holder } from "./holder_pb.js";
@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/payday/holder_svc.g.proto.
  */
 export const file_shale_payday_holder_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9wYXlkYXkvaG9sZGVyX3N2Yy5nLnByb3RvEgVzaGFsZSK4AgoQSG9sZGVyQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMwoGbGFiZWxzGAcgAygLMiMuc2hhbGUuSG9sZGVyQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWFsbF9zaXRlcxgKIAEoCEIFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJWChBIb2xkZXJHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5Ib2xkZXJTZWxlY3QiUAoJSG9sZGVyUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABImCgRzbHVnGAQgASgLMhYuc2hhbGUuSG9sZGVyUmVmQnlTbHVnSABCBQoDa2V5IkIKD0hvbGRlclJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYizwEKDEhvbGRlclNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIRCglhbGxfc2l0ZXMYCiABKAgipQIKEkhvbGRlclBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjUKBmxhYmVscxgOIAMoCzIlLnNoYWxlLkhvbGRlclBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIRCglhbGxfc2l0ZXMYFCABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIlChNIb2xkZXJFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKhAQoRSG9sZGVyTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnNoYWxlLkhvbGRlckZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0IkcKEkhvbGRlckxpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnNoYWxlLkhvbGRlchITCgRuZXh0GAIgASgJQgWqAQIIAiKvAQoMSG9sZGVyRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSLwoGbGFiZWxzGAMgAygLMh8uc2hhbGUuSG9sZGVyRmlsdGVyLkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5zaGFsZS5Ib2xkZXJGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiPAoTSG9sZGVyV2F0Y2hSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnNoYWxlLkhvbGRlcldhdGNoSXRlbSJSCg9Ib2xkZXJXYXRjaEl0ZW0SCgoCaWQYASABKAwSHAoFdmFsdWUYAiABKAsyDS5zaGFsZS5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiI7ChpIb2xkZXJJc3N1ZVBhc3N3b3JkUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYiNgobSG9sZGVySXNzdWVQYXNzd29yZFJlc3BvbnNlEhcKCHBhc3N3b3JkGAEgASgJQgWqAQIIAjKuAwoNSG9sZGVyU2VydmljZRItCgNBZGQSFy5zaGFsZS5Ib2xkZXJBZGRSZXF1ZXN0Gg0uc2hhbGUuSG9sZGVyEi0KA0dldBIXLnNoYWxlLkhvbGRlckdldFJlcXVlc3QaDS5zaGFsZS5Ib2xkZXISMQoFUGF0Y2gSGS5zaGFsZS5Ib2xkZXJQYXRjaFJlcXVlc3QaDS5zaGFsZS5Ib2xkZXISNQoFRXJhc2USEC5zaGFsZS5Ib2xkZXJSZWYaGi5zaGFsZS5Ib2xkZXJFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5zaGFsZS5Ib2xkZXJMaXN0UmVxdWVzdBoZLnNoYWxlLkhvbGRlckxpc3RSZXNwb25zZRJACgVXYXRjaBIZLnNoYWxlLkhvbGRlcldhdGNoUmVxdWVzdBoaLnNoYWxlLkhvbGRlcldhdGNoUmVzcG9uc2UwARJWCg1Jc3N1ZVBhc3N3b3JkEiEuc2hhbGUuSG9sZGVySXNzdWVQYXNzd29yZFJlcXVlc3QaIi5zaGFsZS5Ib2xkZXJJc3N1ZVBhc3N3b3JkUmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_shale_payday_holder, file_shale_payday_tenant_svc_g]);
+  fileDesc("Ch9zaGFsZS9wYXlkYXkvaG9sZGVyX3N2Yy5nLnByb3RvEgVzaGFsZSK4AgoQSG9sZGVyQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMwoGbGFiZWxzGAcgAygLMiMuc2hhbGUuSG9sZGVyQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWFsbF9zaXRlcxgKIAEoCEIFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJWChBIb2xkZXJHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5Ib2xkZXJTZWxlY3QiUAoJSG9sZGVyUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABImCgRzbHVnGAQgASgLMhYuc2hhbGUuSG9sZGVyUmVmQnlTbHVnSABCBQoDa2V5IkIKD0hvbGRlclJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYizwEKDEhvbGRlclNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIRCglhbGxfc2l0ZXMYCiABKAgipQIKEkhvbGRlclBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjUKBmxhYmVscxgOIAMoCzIlLnNoYWxlLkhvbGRlclBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIRCglhbGxfc2l0ZXMYFCABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIlChNIb2xkZXJFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKhAQoRSG9sZGVyTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnNoYWxlLkhvbGRlckZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0IkcKEkhvbGRlckxpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnNoYWxlLkhvbGRlchITCgRuZXh0GAIgASgJQgWqAQIIAiKvAQoMSG9sZGVyRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnNoYWxlLkhvbGRlclJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSLwoGbGFiZWxzGAMgAygLMh8uc2hhbGUuSG9sZGVyRmlsdGVyLkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5zaGFsZS5Ib2xkZXJGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiPAoTSG9sZGVyV2F0Y2hSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnNoYWxlLkhvbGRlcldhdGNoSXRlbSJSCg9Ib2xkZXJXYXRjaEl0ZW0SCgoCaWQYASABKAwSHAoFdmFsdWUYAiABKAsyDS5zaGFsZS5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiI7ChpIb2xkZXJJc3N1ZVBhc3N3b3JkUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5Ib2xkZXJSZWYiNgobSG9sZGVySXNzdWVQYXNzd29yZFJlc3BvbnNlEhcKCHBhc3N3b3JkGAEgASgJQgWqAQIIAiKFAQoVSG9sZGVyQmVnaW5LZXlSZXF1ZXN0EhMKBG5hbWUYASABKAlCBaoBAggCEg8KB21ldGhvZHMYAiADKAkSMAoMZGF0ZV9leHBpcmVkGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgVzY29wZRgEIAEoCUIFqgECCAIi9wEKFkhvbGRlckJlZ2luS2V5UmVzcG9uc2USGQoKYXBwcm92ZV9hdBgBIAEoCUIFqgECCAISGAoJdXNlcl9jb2RlGAIgASgJQgWqAQIIAhIVCgZoYW5kbGUYAyABKAlCBaoBAggCEisKCGludGVydmFsGAQgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uEi8KC2RhdGVfbGFwc2VzGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgV0b2tlbhgGIAEoCUIFqgECCAISHQoDa2V5GAcgASgLMhAuc2hhbGUuSG9sZGVyS2V5Iu0BCglIb2xkZXJLZXkSEQoCaWQYASABKAxCBaoBAggCEhMKBG5hbWUYAiABKAlCBaoBAggCEg8KB21ldGhvZHMYAyADKAkSMAoMZGF0ZV9leHBpcmVkGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFAoFc2NvcGUYByABKAlCBaoBAggCIi0KFEhvbGRlclBvbGxLZXlSZXF1ZXN0EhUKBmhhbmRsZRgBIAEoCUIFqgECCAIihwEKFUhvbGRlclBvbGxLZXlSZXNwb25zZRIrCgVzdGF0ZRgBIAEoDjIVLnNoYWxlLkhvbGRlcktleVN0YXRlQgWqAQIIAhIUCgV0b2tlbhgCIAEoCUIFqgECCAISKwoIaW50ZXJ2YWwYAyABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24iFwoVSG9sZGVyTGlzdEtleXNSZXF1ZXN0Ip8BChZIb2xkZXJMaXN0S2V5c1Jlc3BvbnNlEh4KBGtleXMYASADKAsyEC5zaGFsZS5Ib2xkZXJLZXkSDQoFaG9sZHMYAiADKAkSDQoFcmVhZHMYAyADKAkSLQoKcmVtZW1iZXJlZBgEIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhIYCglub25lX2hlbGQYBSABKAlCBaoBAggCIigKE0hvbGRlckVuZEtleVJlcXVlc3QSEQoCaWQYASABKAxCBaoBAggCIkUKFEhvbGRlckVuZEtleVJlc3BvbnNlEi0KCnJlbWVtYmVyZWQYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24qpgEKDkhvbGRlcktleVN0YXRlEiAKHEhPTERFUl9LRVlfU1RBVEVfVU5TUEVDSUZJRUQQABIcChhIT0xERVJfS0VZX1NUQVRFX1BFTkRJTkcQARIZChVIT0xERVJfS0VZX1NUQVRFX01BREUQAhIcChhIT0xERVJfS0VZX1NUQVRFX1JFRlVTRUQQAxIbChdIT0xERVJfS0VZX1NUQVRFX0xBUFNFRBAEMskFCg1Ib2xkZXJTZXJ2aWNlEi0KA0FkZBIXLnNoYWxlLkhvbGRlckFkZFJlcXVlc3QaDS5zaGFsZS5Ib2xkZXISLQoDR2V0Ehcuc2hhbGUuSG9sZGVyR2V0UmVxdWVzdBoNLnNoYWxlLkhvbGRlchIxCgVQYXRjaBIZLnNoYWxlLkhvbGRlclBhdGNoUmVxdWVzdBoNLnNoYWxlLkhvbGRlchI1CgVFcmFzZRIQLnNoYWxlLkhvbGRlclJlZhoaLnNoYWxlLkhvbGRlckVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnNoYWxlLkhvbGRlckxpc3RSZXF1ZXN0Ghkuc2hhbGUuSG9sZGVyTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkuc2hhbGUuSG9sZGVyV2F0Y2hSZXF1ZXN0Ghouc2hhbGUuSG9sZGVyV2F0Y2hSZXNwb25zZTABElYKDUlzc3VlUGFzc3dvcmQSIS5zaGFsZS5Ib2xkZXJJc3N1ZVBhc3N3b3JkUmVxdWVzdBoiLnNoYWxlLkhvbGRlcklzc3VlUGFzc3dvcmRSZXNwb25zZRJHCghCZWdpbktleRIcLnNoYWxlLkhvbGRlckJlZ2luS2V5UmVxdWVzdBodLnNoYWxlLkhvbGRlckJlZ2luS2V5UmVzcG9uc2USRAoHUG9sbEtleRIbLnNoYWxlLkhvbGRlclBvbGxLZXlSZXF1ZXN0Ghwuc2hhbGUuSG9sZGVyUG9sbEtleVJlc3BvbnNlEkcKCExpc3RLZXlzEhwuc2hhbGUuSG9sZGVyTGlzdEtleXNSZXF1ZXN0Gh0uc2hhbGUuSG9sZGVyTGlzdEtleXNSZXNwb25zZRJBCgZFbmRLZXkSGi5zaGFsZS5Ib2xkZXJFbmRLZXlSZXF1ZXN0Ghsuc2hhbGUuSG9sZGVyRW5kS2V5UmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_duration, file_google_protobuf_timestamp, file_orm, file_shale_payday_holder, file_shale_payday_tenant_svc_g]);
 
 /**
  * @generated from message shale.HolderAddRequest
@@ -555,6 +555,391 @@ export const HolderIssuePasswordResponseSchema: GenMessage<HolderIssuePasswordRe
   messageDesc(file_shale_payday_holder_svc_g, 14);
 
 /**
+ * @generated from message shale.HolderBeginKeyRequest
+ */
+export type HolderBeginKeyRequest = Message<"shale.HolderBeginKeyRequest"> & {
+  /**
+   * What the key is called, in the spelling roster keeps a name in:
+   * small letters, digits and single hyphens, beginning with a letter.
+   *
+   * @generated from field: string name = 1 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * The methods of Shale's it may call, in full: each one the caller
+   * holds at Shale, by a role of Shale's at roster, or roster refuses it.
+   *
+   * @generated from field: repeated string methods = 2;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working, after now; unset is a key that does not.
+   *
+   * @generated from field: google.protobuf.Timestamp date_expired = 3;
+   */
+  dateExpired?: Timestamp | undefined;
+
+  /**
+   * Shale's own word about the key, which roster keeps on it and answers
+   * back when it is used (`ApiKey.scope`); empty for none.
+   *
+   * @generated from field: string scope = 4 [features.field_presence = IMPLICIT];
+   */
+  scope: string;
+};
+
+/**
+ * Describes the message shale.HolderBeginKeyRequest.
+ * Use `create(HolderBeginKeyRequestSchema)` to create a new message.
+ */
+export const HolderBeginKeyRequestSchema: GenMessage<HolderBeginKeyRequest> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 15);
+
+/**
+ * HolderBeginKeyResponse is one answer of two shapes, told apart by
+ * `token`.
+ *
+ * Where roster is elsewhere `token` is empty, and `approve_at`,
+ * `user_code`, `handle`, `interval` and `date_lapses` are said: the
+ * caller's browser goes to `approve_at` to say yes, and PollKey is asked
+ * with `handle` every `interval` until it answers otherwise than pending.
+ *
+ * Where roster runs in this process `token` and `key` are said and the
+ * rest is empty: the key is made, and there is nothing to poll.
+ *
+ * @generated from message shale.HolderBeginKeyResponse
+ */
+export type HolderBeginKeyResponse = Message<"shale.HolderBeginKeyResponse"> & {
+  /**
+   * Where the person says yes at the identity service, the code in it:
+   * roster's account app's `verification_uri_complete`.
+   *
+   * @generated from field: string approve_at = 1 [features.field_presence = IMPLICIT];
+   */
+  approveAt: string;
+
+  /**
+   * The code that page asks for, for a person who opens it by hand.
+   *
+   * @generated from field: string user_code = 2 [features.field_presence = IMPLICIT];
+   */
+  userCode: string;
+
+  /**
+   * What PollKey takes: sealed by Shale, opaque to whoever holds it, and
+   * answered only to the session or the key that began it.
+   *
+   * @generated from field: string handle = 3 [features.field_presence = IMPLICIT];
+   */
+  handle: string;
+
+  /**
+   * How long to wait between two PollKey.
+   *
+   * @generated from field: google.protobuf.Duration interval = 4;
+   */
+  interval?: Duration | undefined;
+
+  /**
+   * When the code lapses unless somebody said yes.
+   *
+   * @generated from field: google.protobuf.Timestamp date_lapses = 5;
+   */
+  dateLapses?: Timestamp | undefined;
+
+  /**
+   * The key's token, this once; only where roster runs in this process.
+   *
+   * @generated from field: string token = 6 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+
+  /**
+   * The key, as roster holds it; only beside `token`.
+   *
+   * @generated from field: shale.HolderKey key = 7;
+   */
+  key?: HolderKey | undefined;
+};
+
+/**
+ * Describes the message shale.HolderBeginKeyResponse.
+ * Use `create(HolderBeginKeyResponseSchema)` to create a new message.
+ */
+export const HolderBeginKeyResponseSchema: GenMessage<HolderBeginKeyResponse> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 16);
+
+/**
+ * HolderKey is a key of the caller's for Shale, as roster holds it; never
+ * its token, which is answered once, when it is made.
+ *
+ * @generated from message shale.HolderKey
+ */
+export type HolderKey = Message<"shale.HolderKey"> & {
+  /**
+   * roster's identifier of the key: what EndKey takes.
+   *
+   * @generated from field: bytes id = 1 [features.field_presence = IMPLICIT];
+   */
+  id: Uint8Array;
+
+  /**
+   * What the person called it.
+   *
+   * @generated from field: string name = 2 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * The methods of Shale's it may call, in full.
+   *
+   * @generated from field: repeated string methods = 3;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working; unset is a key that does not.
+   *
+   * @generated from field: google.protobuf.Timestamp date_expired = 4;
+   */
+  dateExpired?: Timestamp | undefined;
+
+  /**
+   * When it was last used; unset is never.
+   *
+   * @generated from field: google.protobuf.Timestamp date_used = 5;
+   */
+  dateUsed?: Timestamp | undefined;
+
+  /**
+   * When it was made.
+   *
+   * @generated from field: google.protobuf.Timestamp date_created = 6;
+   */
+  dateCreated?: Timestamp | undefined;
+
+  /**
+   * The word Shale had roster keep on it when it was made, as roster
+   * holds it (`ApiKey.scope`); empty for none. Nothing reads it yet.
+   *
+   * @generated from field: string scope = 7 [features.field_presence = IMPLICIT];
+   */
+  scope: string;
+};
+
+/**
+ * Describes the message shale.HolderKey.
+ * Use `create(HolderKeySchema)` to create a new message.
+ */
+export const HolderKeySchema: GenMessage<HolderKey> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 17);
+
+/**
+ * @generated from message shale.HolderPollKeyRequest
+ */
+export type HolderPollKeyRequest = Message<"shale.HolderPollKeyRequest"> & {
+  /**
+   * @generated from field: string handle = 1 [features.field_presence = IMPLICIT];
+   */
+  handle: string;
+};
+
+/**
+ * Describes the message shale.HolderPollKeyRequest.
+ * Use `create(HolderPollKeyRequestSchema)` to create a new message.
+ */
+export const HolderPollKeyRequestSchema: GenMessage<HolderPollKeyRequest> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 18);
+
+/**
+ * @generated from message shale.HolderPollKeyResponse
+ */
+export type HolderPollKeyResponse = Message<"shale.HolderPollKeyResponse"> & {
+  /**
+   * @generated from field: shale.HolderKeyState state = 1 [features.field_presence = IMPLICIT];
+   */
+  state: HolderKeyState;
+
+  /**
+   * The key's token, this once, when `state` is MADE.
+   *
+   * @generated from field: string token = 2 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+
+  /**
+   * How long to wait before asking again, when `state` is PENDING.
+   *
+   * @generated from field: google.protobuf.Duration interval = 3;
+   */
+  interval?: Duration | undefined;
+};
+
+/**
+ * Describes the message shale.HolderPollKeyResponse.
+ * Use `create(HolderPollKeyResponseSchema)` to create a new message.
+ */
+export const HolderPollKeyResponseSchema: GenMessage<HolderPollKeyResponse> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 19);
+
+/**
+ * @generated from message shale.HolderListKeysRequest
+ */
+export type HolderListKeysRequest = Message<"shale.HolderListKeysRequest"> & {
+};
+
+/**
+ * Describes the message shale.HolderListKeysRequest.
+ * Use `create(HolderListKeysRequestSchema)` to create a new message.
+ */
+export const HolderListKeysRequestSchema: GenMessage<HolderListKeysRequest> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 20);
+
+/**
+ * @generated from message shale.HolderListKeysResponse
+ */
+export type HolderListKeysResponse = Message<"shale.HolderListKeysResponse"> & {
+  /**
+   * @generated from field: repeated shale.HolderKey keys = 1;
+   */
+  keys: HolderKey[];
+
+  /**
+   * The methods of Shale's the caller holds across their tenant, by a role
+   * of Shale's at roster, of those the tenant API serves: what a key of
+   * theirs may be given, and nothing else. Empty is a person who holds
+   * none, who can make no key (roster's rule: a key acts as its person).
+   *
+   * @generated from field: repeated string holds = 2;
+   */
+  holds: string[];
+
+  /**
+   * The console's reads, with Get beside every Watch: what every person
+   * reads where roster says what people may change (§33.1), and what a key
+   * that views and reads names, of those the caller holds.
+   *
+   * @generated from field: repeated string reads = 3;
+   */
+  reads: string[];
+
+  /**
+   * How long a call made with a key may still be served, and a stream
+   * opened with it still run, once it is ended (`auth.operators.ttl`).
+   *
+   * @generated from field: google.protobuf.Duration remembered = 4;
+   */
+  remembered?: Duration | undefined;
+
+  /**
+   * Why `holds` is empty where that is this deployment's doing and not the
+   * person's: roster runs in this process and the deployment names no
+   * operators (`auth.operators`), so no role of Shale's exists for anybody
+   * to hold. Empty otherwise.
+   *
+   * @generated from field: string none_held = 5 [features.field_presence = IMPLICIT];
+   */
+  noneHeld: string;
+};
+
+/**
+ * Describes the message shale.HolderListKeysResponse.
+ * Use `create(HolderListKeysResponseSchema)` to create a new message.
+ */
+export const HolderListKeysResponseSchema: GenMessage<HolderListKeysResponse> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 21);
+
+/**
+ * @generated from message shale.HolderEndKeyRequest
+ */
+export type HolderEndKeyRequest = Message<"shale.HolderEndKeyRequest"> & {
+  /**
+   * The key, by roster's identifier (`HolderKey.id`).
+   *
+   * @generated from field: bytes id = 1 [features.field_presence = IMPLICIT];
+   */
+  id: Uint8Array;
+};
+
+/**
+ * Describes the message shale.HolderEndKeyRequest.
+ * Use `create(HolderEndKeyRequestSchema)` to create a new message.
+ */
+export const HolderEndKeyRequestSchema: GenMessage<HolderEndKeyRequest> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 22);
+
+/**
+ * @generated from message shale.HolderEndKeyResponse
+ */
+export type HolderEndKeyResponse = Message<"shale.HolderEndKeyResponse"> & {
+  /**
+   * How long a call made with the key may still be served, and a stream
+   * opened with it still run: what roster said of a key is believed for
+   * `auth.operators.ttl` (30 s), and a key with a stream open is asked
+   * about again when that runs out (§33.1).
+   *
+   * @generated from field: google.protobuf.Duration remembered = 1;
+   */
+  remembered?: Duration | undefined;
+};
+
+/**
+ * Describes the message shale.HolderEndKeyResponse.
+ * Use `create(HolderEndKeyResponseSchema)` to create a new message.
+ */
+export const HolderEndKeyResponseSchema: GenMessage<HolderEndKeyResponse> = /*@__PURE__*/
+  messageDesc(file_shale_payday_holder_svc_g, 23);
+
+/**
+ * HolderKeyState is where a key BeginKey began is.
+ *
+ * @generated from enum shale.HolderKeyState
+ */
+export enum HolderKeyState {
+  /**
+   * @generated from enum value: HOLDER_KEY_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Nobody has said yes or no yet: ask again after the interval.
+   *
+   * @generated from enum value: HOLDER_KEY_STATE_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * Made: `token` is the key's, answered this once.
+   *
+   * @generated from enum value: HOLDER_KEY_STATE_MADE = 2;
+   */
+  MADE = 2,
+
+  /**
+   * The person said no at the identity service. Nothing was made.
+   *
+   * @generated from enum value: HOLDER_KEY_STATE_REFUSED = 3;
+   */
+  REFUSED = 3,
+
+  /**
+   * Nobody said yes in time, or the key was carried away already by an
+   * earlier PollKey. Nothing more comes of this handle.
+   *
+   * @generated from enum value: HOLDER_KEY_STATE_LAPSED = 4;
+   */
+  LAPSED = 4,
+}
+
+/**
+ * Describes the enum shale.HolderKeyState.
+ */
+export const HolderKeyStateSchema: GenEnum<HolderKeyState> = /*@__PURE__*/
+  enumDesc(file_shale_payday_holder_svc_g, 0);
+
+/**
  * @generated from service shale.HolderService
  */
 export const HolderService: GenService<{
@@ -648,6 +1033,57 @@ export const HolderService: GenService<{
     methodKind: "unary";
     input: typeof HolderIssuePasswordRequestSchema;
     output: typeof HolderIssuePasswordResponseSchema;
+  },
+  /**
+   * BeginKey begins making the caller a key for Shale. Where roster is
+   * elsewhere it is a terminal's sign-in for one key at roster's account
+   * app (`auth.roster.account`): the answer is where to send the caller's
+   * browser to say yes at the identity service and a handle for PollKey,
+   * and nothing is made without that yes. Where roster runs in this
+   * process the key is made at once and answered once, since this console
+   * is roster's front door there; a call made with a key does not make
+   * one there.
+   *
+   * @generated from rpc shale.HolderService.BeginKey
+   */
+  beginKey: {
+    methodKind: "unary";
+    input: typeof HolderBeginKeyRequestSchema;
+    output: typeof HolderBeginKeyResponseSchema;
+  },
+  /**
+   * PollKey asks whether the key BeginKey began is made yet: not yet,
+   * refused, lapsed, or made, with its token this once. Only the session
+   * or the key that began it may ask.
+   *
+   * @generated from rpc shale.HolderService.PollKey
+   */
+  pollKey: {
+    methodKind: "unary";
+    input: typeof HolderPollKeyRequestSchema;
+    output: typeof HolderPollKeyResponseSchema;
+  },
+  /**
+   * ListKeys is the caller's own keys for Shale, as roster holds them.
+   *
+   * @generated from rpc shale.HolderService.ListKeys
+   */
+  listKeys: {
+    methodKind: "unary";
+    input: typeof HolderListKeysRequestSchema;
+    output: typeof HolderListKeysResponseSchema;
+  },
+  /**
+   * EndKey ends one of the caller's keys for Shale at roster. Anything
+   * else -- somebody else's key, one of roster's own or for another app,
+   * one that is gone -- is NotFound.
+   *
+   * @generated from rpc shale.HolderService.EndKey
+   */
+  endKey: {
+    methodKind: "unary";
+    input: typeof HolderEndKeyRequestSchema;
+    output: typeof HolderEndKeyResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_shale_payday_holder_svc_g, 0);

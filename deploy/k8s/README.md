@@ -352,8 +352,23 @@ in front (§33.1), Shale runs no roster of its own and takes no password:
    names below; and two OAuth clients -- the console's (confidential,
    authorization code, both callbacks) and the CLI's (public, device
    grant). People's keys for Shale, for their scripts
-   ([§33.1](../../docs/10-security.md#331-trust-model)), need nothing more:
-   `/payday.TokenService/Introspect` in `--allow` is how Shale checks one.
+   ([§33.1](../../docs/10-security.md#331-trust-model)), need nothing more
+   to be taken, listed and ended: `/payday.TokenService/Introspect` in
+   `--allow` is how Shale checks one, and `--serves` binds Shale's holder
+   `app-administrator` for itself, which lists and ends the keys that are
+   for Shale (a tenant installed before `ApiKeyService`'s `Get`, `List`
+   and `Erase` were among that role's has it widened to them). **To make
+   one from the console's *Tokens* page**, roster's operator turns
+   `account.terminal: true` on in roster's file -- the terminal's sign-in
+   at the account app, off unless a deployment says so -- and Shale is told
+   where the account app is, `auth.roster.account`: its base URL as the
+   control plane reaches it, at a name roster serves the tenant at (a
+   `Host` of the tenant's at roster: the account app tells whose front
+   door a request is by that name). The person is sent to the address the
+   account app answers -- its own `account.base`, or the one Shale asked
+   at -- to say yes, signed in there; nothing is minted without it. With
+   neither, the page says a key is made on the identity service's account
+   page instead.
 2. **Two Secrets** in the `shale` namespace: the key, and the console
    client's secret, each mounted as a file in both API Deployments
    (`/run/shale/roster/key`, `/run/shale/oidc/client-secret`).

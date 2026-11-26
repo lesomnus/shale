@@ -372,9 +372,10 @@ are named by ID or slug ([§35.1](12-api.md#351-conventions)). The CLI signs
 in as a person (`shale login`) and keeps a session.
 
 A script calls the tenant API with a person's key for Shale instead
-([§33.1](10-security.md#331-trust-model)): minted at roster for the app
-Shale with the methods the script calls -- on roster's account page, or
-`roster me issue-key --app shale` -- and handed to the CLI as `client.token`,
+([§33.1](10-security.md#331-trust-model)): made by its person on the
+console's *Tokens* page, or minted at roster for the app Shale with the
+methods the script calls -- on roster's account page, or `roster me
+issue-key --app shale` -- and handed to the CLI as `client.token`,
 in the file or as `SHALE_CLIENT_TOKEN`, which is sent as `Authorization:
 Bearer` on every call. There is no `--token` flag: a flag is in the shell's
 history and the process list, and the variable is not. The cluster API does
@@ -394,6 +395,21 @@ ended. A `watch` opened with a key is cut at the key's end, and within the
 same 30 s of the key being ended at roster; a key that watches names the
 entity's `Get` beside its `Watch` (`/shale.SetService/Watch` and
 `/shale.SetService/Get`), since each row a stream sends is read as a `Get`.
+
+**A key that leaked** is ended by its person on the *Tokens* page
+(`HolderService/EndKey`), or at roster: on the account page's *revoke*, or
+by the tenant's administrators and Shale's (an operator of roster's who
+holds `app-administrator` for Shale ends anybody's key for Shale there,
+`ApiKeyService/Erase`); suspending the person ends every key of theirs.
+It lives on **for `auth.operators.ttl`** (30 s) at most after that: a call
+made with it is served while what roster said of it is believed, and a
+`watch` opened with it is cut when it runs out, since a key with a stream
+open is asked about again then; where Shale follows roster's sync stream, a
+suspension lands at once. What it signed before it was ended -- a view
+token, a read token, an export ticket -- runs out on its own clock, minutes
+at most ([§33.7](10-security.md#337-what-a-compromise-costs)). The
+trail at roster says who ended it; Shale's says nothing of a key, since
+none of its rows changed.
 
 ```bash
 # processes (§34.1)

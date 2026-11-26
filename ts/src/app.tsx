@@ -15,6 +15,7 @@ import { Live } from './live.js'
 import { Playback } from './playback.js'
 import { Segments } from './segments.js'
 import { SurfacesProvider, useSurfaces, type Mode, type Opened } from './surface.js'
+import { Tokens } from './tokens.js'
 
 /** useHash is the route: the hash, split on slashes. */
 function useHash(): string[] {
@@ -37,6 +38,7 @@ const PAGES: ReadonlyArray<{ path: string; title: string }> = [
 	{ path: 'playback', title: 'Playback' },
 	{ path: 'hosts', title: 'Hosts' },
 	{ path: 'devices', title: 'Devices' },
+	{ path: 'tokens', title: 'Tokens' },
 ]
 
 export function Console(props: { mode: Mode; initial: Partial<Record<'tenant' | 'cluster', Opened>> }): ReactNode {
@@ -59,6 +61,9 @@ function Shell(): ReactNode {
 			break
 		case 'devices':
 			body = <Devices />
+			break
+		case 'tokens':
+			body = <Tokens />
 			break
 		case 'segments':
 			body = <Segments set={parts[1]} />

@@ -32,8 +32,9 @@ var ErrNoKey = errors.New("no such key for Shale")
 // Key is who a person's key for Shale acts as, and what it allows, as
 // roster answers `TokenService/Introspect` asked as Shale (roster's
 // `docs/apps.md`, *Giving an app's users API tokens*): the holder, their
-// tenant, the key's methods and its end. Not which key: roster's answer
-// does not say.
+// tenant, the key's methods, its end and its scope (`Identity.Scope`, the
+// word Shale had roster keep on the key, empty for none). Not which key:
+// roster's answer does not say.
 //
 // A key names no tenant, and Shale's deployment key holds nothing without
 // `roster-at`, so it is asked in each tenant this deployment serves, the

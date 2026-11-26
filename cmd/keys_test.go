@@ -8,13 +8,17 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/identity"
+	"github.com/lesomnus/shale/server/core"
 )
 
 // A person's key for Shale at the door (§33.1): told apart by its prefix
@@ -214,4 +218,99 @@ func TestPersonsKeyStreamsFollowTheKey(t *testing.T) {
 	n = count("rt_b")
 	time.Sleep(3 * ttl)
 	require.Equal(t, n, count("rt_b"))
+}
+
+// A key's scope is on the frame of the call it came with and no other
+// (§33.1): roster answers it beside the key's methods, it is kept with
+// the rest of what roster said of that key, and payday puts it on the
+// frame each call is served with -- so two keys of one person carry two,
+// whatever the resolver keeps by the person. Nothing reads it yet.
+func TestPersonsKeyScopeIsTheCallsAndNotThePersons(t *testing.T) {
+	tenant, bob := pdid.New(1), pdid.New(2)
+	reads := frame.Whole().To("/shale.SetService/List")
+	said := map[string]auth.Identity{
+		"rt_cams": {Id: bob.String(), TenantId: tenant.String(), Grant: reads, Scope: "cameras:01"},
+		"rt_none": {Id: bob.String(), TenantId: tenant.String(), Grant: reads},
+	}
+	asked := map[string]int{}
+	k := &keys{ttl: 30 * time.Second, now: time.Now, known: map[[32]byte]keyEntry{}, stops: map[pdid.Id]chan struct{}{}, open: map[[32]byte]*keyStreams{}}
+	k.ask = func(_ context.Context, token string) (auth.Identity, error) {
+		asked[token]++
+		v, ok := said[token]
+		if !ok {
+			return auth.Identity{}, identity.ErrNoKey
+		}
+		return v, nil
+	}
+
+	// A resolver that keeps one frame per person, as a cache by actor
+	// would: the scope must not come from it.
+	kept := map[string]*frame.Frame{}
+	resolve := auth.ResolverFunc(func(_ context.Context, id auth.Identity) (*frame.Frame, error) {
+		if f, ok := kept[id.Id]; ok {
+			return f, nil
+		}
+		f := frame.New(bob, tenant, frame.Grant{})
+		kept[id.Id] = f
+		return f, nil
+	})
+	in := auth.InterceptorUnary(k.handler(), resolve, func(string) bool { return false })
+	scopeOf := func(token string) string {
+		t.Helper()
+		md := metadata.Pairs(auth.Header, auth.BearerScheme+" "+token)
+		res, err := in(metadata.NewIncomingContext(context.Background(), md), nil, &grpc.UnaryServerInfo{FullMethod: "/shale.SetService/List"},
+			func(ctx context.Context, _ any) (any, error) { return frame.Must(ctx).TokenScope(), nil })
+		require.NoError(t, err)
+		return res.(string)
+	}
+
+	for range 2 {
+		require.Equal(t, "cameras:01", scopeOf("rt_cams"))
+		require.Empty(t, scopeOf("rt_none"), "another key of the same person carries none")
+	}
+	require.Equal(t, 1, asked["rt_cams"], "kept with the rest of what roster said of the key")
+	require.Len(t, kept, 1, "one frame kept for the person, and two scopes")
+}
+
+// A handle BeginKey seals is bound to the credential the call came with
+// (§33.1): the tenant API tells the core layer which, by a digest -- one
+// session's cookie, one key -- and the same credential is the same digest
+// while another is another. Nothing is said on the cluster API, nor for a
+// method that is not one of a person's own keys'.
+func TestOwnKeysAreBoundToTheCredential(t *testing.T) {
+	sealed, err := authsession.NewSealed(make([]byte, 32))
+	require.NoError(t, err)
+	s := &Server{Sessions: map[Surface]*authsession.Sessions{SurfaceTenant: authsession.New(sealed, authsession.WithCookie("shale_tenant"))}}
+	bob, tenant := pdid.New(2), pdid.New(1)
+	digest := func(surface Surface, method, how string, header ...string) ([32]byte, bool) {
+		t.Helper()
+		f := frame.New(bob, tenant, frame.Grant{})
+		v := *f
+		v.Authentication = frame.Authentication{Method: how}
+		ctx := metadata.NewIncomingContext(frame.Into(context.Background(), &v), metadata.Pairs(header...))
+		var got [32]byte
+		var ok bool
+		_, err := s.credential(surface)(ctx, nil, &grpc.UnaryServerInfo{FullMethod: method}, func(ctx context.Context, _ any) (any, error) {
+			got, ok = core.CredentialFrom(ctx)
+			return nil, nil
+		})
+		require.NoError(t, err)
+		return got, ok
+	}
+	begin := api.HolderService_BeginKey_FullMethodName
+	one, ok := digest(SurfaceTenant, begin, authsession.Method, "cookie", "shale_tenant=one")
+	require.True(t, ok)
+	again, _ := digest(SurfaceTenant, api.HolderService_PollKey_FullMethodName, authsession.Method, "cookie", "other=x; shale_tenant=one")
+	require.Equal(t, one, again, "the same session")
+	two, _ := digest(SurfaceTenant, begin, authsession.Method, "cookie", "shale_tenant=two")
+	require.NotEqual(t, one, two, "another session of the same person")
+	key, ok := digest(SurfaceTenant, begin, auth.MethodBearer, "authorization", "Bearer rt_one")
+	require.True(t, ok)
+	other, _ := digest(SurfaceTenant, begin, auth.MethodBearer, "authorization", "Bearer rt_two")
+	require.NotEqual(t, key, other, "another key")
+	require.NotEqual(t, one, key)
+	_, ok = digest(SurfaceCluster, begin, authsession.Method, "cookie", "shale_tenant=one")
+	require.False(t, ok, "the cluster API")
+	_, ok = digest(SurfaceTenant, api.SetService_List_FullMethodName, authsession.Method, "cookie", "shale_tenant=one")
+	require.False(t, ok, "not one of a person's own keys'")
 }
