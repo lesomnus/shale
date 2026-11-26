@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/lesomnus/payday/auth"
@@ -214,4 +215,56 @@ func TestPersonsKeyStreamsFollowTheKey(t *testing.T) {
 	n = count("rt_b")
 	time.Sleep(3 * ttl)
 	require.Equal(t, n, count("rt_b"))
+}
+
+// A key's scope is on the frame of the call it came with and no other
+// (§33.1): roster answers it beside the key's methods, it is kept with
+// the rest of what roster said of that key, and payday puts it on the
+// frame each call is served with -- so two keys of one person carry two,
+// whatever the resolver keeps by the person. Nothing reads it yet.
+func TestPersonsKeyScopeIsTheCallsAndNotThePersons(t *testing.T) {
+	tenant, bob := pdid.New(1), pdid.New(2)
+	reads := frame.Whole().To("/shale.SetService/List")
+	said := map[string]auth.Identity{
+		"rt_cams": {Id: bob.String(), TenantId: tenant.String(), Grant: reads, Scope: "cameras:01"},
+		"rt_none": {Id: bob.String(), TenantId: tenant.String(), Grant: reads},
+	}
+	asked := map[string]int{}
+	k := &keys{ttl: 30 * time.Second, now: time.Now, known: map[[32]byte]keyEntry{}, stops: map[pdid.Id]chan struct{}{}, open: map[[32]byte]*keyStreams{}}
+	k.ask = func(_ context.Context, token string) (auth.Identity, error) {
+		asked[token]++
+		v, ok := said[token]
+		if !ok {
+			return auth.Identity{}, identity.ErrNoKey
+		}
+		return v, nil
+	}
+
+	// A resolver that keeps one frame per person, as a cache by actor
+	// would: the scope must not come from it.
+	kept := map[string]*frame.Frame{}
+	resolve := auth.ResolverFunc(func(_ context.Context, id auth.Identity) (*frame.Frame, error) {
+		if f, ok := kept[id.Id]; ok {
+			return f, nil
+		}
+		f := frame.New(bob, tenant, frame.Grant{})
+		kept[id.Id] = f
+		return f, nil
+	})
+	in := auth.InterceptorUnary(k.handler(), resolve, func(string) bool { return false })
+	scopeOf := func(token string) string {
+		t.Helper()
+		md := metadata.Pairs(auth.Header, auth.BearerScheme+" "+token)
+		res, err := in(metadata.NewIncomingContext(context.Background(), md), nil, &grpc.UnaryServerInfo{FullMethod: "/shale.SetService/List"},
+			func(ctx context.Context, _ any) (any, error) { return frame.Must(ctx).TokenScope(), nil })
+		require.NoError(t, err)
+		return res.(string)
+	}
+
+	for range 2 {
+		require.Equal(t, "cameras:01", scopeOf("rt_cams"))
+		require.Empty(t, scopeOf("rt_none"), "another key of the same person carries none")
+	}
+	require.Equal(t, 1, asked["rt_cams"], "kept with the rest of what roster said of the key")
+	require.Len(t, kept, 1, "one frame kept for the person, and two scopes")
 }
