@@ -2,7 +2,7 @@ edition = "2023";
 package shale;
 
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
+import "orm.proto";
 import "shale/payday/tenant.proto";
 
 option go_package = "github.com/lesomnus/shale/api";
@@ -14,8 +14,6 @@ service TenantService {
   rpc Get(TenantGetRequest) returns (Tenant);
   // Patch updates an existing Tenant
   rpc Patch(TenantPatchRequest) returns (Tenant);
-  // Apply applies a patch document to an existing Tenant
-  rpc Apply(TenantApplyRequest) returns (Tenant);
   // Erase deletes a Tenant
   rpc Erase(TenantRef) returns (TenantEraseResponse);
   // List reads Tenants a page at a time.
@@ -23,7 +21,7 @@ service TenantService {
 }
 
 message TenantAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
@@ -40,7 +38,7 @@ message TenantGetRequest {
 
 message TenantRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     string alias = 4;
   }
 }
@@ -81,11 +79,6 @@ message TenantPatchRequest {
   int64 stored_bytes = 18;
 }
 
-message TenantApplyRequest {
-  TenantRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message TenantEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -116,6 +109,16 @@ message TenantListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  TenantSelect select = 6;
 }
 
 message TenantListResponse {

@@ -1537,7 +1537,7 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\trequested\x18\x04 \x01(\v2\x1b.shale.CameraPresetSettingsR\trequested\x12?\n" +
 	"\falternatives\x18\x05 \x03(\v2\x1b.shale.CameraPresetSettingsR\falternatives\x12\x1a\n" +
 	"\brequired\x18\x06 \x03(\tR\brequired\x127\n" +
-	"\bfirmware\x18\a \x01(\v2\x1b.shale.CameraPresetFirmwareR\bfirmware\"\xc6\x06\n" +
+	"\bfirmware\x18\a \x01(\v2\x1b.shale.CameraPresetFirmwareR\bfirmware\"\xca\x06\n" +
 	"\fCameraPreset\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1557,7 +1557,7 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xb2\x01\xca\xfc\x15l\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xb6\x01\xca\xfc\x15p\x12\x06\x82\x01\x00\x8a\x01\x00\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +

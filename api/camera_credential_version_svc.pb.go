@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1939,192 +1939,20 @@ func (b0 CameraCredentialVersionPatchRequest_builder) Build() *CameraCredentialV
 	return m0
 }
 
-type CameraCredentialVersionApplyRequest struct {
-	state            protoimpl.MessageState      `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraCredentialVersionRef `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch              `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraCredentialVersionApplyRequest) Reset() {
-	*x = CameraCredentialVersionApplyRequest{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraCredentialVersionApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraCredentialVersionApplyRequest) ProtoMessage() {}
-
-func (x *CameraCredentialVersionApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraCredentialVersionApplyRequest) GetRef() *CameraCredentialVersionRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraCredentialVersionApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraCredentialVersionApplyRequest) SetRef(v *CameraCredentialVersionRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraCredentialVersionApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraCredentialVersionApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraCredentialVersionApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraCredentialVersionApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraCredentialVersionApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraCredentialVersionApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraCredentialVersionRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraCredentialVersionApplyRequest_builder) Build() *CameraCredentialVersionApplyRequest {
-	m0 := &CameraCredentialVersionApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraCredentialVersionEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraCredentialVersionEraseResponse) Reset() {
-	*x = CameraCredentialVersionEraseResponse{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraCredentialVersionEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraCredentialVersionEraseResponse) ProtoMessage() {}
-
-func (x *CameraCredentialVersionEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraCredentialVersionEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraCredentialVersionEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraCredentialVersionEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraCredentialVersionEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraCredentialVersionEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraCredentialVersionEraseResponse_builder) Build() *CameraCredentialVersionEraseResponse {
-	m0 := &CameraCredentialVersionEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraCredentialVersionListRequest struct {
 	state              protoimpl.MessageState            `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraCredentialVersionFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                             `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                            `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                              `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraCredentialVersionSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraCredentialVersionListRequest) Reset() {
 	*x = CameraCredentialVersionListRequest{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2136,7 +1964,7 @@ func (x *CameraCredentialVersionListRequest) String() string {
 func (*CameraCredentialVersionListRequest) ProtoMessage() {}
 
 func (x *CameraCredentialVersionListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2177,6 +2005,13 @@ func (x *CameraCredentialVersionListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraCredentialVersionListRequest) GetSelect() *CameraCredentialVersionSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraCredentialVersionListRequest) SetFilters(v []*CameraCredentialVersionFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2191,6 +2026,21 @@ func (x *CameraCredentialVersionListRequest) SetAfter(v string) {
 
 func (x *CameraCredentialVersionListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraCredentialVersionListRequest) SetSelect(v *CameraCredentialVersionSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraCredentialVersionListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraCredentialVersionListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraCredentialVersionListRequest_builder struct {
@@ -2213,6 +2063,15 @@ type CameraCredentialVersionListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraCredentialVersionSelect
 }
 
 func (b0 CameraCredentialVersionListRequest_builder) Build() *CameraCredentialVersionListRequest {
@@ -2223,6 +2082,7 @@ func (b0 CameraCredentialVersionListRequest_builder) Build() *CameraCredentialVe
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2236,7 +2096,7 @@ type CameraCredentialVersionListResponse struct {
 
 func (x *CameraCredentialVersionListResponse) Reset() {
 	*x = CameraCredentialVersionListResponse{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2248,7 +2108,7 @@ func (x *CameraCredentialVersionListResponse) String() string {
 func (*CameraCredentialVersionListResponse) ProtoMessage() {}
 
 func (x *CameraCredentialVersionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2318,7 +2178,7 @@ type CameraCredentialVersionFilter struct {
 
 func (x *CameraCredentialVersionFilter) Reset() {
 	*x = CameraCredentialVersionFilter{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2330,7 +2190,7 @@ func (x *CameraCredentialVersionFilter) String() string {
 func (*CameraCredentialVersionFilter) ProtoMessage() {}
 
 func (x *CameraCredentialVersionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2459,7 +2319,7 @@ type CameraCredentialVersionWatchRequest struct {
 
 func (x *CameraCredentialVersionWatchRequest) Reset() {
 	*x = CameraCredentialVersionWatchRequest{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2471,7 +2331,7 @@ func (x *CameraCredentialVersionWatchRequest) String() string {
 func (*CameraCredentialVersionWatchRequest) ProtoMessage() {}
 
 func (x *CameraCredentialVersionWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2509,13 +2369,15 @@ func (x *CameraCredentialVersionWatchRequest) SetSkipSnapshot(v bool) {
 type CameraCredentialVersionWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraCredentialVersionFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2543,7 +2405,7 @@ type CameraCredentialVersionWatchResponse struct {
 
 func (x *CameraCredentialVersionWatchResponse) Reset() {
 	*x = CameraCredentialVersionWatchResponse{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2555,7 +2417,7 @@ func (x *CameraCredentialVersionWatchResponse) String() string {
 func (*CameraCredentialVersionWatchResponse) ProtoMessage() {}
 
 func (x *CameraCredentialVersionWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2607,7 +2469,7 @@ type CameraCredentialVersionWatchItem struct {
 
 func (x *CameraCredentialVersionWatchItem) Reset() {
 	*x = CameraCredentialVersionWatchItem{}
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2619,7 +2481,7 @@ func (x *CameraCredentialVersionWatchItem) String() string {
 func (*CameraCredentialVersionWatchItem) ProtoMessage() {}
 
 func (x *CameraCredentialVersionWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_credential_version_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2696,7 +2558,7 @@ type CameraCredentialVersionWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2704,7 +2566,8 @@ type CameraCredentialVersionWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraCredentialVersion
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2732,9 +2595,9 @@ var File_shale_camera_credential_version_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"+shale/camera_credential_version_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a#shale/camera_credential_svc.g.proto\x1a%shale/camera_credential_version.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xbc\x06\n" +
-	"!CameraCredentialVersionAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"+shale/camera_credential_version_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/camera.proto\x1a#shale/camera_credential_svc.g.proto\x1a%shale/camera_credential_version.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xc4\x06\n" +
+	"!CameraCredentialVersionAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12:\n" +
 	"\n" +
@@ -2762,9 +2625,9 @@ const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"prepareTag\"\x96\x01\n" +
 	"!CameraCredentialVersionGetRequest\x123\n" +
 	"\x03ref\x18\x01 \x01(\v2!.shale.CameraCredentialVersionRefR\x03ref\x12<\n" +
-	"\x06select\x18\x02 \x01(\v2$.shale.CameraCredentialVersionSelectR\x06select\"\x87\x02\n" +
-	"\x1aCameraCredentialVersionRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12F\n" +
+	"\x06select\x18\x02 \x01(\v2$.shale.CameraCredentialVersionSelectR\x06select\"\x8f\x02\n" +
+	"\x1aCameraCredentialVersionRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12F\n" +
 	"\aversion\x18\t \x01(\v2*.shale.CameraCredentialVersionRefByVersionH\x00R\aversion\x12C\n" +
 	"\x06intent\x18\n" +
 	" \x01(\v2).shale.CameraCredentialVersionRefByIntentH\x00R\x06intent\x12C\n" +
@@ -2820,17 +2683,13 @@ const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12=\n" +
 	"\fdate_revoked\x18& \x01(\v2\x1a.google.protobuf.TimestampR\vdateRevoked\x12*\n" +
-	"\x11date_revoked_null\x18' \x01(\bR\x0fdateRevokedNull\"~\n" +
-	"#CameraCredentialVersionApplyRequest\x123\n" +
-	"\x03ref\x18\x01 \x01(\v2!.shale.CameraCredentialVersionRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\">\n" +
-	"$CameraCredentialVersionEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xbd\x01\n" +
+	"\x11date_revoked_null\x18' \x01(\bR\x0fdateRevokedNull\"\xfb\x01\n" +
 	"\"CameraCredentialVersionListRequest\x12>\n" +
 	"\afilters\x18\x01 \x03(\v2$.shale.CameraCredentialVersionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"v\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12<\n" +
+	"\x06select\x18\x06 \x01(\v2$.shale.CameraCredentialVersionSelectR\x06select\"v\n" +
 	"#CameraCredentialVersionListResponse\x124\n" +
 	"\x05items\x18\x01 \x03(\v2\x1e.shale.CameraCredentialVersionR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xde\x01\n" +
@@ -2849,17 +2708,15 @@ const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	" CameraCredentialVersionWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x124\n" +
 	"\x05value\x18\x02 \x01(\v2\x1e.shale.CameraCredentialVersionR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x88\x05\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xda\x03\n" +
 	"\x1eCameraCredentialVersionService\x12O\n" +
 	"\x03Add\x12(.shale.CameraCredentialVersionAddRequest\x1a\x1e.shale.CameraCredentialVersion\x12O\n" +
 	"\x03Get\x12(.shale.CameraCredentialVersionGetRequest\x1a\x1e.shale.CameraCredentialVersion\x12S\n" +
-	"\x05Patch\x12*.shale.CameraCredentialVersionPatchRequest\x1a\x1e.shale.CameraCredentialVersion\x12S\n" +
-	"\x05Apply\x12*.shale.CameraCredentialVersionApplyRequest\x1a\x1e.shale.CameraCredentialVersion\x12W\n" +
-	"\x05Erase\x12!.shale.CameraCredentialVersionRef\x1a+.shale.CameraCredentialVersionEraseResponse\x12]\n" +
+	"\x05Patch\x12*.shale.CameraCredentialVersionPatchRequest\x1a\x1e.shale.CameraCredentialVersion\x12]\n" +
 	"\x04List\x12).shale.CameraCredentialVersionListRequest\x1a*.shale.CameraCredentialVersionListResponse\x12b\n" +
 	"\x05Watch\x12*.shale.CameraCredentialVersionWatchRequest\x1a+.shale.CameraCredentialVersionWatchResponse0\x01B\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_camera_credential_version_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_shale_camera_credential_version_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_shale_camera_credential_version_svc_g_proto_goTypes = []any{
 	(*CameraCredentialVersionAddRequest)(nil),    // 0: shale.CameraCredentialVersionAddRequest
 	(*CameraCredentialVersionGetRequest)(nil),    // 1: shale.CameraCredentialVersionGetRequest
@@ -2869,79 +2726,71 @@ var file_shale_camera_credential_version_svc_g_proto_goTypes = []any{
 	(*CameraCredentialVersionRefByLegacy)(nil),   // 5: shale.CameraCredentialVersionRefByLegacy
 	(*CameraCredentialVersionSelect)(nil),        // 6: shale.CameraCredentialVersionSelect
 	(*CameraCredentialVersionPatchRequest)(nil),  // 7: shale.CameraCredentialVersionPatchRequest
-	(*CameraCredentialVersionApplyRequest)(nil),  // 8: shale.CameraCredentialVersionApplyRequest
-	(*CameraCredentialVersionEraseResponse)(nil), // 9: shale.CameraCredentialVersionEraseResponse
-	(*CameraCredentialVersionListRequest)(nil),   // 10: shale.CameraCredentialVersionListRequest
-	(*CameraCredentialVersionListResponse)(nil),  // 11: shale.CameraCredentialVersionListResponse
-	(*CameraCredentialVersionFilter)(nil),        // 12: shale.CameraCredentialVersionFilter
-	(*CameraCredentialVersionWatchRequest)(nil),  // 13: shale.CameraCredentialVersionWatchRequest
-	(*CameraCredentialVersionWatchResponse)(nil), // 14: shale.CameraCredentialVersionWatchResponse
-	(*CameraCredentialVersionWatchItem)(nil),     // 15: shale.CameraCredentialVersionWatchItem
-	(*TenantRef)(nil),                            // 16: shale.TenantRef
-	(*SiteRef)(nil),                              // 17: shale.SiteRef
-	(*CameraCredentialRef)(nil),                  // 18: shale.CameraCredentialRef
-	(*timestamppb.Timestamp)(nil),                // 19: google.protobuf.Timestamp
-	(CameraCredentialOrigin)(0),                  // 20: shale.CameraCredentialOrigin
-	(*CameraLegacyCredentialReference)(nil),      // 21: shale.CameraLegacyCredentialReference
-	(*CameraCredentialReference)(nil),            // 22: shale.CameraCredentialReference
-	(*TenantSelect)(nil),                         // 23: shale.TenantSelect
-	(*SiteSelect)(nil),                           // 24: shale.SiteSelect
-	(*CameraCredentialSelect)(nil),               // 25: shale.CameraCredentialSelect
-	(*patchpb.Patch)(nil),                        // 26: patch.Patch
-	(*CameraCredentialVersion)(nil),              // 27: shale.CameraCredentialVersion
+	(*CameraCredentialVersionListRequest)(nil),   // 8: shale.CameraCredentialVersionListRequest
+	(*CameraCredentialVersionListResponse)(nil),  // 9: shale.CameraCredentialVersionListResponse
+	(*CameraCredentialVersionFilter)(nil),        // 10: shale.CameraCredentialVersionFilter
+	(*CameraCredentialVersionWatchRequest)(nil),  // 11: shale.CameraCredentialVersionWatchRequest
+	(*CameraCredentialVersionWatchResponse)(nil), // 12: shale.CameraCredentialVersionWatchResponse
+	(*CameraCredentialVersionWatchItem)(nil),     // 13: shale.CameraCredentialVersionWatchItem
+	(*TenantRef)(nil),                            // 14: shale.TenantRef
+	(*SiteRef)(nil),                              // 15: shale.SiteRef
+	(*CameraCredentialRef)(nil),                  // 16: shale.CameraCredentialRef
+	(*timestamppb.Timestamp)(nil),                // 17: google.protobuf.Timestamp
+	(CameraCredentialOrigin)(0),                  // 18: shale.CameraCredentialOrigin
+	(*CameraLegacyCredentialReference)(nil),      // 19: shale.CameraLegacyCredentialReference
+	(*CameraCredentialReference)(nil),            // 20: shale.CameraCredentialReference
+	(*TenantSelect)(nil),                         // 21: shale.TenantSelect
+	(*SiteSelect)(nil),                           // 22: shale.SiteSelect
+	(*CameraCredentialSelect)(nil),               // 23: shale.CameraCredentialSelect
+	(*CameraCredentialVersion)(nil),              // 24: shale.CameraCredentialVersion
 }
 var file_shale_camera_credential_version_svc_g_proto_depIdxs = []int32{
-	16, // 0: shale.CameraCredentialVersionAddRequest.tenant:type_name -> shale.TenantRef
-	17, // 1: shale.CameraCredentialVersionAddRequest.site:type_name -> shale.SiteRef
-	18, // 2: shale.CameraCredentialVersionAddRequest.credential:type_name -> shale.CameraCredentialRef
-	19, // 3: shale.CameraCredentialVersionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	20, // 4: shale.CameraCredentialVersionAddRequest.origin:type_name -> shale.CameraCredentialOrigin
-	19, // 5: shale.CameraCredentialVersionAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	21, // 6: shale.CameraCredentialVersionAddRequest.legacy:type_name -> shale.CameraLegacyCredentialReference
-	22, // 7: shale.CameraCredentialVersionAddRequest.reused_from:type_name -> shale.CameraCredentialReference
+	14, // 0: shale.CameraCredentialVersionAddRequest.tenant:type_name -> shale.TenantRef
+	15, // 1: shale.CameraCredentialVersionAddRequest.site:type_name -> shale.SiteRef
+	16, // 2: shale.CameraCredentialVersionAddRequest.credential:type_name -> shale.CameraCredentialRef
+	17, // 3: shale.CameraCredentialVersionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	18, // 4: shale.CameraCredentialVersionAddRequest.origin:type_name -> shale.CameraCredentialOrigin
+	17, // 5: shale.CameraCredentialVersionAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	19, // 6: shale.CameraCredentialVersionAddRequest.legacy:type_name -> shale.CameraLegacyCredentialReference
+	20, // 7: shale.CameraCredentialVersionAddRequest.reused_from:type_name -> shale.CameraCredentialReference
 	2,  // 8: shale.CameraCredentialVersionGetRequest.ref:type_name -> shale.CameraCredentialVersionRef
 	6,  // 9: shale.CameraCredentialVersionGetRequest.select:type_name -> shale.CameraCredentialVersionSelect
 	3,  // 10: shale.CameraCredentialVersionRef.version:type_name -> shale.CameraCredentialVersionRefByVersion
 	4,  // 11: shale.CameraCredentialVersionRef.intent:type_name -> shale.CameraCredentialVersionRefByIntent
 	5,  // 12: shale.CameraCredentialVersionRef.legacy:type_name -> shale.CameraCredentialVersionRefByLegacy
-	18, // 13: shale.CameraCredentialVersionRefByVersion.credential:type_name -> shale.CameraCredentialRef
-	18, // 14: shale.CameraCredentialVersionRefByIntent.credential:type_name -> shale.CameraCredentialRef
-	23, // 15: shale.CameraCredentialVersionSelect.tenant:type_name -> shale.TenantSelect
-	24, // 16: shale.CameraCredentialVersionSelect.site:type_name -> shale.SiteSelect
-	25, // 17: shale.CameraCredentialVersionSelect.credential:type_name -> shale.CameraCredentialSelect
+	16, // 13: shale.CameraCredentialVersionRefByVersion.credential:type_name -> shale.CameraCredentialRef
+	16, // 14: shale.CameraCredentialVersionRefByIntent.credential:type_name -> shale.CameraCredentialRef
+	21, // 15: shale.CameraCredentialVersionSelect.tenant:type_name -> shale.TenantSelect
+	22, // 16: shale.CameraCredentialVersionSelect.site:type_name -> shale.SiteSelect
+	23, // 17: shale.CameraCredentialVersionSelect.credential:type_name -> shale.CameraCredentialSelect
 	2,  // 18: shale.CameraCredentialVersionPatchRequest.ref:type_name -> shale.CameraCredentialVersionRef
-	19, // 19: shale.CameraCredentialVersionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	19, // 20: shale.CameraCredentialVersionPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	2,  // 21: shale.CameraCredentialVersionApplyRequest.ref:type_name -> shale.CameraCredentialVersionRef
-	26, // 22: shale.CameraCredentialVersionApplyRequest.patch:type_name -> patch.Patch
-	12, // 23: shale.CameraCredentialVersionListRequest.filters:type_name -> shale.CameraCredentialVersionFilter
-	27, // 24: shale.CameraCredentialVersionListResponse.items:type_name -> shale.CameraCredentialVersion
-	2,  // 25: shale.CameraCredentialVersionFilter.ref:type_name -> shale.CameraCredentialVersionRef
-	16, // 26: shale.CameraCredentialVersionFilter.tenant:type_name -> shale.TenantRef
-	17, // 27: shale.CameraCredentialVersionFilter.site:type_name -> shale.SiteRef
-	18, // 28: shale.CameraCredentialVersionFilter.credential:type_name -> shale.CameraCredentialRef
-	12, // 29: shale.CameraCredentialVersionWatchRequest.filters:type_name -> shale.CameraCredentialVersionFilter
-	15, // 30: shale.CameraCredentialVersionWatchResponse.items:type_name -> shale.CameraCredentialVersionWatchItem
-	27, // 31: shale.CameraCredentialVersionWatchItem.value:type_name -> shale.CameraCredentialVersion
-	0,  // 32: shale.CameraCredentialVersionService.Add:input_type -> shale.CameraCredentialVersionAddRequest
-	1,  // 33: shale.CameraCredentialVersionService.Get:input_type -> shale.CameraCredentialVersionGetRequest
-	7,  // 34: shale.CameraCredentialVersionService.Patch:input_type -> shale.CameraCredentialVersionPatchRequest
-	8,  // 35: shale.CameraCredentialVersionService.Apply:input_type -> shale.CameraCredentialVersionApplyRequest
-	2,  // 36: shale.CameraCredentialVersionService.Erase:input_type -> shale.CameraCredentialVersionRef
-	10, // 37: shale.CameraCredentialVersionService.List:input_type -> shale.CameraCredentialVersionListRequest
-	13, // 38: shale.CameraCredentialVersionService.Watch:input_type -> shale.CameraCredentialVersionWatchRequest
-	27, // 39: shale.CameraCredentialVersionService.Add:output_type -> shale.CameraCredentialVersion
-	27, // 40: shale.CameraCredentialVersionService.Get:output_type -> shale.CameraCredentialVersion
-	27, // 41: shale.CameraCredentialVersionService.Patch:output_type -> shale.CameraCredentialVersion
-	27, // 42: shale.CameraCredentialVersionService.Apply:output_type -> shale.CameraCredentialVersion
-	9,  // 43: shale.CameraCredentialVersionService.Erase:output_type -> shale.CameraCredentialVersionEraseResponse
-	11, // 44: shale.CameraCredentialVersionService.List:output_type -> shale.CameraCredentialVersionListResponse
-	14, // 45: shale.CameraCredentialVersionService.Watch:output_type -> shale.CameraCredentialVersionWatchResponse
-	39, // [39:46] is the sub-list for method output_type
-	32, // [32:39] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	17, // 19: shale.CameraCredentialVersionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	17, // 20: shale.CameraCredentialVersionPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	10, // 21: shale.CameraCredentialVersionListRequest.filters:type_name -> shale.CameraCredentialVersionFilter
+	6,  // 22: shale.CameraCredentialVersionListRequest.select:type_name -> shale.CameraCredentialVersionSelect
+	24, // 23: shale.CameraCredentialVersionListResponse.items:type_name -> shale.CameraCredentialVersion
+	2,  // 24: shale.CameraCredentialVersionFilter.ref:type_name -> shale.CameraCredentialVersionRef
+	14, // 25: shale.CameraCredentialVersionFilter.tenant:type_name -> shale.TenantRef
+	15, // 26: shale.CameraCredentialVersionFilter.site:type_name -> shale.SiteRef
+	16, // 27: shale.CameraCredentialVersionFilter.credential:type_name -> shale.CameraCredentialRef
+	10, // 28: shale.CameraCredentialVersionWatchRequest.filters:type_name -> shale.CameraCredentialVersionFilter
+	13, // 29: shale.CameraCredentialVersionWatchResponse.items:type_name -> shale.CameraCredentialVersionWatchItem
+	24, // 30: shale.CameraCredentialVersionWatchItem.value:type_name -> shale.CameraCredentialVersion
+	0,  // 31: shale.CameraCredentialVersionService.Add:input_type -> shale.CameraCredentialVersionAddRequest
+	1,  // 32: shale.CameraCredentialVersionService.Get:input_type -> shale.CameraCredentialVersionGetRequest
+	7,  // 33: shale.CameraCredentialVersionService.Patch:input_type -> shale.CameraCredentialVersionPatchRequest
+	8,  // 34: shale.CameraCredentialVersionService.List:input_type -> shale.CameraCredentialVersionListRequest
+	11, // 35: shale.CameraCredentialVersionService.Watch:input_type -> shale.CameraCredentialVersionWatchRequest
+	24, // 36: shale.CameraCredentialVersionService.Add:output_type -> shale.CameraCredentialVersion
+	24, // 37: shale.CameraCredentialVersionService.Get:output_type -> shale.CameraCredentialVersion
+	24, // 38: shale.CameraCredentialVersionService.Patch:output_type -> shale.CameraCredentialVersion
+	9,  // 39: shale.CameraCredentialVersionService.List:output_type -> shale.CameraCredentialVersionListResponse
+	12, // 40: shale.CameraCredentialVersionService.Watch:output_type -> shale.CameraCredentialVersionWatchResponse
+	36, // [36:41] is the sub-list for method output_type
+	31, // [31:36] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_credential_version_svc_g_proto_init() }
@@ -2966,7 +2815,7 @@ func file_shale_camera_credential_version_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_credential_version_svc_g_proto_rawDesc), len(file_shale_camera_credential_version_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

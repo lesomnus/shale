@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
+import { file_orm } from "../orm_pb.js";
 import type { TenantRef, TenantSelect } from "./payday/tenant_svc_pb.js";
 import { file_shale_payday_tenant_svc_g } from "./payday/tenant_svc_pb.js";
 import type { Site, SiteSchema } from "./site_pb.js";
@@ -18,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/site_svc.g.proto.
  */
 export const file_shale_site_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChZzaGFsZS9zaXRlX3N2Yy5nLnByb3RvEgVzaGFsZSKOBAoOU2l0ZUFkZFJlcXVlc3QSCgoCaWQYASABKAwSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIxCgZsYWJlbHMYByADKAsyIS5zaGFsZS5TaXRlQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRJACg5yZWxheV9zZWxlY3RvchgIIAMoCzIoLnNoYWxlLlNpdGVBZGRSZXF1ZXN0LlJlbGF5U2VsZWN0b3JFbnRyeRJIChJzYXRlbGxpdGVfc2VsZWN0b3IYCSADKAsyLC5zaGFsZS5TaXRlQWRkUmVxdWVzdC5TYXRlbGxpdGVTZWxlY3RvckVudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARo0ChJSZWxheVNlbGVjdG9yRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARo4ChZTYXRlbGxpdGVTZWxlY3RvckVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUAoOU2l0ZUdldFJlcXVlc3QSGwoDcmVmGAEgASgLMg4uc2hhbGUuU2l0ZVJlZhIhCgZzZWxlY3QYAiABKAsyES5zaGFsZS5TaXRlU2VsZWN0IkQKB1NpdGVSZWYSDAoCaWQYASABKAxIABIkCgRzbHVnGAQgASgLMhQuc2hhbGUuU2l0ZVJlZkJ5U2x1Z0gAQgUKA2tleSJACg1TaXRlUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZiLuAQoKU2l0ZVNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFgoOcmVsYXlfc2VsZWN0b3IYCCABKAgSGgoSc2F0ZWxsaXRlX3NlbGVjdG9yGAkgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgijAQKEFNpdGVQYXRjaFJlcXVlc3QSGwoDcmVmGAEgASgLMg4uc2hhbGUuU2l0ZVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSMwoGbGFiZWxzGA4gAygLMiMuc2hhbGUuU2l0ZVBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRJCCg5yZWxheV9zZWxlY3RvchgQIAMoCzIqLnNoYWxlLlNpdGVQYXRjaFJlcXVlc3QuUmVsYXlTZWxlY3RvckVudHJ5EkoKEnNhdGVsbGl0ZV9zZWxlY3RvchgSIAMoCzIuLnNoYWxlLlNpdGVQYXRjaFJlcXVlc3QuU2F0ZWxsaXRlU2VsZWN0b3JFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGjQKElJlbGF5U2VsZWN0b3JFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGjgKFlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJMChBTaXRlQXBwbHlSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLnNoYWxlLlNpdGVSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFTaXRlRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieAoPU2l0ZUxpc3RSZXF1ZXN0EiIKB2ZpbHRlcnMYASADKAsyES5zaGFsZS5TaXRlRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJDChBTaXRlTGlzdFJlc3BvbnNlEhoKBWl0ZW1zGAEgAygLMgsuc2hhbGUuU2l0ZRITCgRuZXh0GAIgASgJQgWqAQIIAiJLCgpTaXRlRmlsdGVyEhsKA3JlZhgBIAEoCzIOLnNoYWxlLlNpdGVSZWYSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmIlQKEFNpdGVXYXRjaFJlcXVlc3QSIgoHZmlsdGVycxgBIAMoCzIRLnNoYWxlLlNpdGVGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOAoRU2l0ZVdhdGNoUmVzcG9uc2USIwoFaXRlbXMYASADKAsyFC5zaGFsZS5TaXRlV2F0Y2hJdGVtIk4KDVNpdGVXYXRjaEl0ZW0SCgoCaWQYASABKAwSGgoFdmFsdWUYAiABKAsyCy5zaGFsZS5TaXRlEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIy6wIKC1NpdGVTZXJ2aWNlEikKA0FkZBIVLnNoYWxlLlNpdGVBZGRSZXF1ZXN0Ggsuc2hhbGUuU2l0ZRIpCgNHZXQSFS5zaGFsZS5TaXRlR2V0UmVxdWVzdBoLLnNoYWxlLlNpdGUSLQoFUGF0Y2gSFy5zaGFsZS5TaXRlUGF0Y2hSZXF1ZXN0Ggsuc2hhbGUuU2l0ZRItCgVBcHBseRIXLnNoYWxlLlNpdGVBcHBseVJlcXVlc3QaCy5zaGFsZS5TaXRlEjEKBUVyYXNlEg4uc2hhbGUuU2l0ZVJlZhoYLnNoYWxlLlNpdGVFcmFzZVJlc3BvbnNlEjcKBExpc3QSFi5zaGFsZS5TaXRlTGlzdFJlcXVlc3QaFy5zaGFsZS5TaXRlTGlzdFJlc3BvbnNlEjwKBVdhdGNoEhcuc2hhbGUuU2l0ZVdhdGNoUmVxdWVzdBoYLnNoYWxlLlNpdGVXYXRjaFJlc3BvbnNlMAFCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_payday_tenant_svc_g, file_shale_site]);
+  fileDesc("ChZzaGFsZS9zaXRlX3N2Yy5nLnByb3RvEgVzaGFsZSKWBAoOU2l0ZUFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjEKBmxhYmVscxgHIAMoCzIhLnNoYWxlLlNpdGVBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EkAKDnJlbGF5X3NlbGVjdG9yGAggAygLMiguc2hhbGUuU2l0ZUFkZFJlcXVlc3QuUmVsYXlTZWxlY3RvckVudHJ5EkgKEnNhdGVsbGl0ZV9zZWxlY3RvchgJIAMoCzIsLnNoYWxlLlNpdGVBZGRSZXF1ZXN0LlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGjQKElJlbGF5U2VsZWN0b3JFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGjgKFlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJQCg5TaXRlR2V0UmVxdWVzdBIbCgNyZWYYASABKAsyDi5zaGFsZS5TaXRlUmVmEiEKBnNlbGVjdBgCIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QiTAoHU2l0ZVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASJAoEc2x1ZxgEIAEoCzIULnNoYWxlLlNpdGVSZWZCeVNsdWdIAEIFCgNrZXkiQAoNU2l0ZVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYi7gEKClNpdGVTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhYKDnJlbGF5X3NlbGVjdG9yGAggASgIEhoKEnNhdGVsbGl0ZV9zZWxlY3RvchgJIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIowEChBTaXRlUGF0Y2hSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLnNoYWxlLlNpdGVSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjMKBmxhYmVscxgOIAMoCzIjLnNoYWxlLlNpdGVQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSQgoOcmVsYXlfc2VsZWN0b3IYECADKAsyKi5zaGFsZS5TaXRlUGF0Y2hSZXF1ZXN0LlJlbGF5U2VsZWN0b3JFbnRyeRJKChJzYXRlbGxpdGVfc2VsZWN0b3IYEiADKAsyLi5zaGFsZS5TaXRlUGF0Y2hSZXF1ZXN0LlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARo0ChJSZWxheVNlbGVjdG9yRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARo4ChZTYXRlbGxpdGVTZWxlY3RvckVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIwoRU2l0ZUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIpsBCg9TaXRlTGlzdFJlcXVlc3QSIgoHZmlsdGVycxgBIAMoCzIRLnNoYWxlLlNpdGVGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiEKBnNlbGVjdBgGIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QiQwoQU2l0ZUxpc3RSZXNwb25zZRIaCgVpdGVtcxgBIAMoCzILLnNoYWxlLlNpdGUSEwoEbmV4dBgCIAEoCUIFqgECCAIiSwoKU2l0ZUZpbHRlchIbCgNyZWYYASABKAsyDi5zaGFsZS5TaXRlUmVmEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZiJUChBTaXRlV2F0Y2hSZXF1ZXN0EiIKB2ZpbHRlcnMYASADKAsyES5zaGFsZS5TaXRlRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjgKEVNpdGVXYXRjaFJlc3BvbnNlEiMKBWl0ZW1zGAEgAygLMhQuc2hhbGUuU2l0ZVdhdGNoSXRlbSJOCg1TaXRlV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhoKBXZhbHVlGAIgASgLMgsuc2hhbGUuU2l0ZRIVCgZhY3Rpb24YAyABKAlCBaoBAggCMrwCCgtTaXRlU2VydmljZRIpCgNBZGQSFS5zaGFsZS5TaXRlQWRkUmVxdWVzdBoLLnNoYWxlLlNpdGUSKQoDR2V0EhUuc2hhbGUuU2l0ZUdldFJlcXVlc3QaCy5zaGFsZS5TaXRlEi0KBVBhdGNoEhcuc2hhbGUuU2l0ZVBhdGNoUmVxdWVzdBoLLnNoYWxlLlNpdGUSMQoFRXJhc2USDi5zaGFsZS5TaXRlUmVmGhguc2hhbGUuU2l0ZUVyYXNlUmVzcG9uc2USNwoETGlzdBIWLnNoYWxlLlNpdGVMaXN0UmVxdWVzdBoXLnNoYWxlLlNpdGVMaXN0UmVzcG9uc2USPAoFV2F0Y2gSFy5zaGFsZS5TaXRlV2F0Y2hSZXF1ZXN0Ghguc2hhbGUuU2l0ZVdhdGNoUmVzcG9uc2UwAUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_shale_payday_tenant_svc_g, file_shale_site]);
 
 /**
  * @generated from message shale.SiteAddRequest
@@ -289,28 +288,6 @@ export const SitePatchRequestSchema: GenMessage<SitePatchRequest> = /*@__PURE__*
   messageDesc(file_shale_site_svc_g, 5);
 
 /**
- * @generated from message shale.SiteApplyRequest
- */
-export type SiteApplyRequest = Message<"shale.SiteApplyRequest"> & {
-  /**
-   * @generated from field: shale.SiteRef ref = 1;
-   */
-  ref?: SiteRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.SiteApplyRequest.
- * Use `create(SiteApplyRequestSchema)` to create a new message.
- */
-export const SiteApplyRequestSchema: GenMessage<SiteApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 6);
-
-/**
  * @generated from message shale.SiteEraseResponse
  */
 export type SiteEraseResponse = Message<"shale.SiteEraseResponse"> & {
@@ -331,7 +308,7 @@ export type SiteEraseResponse = Message<"shale.SiteEraseResponse"> & {
  * Use `create(SiteEraseResponseSchema)` to create a new message.
  */
 export const SiteEraseResponseSchema: GenMessage<SiteEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 7);
+  messageDesc(file_shale_site_svc_g, 6);
 
 /**
  * @generated from message shale.SiteListRequest
@@ -373,6 +350,20 @@ export type SiteListRequest = Message<"shale.SiteListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.SiteSelect select = 6;
+   */
+  select?: SiteSelect | undefined;
 };
 
 /**
@@ -380,7 +371,7 @@ export type SiteListRequest = Message<"shale.SiteListRequest"> & {
  * Use `create(SiteListRequestSchema)` to create a new message.
  */
 export const SiteListRequestSchema: GenMessage<SiteListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 8);
+  messageDesc(file_shale_site_svc_g, 7);
 
 /**
  * @generated from message shale.SiteListResponse
@@ -410,7 +401,7 @@ export type SiteListResponse = Message<"shale.SiteListResponse"> & {
  * Use `create(SiteListResponseSchema)` to create a new message.
  */
 export const SiteListResponseSchema: GenMessage<SiteListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 9);
+  messageDesc(file_shale_site_svc_g, 8);
 
 /**
  * @generated from message shale.SiteFilter
@@ -432,20 +423,22 @@ export type SiteFilter = Message<"shale.SiteFilter"> & {
  * Use `create(SiteFilterSchema)` to create a new message.
  */
 export const SiteFilterSchema: GenMessage<SiteFilter> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 10);
+  messageDesc(file_shale_site_svc_g, 9);
 
 /**
  * @generated from message shale.SiteWatchRequest
  */
 export type SiteWatchRequest = Message<"shale.SiteWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated shale.SiteFilter filters = 1;
    */
@@ -468,7 +461,7 @@ export type SiteWatchRequest = Message<"shale.SiteWatchRequest"> & {
  * Use `create(SiteWatchRequestSchema)` to create a new message.
  */
 export const SiteWatchRequestSchema: GenMessage<SiteWatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 11);
+  messageDesc(file_shale_site_svc_g, 10);
 
 /**
  * @generated from message shale.SiteWatchResponse
@@ -487,7 +480,7 @@ export type SiteWatchResponse = Message<"shale.SiteWatchResponse"> & {
  * Use `create(SiteWatchResponseSchema)` to create a new message.
  */
 export const SiteWatchResponseSchema: GenMessage<SiteWatchResponse> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 12);
+  messageDesc(file_shale_site_svc_g, 11);
 
 /**
  * @generated from message shale.SiteWatchItem
@@ -502,7 +495,7 @@ export type SiteWatchItem = Message<"shale.SiteWatchItem"> & {
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -510,7 +503,8 @@ export type SiteWatchItem = Message<"shale.SiteWatchItem"> & {
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: shale.Site value = 2;
    */
@@ -534,7 +528,7 @@ export type SiteWatchItem = Message<"shale.SiteWatchItem"> & {
  * Use `create(SiteWatchItemSchema)` to create a new message.
  */
 export const SiteWatchItemSchema: GenMessage<SiteWatchItem> = /*@__PURE__*/
-  messageDesc(file_shale_site_svc_g, 13);
+  messageDesc(file_shale_site_svc_g, 12);
 
 /**
  * @generated from service shale.SiteService
@@ -571,16 +565,6 @@ export const SiteService: GenService<{
     output: typeof SiteSchema;
   },
   /**
-   * Apply applies a patch document to an existing Site
-   *
-   * @generated from rpc shale.SiteService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof SiteApplyRequestSchema;
-    output: typeof SiteSchema;
-  },
-  /**
    * Erase deletes a Site
    *
    * @generated from rpc shale.SiteService.Erase
@@ -603,15 +587,23 @@ export const SiteService: GenService<{
   /**
    * Watch the Sites this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc shale.SiteService.Watch
    */

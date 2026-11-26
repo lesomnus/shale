@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file orm/rpc.proto.
  */
 export const file_orm_rpc: GenFile = /*@__PURE__*/
-  fileDesc("Cg1vcm0vcnBjLnByb3RvEgNvcm0iOQoGUnBjQWRkEhAKCGRpc2FibGVkGAEgASgIEh0KBG1hbnkYAiABKAsyDy5vcm0uUnBjQWRkTWFueSIZCgpScGNBZGRNYW55EgsKA21heBgBIAEoDSIaCgZScGNHZXQSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjUGF0Y2gSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjRXJhc2USEAoIZGlzYWJsZWQYASABKAhCLFoqZ2l0aHViLmNvbS9wcm90b2J1Zi1vcm0vcHJvdG9idWYtb3JtL29ybXBiYghlZGl0aW9uc3DoBw");
+  fileDesc("Cg1vcm0vcnBjLnByb3RvEgNvcm0iOQoGUnBjQWRkEhAKCGRpc2FibGVkGAEgASgIEh0KBG1hbnkYAiABKAsyDy5vcm0uUnBjQWRkTWFueSIZCgpScGNBZGRNYW55EgsKA21heBgBIAEoDSIaCgZScGNHZXQSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjUGF0Y2gSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjQXBwbHkSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjRXJhc2USEAoIZGlzYWJsZWQYASABKAhCLFoqZ2l0aHViLmNvbS9wcm90b2J1Zi1vcm0vcHJvdG9idWYtb3JtL29ybXBiYghlZGl0aW9uc3DoBw");
 
 /**
  * @generated from message orm.RpcAdd
@@ -104,6 +104,34 @@ export const RpcPatchSchema: GenMessage<RpcPatch> = /*@__PURE__*/
   messageDesc(file_orm_rpc, 3);
 
 /**
+ * RpcApply is Apply, which writes what a patch document says to a row that is
+ * there.
+ *
+ * Its request is the entity's Ref and the document, and its answer is the row.
+ * What it can say that a PatchRequest cannot is whatever the PatchRequest has
+ * no field for: an entry of a map, an element of a list, a test on a column
+ * beside the write.
+ *
+ * It is a verb of its own. It is there when it is asked for, and not because
+ * Patch is; an entity may have either without the other.
+ *
+ * @generated from message orm.RpcApply
+ */
+export type RpcApply = Message<"orm.RpcApply"> & {
+  /**
+   * @generated from field: bool disabled = 1;
+   */
+  disabled: boolean;
+};
+
+/**
+ * Describes the message orm.RpcApply.
+ * Use `create(RpcApplySchema)` to create a new message.
+ */
+export const RpcApplySchema: GenMessage<RpcApply> = /*@__PURE__*/
+  messageDesc(file_orm_rpc, 4);
+
+/**
  * @generated from message orm.RpcErase
  */
 export type RpcErase = Message<"orm.RpcErase"> & {
@@ -118,5 +146,5 @@ export type RpcErase = Message<"orm.RpcErase"> & {
  * Use `create(RpcEraseSchema)` to create a new message.
  */
 export const RpcEraseSchema: GenMessage<RpcErase> = /*@__PURE__*/
-  messageDesc(file_orm_rpc, 4);
+  messageDesc(file_orm_rpc, 5);
 

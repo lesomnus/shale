@@ -69,7 +69,12 @@ message Tenant {
   // would leave the trail saying who while nobody could find out who. Nothing
   // names a tenant that way, so there is nothing for its row to outlive.
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      erase: {}
+    }
     indexes: [
       // The order its list reads in. Small next to anything a tenant holds,
       // and still the table a deployment of many customers grows: without it

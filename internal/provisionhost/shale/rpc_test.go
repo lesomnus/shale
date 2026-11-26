@@ -174,7 +174,7 @@ func TestObserveHonorsElapsedDeadlineBeforeContextTimer(t *testing.T) {
 }
 
 func TestReadinessRetriesTransientCPFailureWithoutWeakeningOwnership(t *testing.T) {
-	for _, code := range []codes.Code{codes.Unavailable, codes.Aborted, codes.Unknown, codes.Canceled, codes.ResourceExhausted} {
+	for _, code := range []codes.Code{codes.Unavailable, codes.Aborted, codes.Unknown, codes.Internal, codes.Canceled, codes.ResourceExhausted} {
 		t.Run(code.String(), func(t *testing.T) {
 			f := newRPCFixture(t)
 			f.authority.ObserveTimeout = time.Second

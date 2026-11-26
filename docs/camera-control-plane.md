@@ -29,7 +29,8 @@ existing tenant-person administration policy is retained; this feature does not
 invent a new implicit administrator identity.
 
 Generated Get/List/Watch methods provide scoped observation. Generated
-Add/Patch/Apply/Erase are refused even for operators: they could bypass Source
+Add/Patch/Erase, where an entity has them, are refused even for operators
+(none has an Apply, and only a worker an Erase): they could bypass Source
 reservation, ownership, job fences and immutable-input checks. The custom
 operations below are the only external write path. They call the normal
 transactional/recorded/scoped layers; direct Ent reads are limited by already

@@ -3,6 +3,7 @@
 package identity
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 	rostercli "github.com/lesomnus/roster/cli"
 	rostercmd "github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/rstr"
+	rostercore "github.com/lesomnus/roster/server/core"
 )
 
 // embedded is roster in this process: its server on an in-process
@@ -47,6 +49,13 @@ type embedded struct {
 // plane's.
 const RosterDbFile = "roster.db"
 
+// ErrRosterFromBefore is an embedded roster's database this roster cannot
+// migrate: one an earlier Shale's roster made, which roster carries nothing
+// across for (docs/09-operations.md §32.2).
+var ErrRosterFromBefore = errors.New("a roster database an earlier Shale made is not one this roster reads; if this is one, " +
+	"move it aside and run `shale identity migrate`, which makes the tenants and people again " +
+	"under their identifiers with new passwords (docs/09-operations.md §32.2)")
+
 // unframed is a context for the deployment's own door at the embedded
 // roster. Both apps read payday's one frame type, so a request's frame
 // here would be a frame there, and roster would take Shale's actor for
@@ -63,9 +72,15 @@ func unframed(ctx context.Context) (context.Context, context.CancelFunc) {
 
 func openEmbedded(ctx context.Context, cfg Config, stateDir string, log *slog.Logger) (*embedded, error) {
 	rc := rostercmd.Config{Db: cfg.Db}
+	// Whether there was a database to migrate: one that was made before is
+	// one an earlier roster may have made.
+	made := rc.Db.Driver != ""
 	if rc.Db.Driver == "" {
 		if err := os.MkdirAll(stateDir, 0o700); err != nil {
 			return nil, err
+		}
+		if _, err := os.Stat(filepath.Join(stateDir, RosterDbFile)); err == nil {
+			made = true
 		}
 		rc.Db.Driver = "sqlite3"
 		rc.Db.Dsn = "file:" + filepath.Join(stateDir, RosterDbFile) + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
@@ -79,6 +94,12 @@ func openEmbedded(ctx context.Context, cfg Config, stateDir string, log *slog.Lo
 	}
 	if err := rostercli.Migrate(ctx, rs); err != nil {
 		rs.Close()
+		if made {
+			// roster's words are about its columns, and what they say to
+			// do does not make an earlier roster's file this one's.
+			return nil, fmt.Errorf("embedded roster: %w\n\n%w", err, ErrRosterFromBefore)
+		}
+
 		return nil, fmt.Errorf("embedded roster: %w", err)
 	}
 	g, err := rs.Grpc(ctx, rc)
@@ -256,7 +277,7 @@ func (s *Store) issue(ctx context.Context, holder pdid.Id) (string, error) {
 	ctx, cancel := unframed(ctx)
 	defer cancel()
 	res, err := s.em.rs.Ungated.Credential().Issue(ctx, rstr.CredentialIssueRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(), Kind: "password",
+		Holder: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(), Kind: "password",
 	}.Build())
 	if err != nil {
 		return "", err
@@ -279,7 +300,7 @@ func (s *Store) SetPassword(ctx context.Context, tenant, alias, password string)
 	ctx, cancel := unframed(ctx)
 	defer cancel()
 	_, err = s.em.rs.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: p.Id.Bytes()}.Build(), Kind: "password", Secret: []byte(password),
+		Holder: rstr.HolderRef_builder{Id: p.Id.Bytes()}.Build(), Kind: "password", Secret: []byte(password),
 	}.Build())
 
 	return err
@@ -321,6 +342,9 @@ func (s *Store) Adopt(ctx context.Context, tenant pdid.Id, alias, name string, p
 		if _, err := own.Tenant().Add(ctx, rstr.TenantAddRequest_builder{Id: tenant.Bytes(), Alias: alias, Name: name}.Build()); err != nil {
 			return nil, fmt.Errorf("tenant @%s: %w", alias, err)
 		}
+		if err := s.em.unadministered(ctx, tref, people); err != nil {
+			return nil, fmt.Errorf("tenant @%s: %w", alias, err)
+		}
 	}
 	passwords := map[string]string{}
 	for _, p := range people {
@@ -345,6 +369,36 @@ func (s *Store) Adopt(ctx context.Context, tenant pdid.Id, alias, name string, p
 	}
 
 	return passwords, nil
+}
+
+// unadministered takes away the administrator roster made with a tenant
+// Adopt just made (`rostercore.Administers`, `admin`, with an identifier of
+// roster's minting) where the people adopted take its place: one of them is
+// called that, and would be refused the name, or one of them administers the
+// tenant and is bound to the same role. Where none does it stays, so the
+// tenant is not left with nobody to administer it at roster.
+func (e *embedded) unadministered(ctx context.Context, tref *rstr.TenantRef, people []Adoptee) error {
+	if !slices.ContainsFunc(people, func(p Adoptee) bool { return p.Alias == rostercore.Administers || p.Admin }) {
+		return nil
+	}
+	own := e.rs.Ungated
+	h, err := own.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(rostercore.Administers), Tenant: tref}.Build()}.Build(),
+	}.Build())
+	switch {
+	case status.Code(err) == codes.NotFound:
+		return nil
+	case err != nil:
+		return err
+	}
+	if slices.ContainsFunc(people, func(p Adoptee) bool { return bytes.Equal(p.Id.Bytes(), h.GetId()) }) {
+		return nil
+	}
+	if _, err := own.Holder().Erase(ctx, rstr.HolderRef_builder{Id: h.GetId()}.Build()); err != nil {
+		return fmt.Errorf("the administrator roster made: %w", err)
+	}
+
+	return nil
 }
 
 // OperatorRole is the role `shale init` writes at the embedded roster for
@@ -429,7 +483,8 @@ func (e *embedded) everything(ctx context.Context, tref *rstr.TenantRef, holder 
 
 // Exchange is the exchange token an app of a tenant of the embedded roster
 // is issued for Shale (§33.8): roster's `DelegationService/Exchange`, asked
-// as the app's holder, naming Shale's holder in the tenant as its audience.
+// as the app's holder, naming Shale's holder in the tenant as the app it is for
+// (`app`, which was `audience`).
 // What an app does at an external roster with its own key; here, what the
 // tests prove an app with.
 func (s *Store) Exchange(ctx context.Context, tenant, app string, methods []string) (string, error) {
@@ -441,7 +496,7 @@ func (s *Store) Exchange(ctx context.Context, tenant, app string, methods []stri
 	}
 	as := auth.PlainProvider("@" + tenant + "/" + app).Provide(ctx)
 	v, err := rstr.NewDelegationServiceClient(s.conn).Exchange(as, rstr.DelegationExchangeRequest_builder{
-		Audience: rstr.HolderRef_builder{
+		App: rstr.HolderRef_builder{
 			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(Agent), Tenant: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build(),
 		}.Build(),
 		Methods: methods,

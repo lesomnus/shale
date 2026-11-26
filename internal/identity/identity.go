@@ -619,7 +619,7 @@ func (s *Store) Verify(ctx context.Context, tenant, alias, password string) (Per
 		return Person{}, err
 	}
 	res, err := rstr.NewVouchServiceClient(s.conn).Verify(as, rstr.VouchVerifyRequest_builder{
-		Who:    rstr.VouchWho_builder{Tenant: tenant, Alias: alias}.Build(),
+		Who:    rstr.VouchWho_builder{Tenant: rstr.VouchTenant_builder{Alias: z.Ptr(tenant)}.Build(), Alias: alias}.Build(),
 		Kind:   "password",
 		Secret: []byte(password),
 	}.Build())
@@ -627,7 +627,7 @@ func (s *Store) Verify(ctx context.Context, tenant, alias, password string) (Per
 		return Person{}, fmt.Errorf("roster: %w", err)
 	}
 	if !res.GetOk() {
-		if t := res.GetDateLocked(); t != nil {
+		if t := res.GetDateUnlocked(); t != nil {
 			return Person{}, Locked{Until: t.AsTime()}
 		}
 

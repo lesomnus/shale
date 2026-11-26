@@ -22,8 +22,6 @@ const (
 	CameraCredentialService_Add_FullMethodName     = "/shale.CameraCredentialService/Add"
 	CameraCredentialService_Get_FullMethodName     = "/shale.CameraCredentialService/Get"
 	CameraCredentialService_Patch_FullMethodName   = "/shale.CameraCredentialService/Patch"
-	CameraCredentialService_Apply_FullMethodName   = "/shale.CameraCredentialService/Apply"
-	CameraCredentialService_Erase_FullMethodName   = "/shale.CameraCredentialService/Erase"
 	CameraCredentialService_List_FullMethodName    = "/shale.CameraCredentialService/List"
 	CameraCredentialService_Watch_FullMethodName   = "/shale.CameraCredentialService/Watch"
 	CameraCredentialService_Prepare_FullMethodName = "/shale.CameraCredentialService/Prepare"
@@ -42,23 +40,27 @@ type CameraCredentialServiceClient interface {
 	Get(ctx context.Context, in *CameraCredentialGetRequest, opts ...grpc.CallOption) (*CameraCredential, error)
 	// Patch updates an existing CameraCredential
 	Patch(ctx context.Context, in *CameraCredentialPatchRequest, opts ...grpc.CallOption) (*CameraCredential, error)
-	// Apply applies a patch document to an existing CameraCredential
-	Apply(ctx context.Context, in *CameraCredentialApplyRequest, opts ...grpc.CallOption) (*CameraCredential, error)
-	// Erase deletes a CameraCredential
-	Erase(ctx context.Context, in *CameraCredentialRef, opts ...grpc.CallOption) (*CameraCredentialEraseResponse, error)
 	// List reads CameraCredentials a page at a time.
 	List(ctx context.Context, in *CameraCredentialListRequest, opts ...grpc.CallOption) (*CameraCredentialListResponse, error)
 	// Watch the CameraCredentials this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraCredentialWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraCredentialWatchResponse], error)
 	Prepare(ctx context.Context, in *CameraCredentialPrepareRequest, opts ...grpc.CallOption) (*CameraCredentialPrepared, error)
 	Import(ctx context.Context, in *CameraCredentialImportRequest, opts ...grpc.CallOption) (*CameraCredentialPrepared, error)
@@ -98,26 +100,6 @@ func (c *cameraCredentialServiceClient) Patch(ctx context.Context, in *CameraCre
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraCredential)
 	err := c.cc.Invoke(ctx, CameraCredentialService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraCredentialServiceClient) Apply(ctx context.Context, in *CameraCredentialApplyRequest, opts ...grpc.CallOption) (*CameraCredential, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraCredential)
-	err := c.cc.Invoke(ctx, CameraCredentialService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraCredentialServiceClient) Erase(ctx context.Context, in *CameraCredentialRef, opts ...grpc.CallOption) (*CameraCredentialEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraCredentialEraseResponse)
-	err := c.cc.Invoke(ctx, CameraCredentialService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -203,23 +185,27 @@ type CameraCredentialServiceServer interface {
 	Get(context.Context, *CameraCredentialGetRequest) (*CameraCredential, error)
 	// Patch updates an existing CameraCredential
 	Patch(context.Context, *CameraCredentialPatchRequest) (*CameraCredential, error)
-	// Apply applies a patch document to an existing CameraCredential
-	Apply(context.Context, *CameraCredentialApplyRequest) (*CameraCredential, error)
-	// Erase deletes a CameraCredential
-	Erase(context.Context, *CameraCredentialRef) (*CameraCredentialEraseResponse, error)
 	// List reads CameraCredentials a page at a time.
 	List(context.Context, *CameraCredentialListRequest) (*CameraCredentialListResponse, error)
 	// Watch the CameraCredentials this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraCredentialWatchRequest, grpc.ServerStreamingServer[CameraCredentialWatchResponse]) error
 	Prepare(context.Context, *CameraCredentialPrepareRequest) (*CameraCredentialPrepared, error)
 	Import(context.Context, *CameraCredentialImportRequest) (*CameraCredentialPrepared, error)
@@ -243,12 +229,6 @@ func (UnimplementedCameraCredentialServiceServer) Get(context.Context, *CameraCr
 }
 func (UnimplementedCameraCredentialServiceServer) Patch(context.Context, *CameraCredentialPatchRequest) (*CameraCredential, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraCredentialServiceServer) Apply(context.Context, *CameraCredentialApplyRequest) (*CameraCredential, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraCredentialServiceServer) Erase(context.Context, *CameraCredentialRef) (*CameraCredentialEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraCredentialServiceServer) List(context.Context, *CameraCredentialListRequest) (*CameraCredentialListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -340,42 +320,6 @@ func _CameraCredentialService_Patch_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraCredentialServiceServer).Patch(ctx, req.(*CameraCredentialPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraCredentialService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraCredentialApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraCredentialServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraCredentialService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraCredentialServiceServer).Apply(ctx, req.(*CameraCredentialApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraCredentialService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraCredentialRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraCredentialServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraCredentialService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraCredentialServiceServer).Erase(ctx, req.(*CameraCredentialRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -499,14 +443,6 @@ var CameraCredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _CameraCredentialService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _CameraCredentialService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraCredentialService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

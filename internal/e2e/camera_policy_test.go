@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func cameraPolicyControl(t *testing.T) (*cmd.Server, string, *grpc.ClientConn, context.Context) {
@@ -247,32 +248,23 @@ func TestCameraPolicyManagementAndTemplateReadPermissions(t *testing.T) {
 			_, err := presets.Add(ctx, api.CameraPresetAddRequest_builder{Tenant: request.GetTenant(), PresetKey: "bypass", Revision: "1", Rules: request.GetRules()}.Build())
 			return err
 		},
-		"preset Patch": func() error {
-			_, err := presets.Patch(ctx, api.CameraPresetPatchRequest_builder{Ref: presetRef, Name: z.Ptr("bypass")}.Build())
-			return err
-		},
-		"preset Apply": func() error {
-			_, err := presets.Apply(ctx, api.CameraPresetApplyRequest_builder{Ref: presetRef}.Build())
-			return err
-		},
-		"preset Erase": func() error { _, err := presets.Erase(ctx, presetRef); return err },
 		"policy Add": func() error {
 			_, err := policies.Add(ctx, api.CameraPolicyAddRequest_builder{Tenant: request.GetTenant(), Network: policyRequest.GetNetwork(), Preset: presetRef, PolicyKey: "bypass", Revision: "1", Enrollment: policyRequest.GetEnrollment()}.Build())
 			return err
 		},
-		"policy Patch": func() error {
-			_, err := policies.Patch(ctx, api.CameraPolicyPatchRequest_builder{Ref: policyRef, Name: z.Ptr("bypass")}.Build())
-			return err
-		},
-		"policy Apply": func() error {
-			_, err := policies.Apply(ctx, api.CameraPolicyApplyRequest_builder{Ref: policyRef}.Build())
-			return err
-		},
-		"policy Erase": func() error { _, err := policies.Erase(ctx, policyRef); return err },
 	} {
 		t.Run(name, func(t *testing.T) {
 			require.Equal(t, codes.PermissionDenied, status.Code(operation()), "even operators cannot bypass immutable custom operations")
 		})
+	}
+	// And a revision is never changed in place: neither entity has a
+	// general write past Add for anybody to be refused.
+	for _, method := range []string{
+		"/shale.CameraPresetService/Patch", "/shale.CameraPresetService/Apply", "/shale.CameraPresetService/Erase",
+		"/shale.CameraPolicyService/Patch", "/shale.CameraPolicyService/Apply", "/shale.CameraPolicyService/Erase",
+	} {
+		err := admin.Invoke(ctx, method, &emptypb.Empty{}, &emptypb.Empty{})
+		require.Equal(t, codes.Unimplemented, status.Code(err), method)
 	}
 	_, err = server.Identity.AddPerson(ctx, "acme", "policy-viewer", "Policy viewer")
 	require.NoError(t, err)

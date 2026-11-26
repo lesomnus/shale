@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1099,442 +1099,20 @@ func (b0 CameraPresetSelect_builder) Build() *CameraPresetSelect {
 	return m0
 }
 
-type CameraPresetPatchRequest struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref              *CameraPresetRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
-	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
-	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
-	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
-}
-
-func (x *CameraPresetPatchRequest) Reset() {
-	*x = CameraPresetPatchRequest{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraPresetPatchRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraPresetPatchRequest) ProtoMessage() {}
-
-func (x *CameraPresetPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraPresetPatchRequest) GetRef() *CameraPresetRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraPresetPatchRequest) GetAlias() string {
-	if x != nil {
-		if x.xxx_hidden_Alias != nil {
-			return *x.xxx_hidden_Alias
-		}
-		return ""
-	}
-	return ""
-}
-
-func (x *CameraPresetPatchRequest) GetName() string {
-	if x != nil {
-		if x.xxx_hidden_Name != nil {
-			return *x.xxx_hidden_Name
-		}
-		return ""
-	}
-	return ""
-}
-
-func (x *CameraPresetPatchRequest) GetDesc() string {
-	if x != nil {
-		if x.xxx_hidden_Desc != nil {
-			return *x.xxx_hidden_Desc
-		}
-		return ""
-	}
-	return ""
-}
-
-func (x *CameraPresetPatchRequest) GetLabels() map[string]string {
-	if x != nil {
-		return x.xxx_hidden_Labels
-	}
-	return nil
-}
-
-func (x *CameraPresetPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateUpdated
-	}
-	return nil
-}
-
-func (x *CameraPresetPatchRequest) GetDateUpdatedForce() bool {
-	if x != nil {
-		return x.xxx_hidden_DateUpdatedForce
-	}
-	return false
-}
-
-func (x *CameraPresetPatchRequest) SetRef(v *CameraPresetRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraPresetPatchRequest) SetAlias(v string) {
-	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
-}
-
-func (x *CameraPresetPatchRequest) SetName(v string) {
-	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
-}
-
-func (x *CameraPresetPatchRequest) SetDesc(v string) {
-	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
-}
-
-func (x *CameraPresetPatchRequest) SetLabels(v map[string]string) {
-	x.xxx_hidden_Labels = v
-}
-
-func (x *CameraPresetPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateUpdated = v
-}
-
-func (x *CameraPresetPatchRequest) SetDateUpdatedForce(v bool) {
-	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
-}
-
-func (x *CameraPresetPatchRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraPresetPatchRequest) HasAlias() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *CameraPresetPatchRequest) HasName() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *CameraPresetPatchRequest) HasDesc() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
-func (x *CameraPresetPatchRequest) HasDateUpdated() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateUpdated != nil
-}
-
-func (x *CameraPresetPatchRequest) HasDateUpdatedForce() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
-}
-
-func (x *CameraPresetPatchRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraPresetPatchRequest) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Alias = nil
-}
-
-func (x *CameraPresetPatchRequest) ClearName() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Name = nil
-}
-
-func (x *CameraPresetPatchRequest) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Desc = nil
-}
-
-func (x *CameraPresetPatchRequest) ClearDateUpdated() {
-	x.xxx_hidden_DateUpdated = nil
-}
-
-func (x *CameraPresetPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_DateUpdatedForce = false
-}
-
-type CameraPresetPatchRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref    *CameraPresetRef
-	Alias  *string
-	Name   *string
-	Desc   *string
-	Labels map[string]string
-	// The version this update requires the stored date_updated to be.
-	// It is a precondition, not a write: the update applies only if the row
-	// still holds this value, and the server stamps the new version itself.
-	// Setting it together with date_updated_force is an error --
-	// the version is the token every client's compare-and-swap is measured
-	// against, so it is not the caller's to choose.
-	DateUpdated *timestamppb.Timestamp
-	// Update whatever the stored date_updated is, with no precondition.
-	// The server still stamps a new version, so other clients' tokens are
-	// invalidated as usual; this declines the check for THIS update only.
-	// One of date_updated or this must be set. An omitted version is
-	// refused rather than assumed, because an unset field cannot be told
-	// apart from a caller who never considered locking at all.
-	DateUpdatedForce *bool
-}
-
-func (b0 CameraPresetPatchRequest_builder) Build() *CameraPresetPatchRequest {
-	m0 := &CameraPresetPatchRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
-		x.xxx_hidden_Alias = b.Alias
-	}
-	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
-		x.xxx_hidden_Name = b.Name
-	}
-	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
-		x.xxx_hidden_Desc = b.Desc
-	}
-	x.xxx_hidden_Labels = b.Labels
-	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
-		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
-	}
-	return m0
-}
-
-type CameraPresetApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraPresetRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraPresetApplyRequest) Reset() {
-	*x = CameraPresetApplyRequest{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraPresetApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraPresetApplyRequest) ProtoMessage() {}
-
-func (x *CameraPresetApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraPresetApplyRequest) GetRef() *CameraPresetRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraPresetApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraPresetApplyRequest) SetRef(v *CameraPresetRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraPresetApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraPresetApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraPresetApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraPresetApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraPresetApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraPresetApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraPresetRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraPresetApplyRequest_builder) Build() *CameraPresetApplyRequest {
-	m0 := &CameraPresetApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraPresetEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraPresetEraseResponse) Reset() {
-	*x = CameraPresetEraseResponse{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraPresetEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraPresetEraseResponse) ProtoMessage() {}
-
-func (x *CameraPresetEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraPresetEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraPresetEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraPresetEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraPresetEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraPresetEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraPresetEraseResponse_builder) Build() *CameraPresetEraseResponse {
-	m0 := &CameraPresetEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraPresetListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraPresetFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraPresetSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraPresetListRequest) Reset() {
 	*x = CameraPresetListRequest{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1546,7 +1124,7 @@ func (x *CameraPresetListRequest) String() string {
 func (*CameraPresetListRequest) ProtoMessage() {}
 
 func (x *CameraPresetListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1587,6 +1165,13 @@ func (x *CameraPresetListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraPresetListRequest) GetSelect() *CameraPresetSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraPresetListRequest) SetFilters(v []*CameraPresetFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1601,6 +1186,21 @@ func (x *CameraPresetListRequest) SetAfter(v string) {
 
 func (x *CameraPresetListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraPresetListRequest) SetSelect(v *CameraPresetSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraPresetListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraPresetListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraPresetListRequest_builder struct {
@@ -1623,6 +1223,15 @@ type CameraPresetListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraPresetSelect
 }
 
 func (b0 CameraPresetListRequest_builder) Build() *CameraPresetListRequest {
@@ -1633,6 +1242,7 @@ func (b0 CameraPresetListRequest_builder) Build() *CameraPresetListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1646,7 +1256,7 @@ type CameraPresetListResponse struct {
 
 func (x *CameraPresetListResponse) Reset() {
 	*x = CameraPresetListResponse{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1658,7 +1268,7 @@ func (x *CameraPresetListResponse) String() string {
 func (*CameraPresetListResponse) ProtoMessage() {}
 
 func (x *CameraPresetListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1727,7 +1337,7 @@ type CameraPresetFilter struct {
 
 func (x *CameraPresetFilter) Reset() {
 	*x = CameraPresetFilter{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1739,7 +1349,7 @@ func (x *CameraPresetFilter) String() string {
 func (*CameraPresetFilter) ProtoMessage() {}
 
 func (x *CameraPresetFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1844,7 +1454,7 @@ type CameraPresetWatchRequest struct {
 
 func (x *CameraPresetWatchRequest) Reset() {
 	*x = CameraPresetWatchRequest{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1856,7 +1466,7 @@ func (x *CameraPresetWatchRequest) String() string {
 func (*CameraPresetWatchRequest) ProtoMessage() {}
 
 func (x *CameraPresetWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1894,13 +1504,15 @@ func (x *CameraPresetWatchRequest) SetSkipSnapshot(v bool) {
 type CameraPresetWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraPresetFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -1928,7 +1540,7 @@ type CameraPresetWatchResponse struct {
 
 func (x *CameraPresetWatchResponse) Reset() {
 	*x = CameraPresetWatchResponse{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1940,7 +1552,7 @@ func (x *CameraPresetWatchResponse) String() string {
 func (*CameraPresetWatchResponse) ProtoMessage() {}
 
 func (x *CameraPresetWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1992,7 +1604,7 @@ type CameraPresetWatchItem struct {
 
 func (x *CameraPresetWatchItem) Reset() {
 	*x = CameraPresetWatchItem{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2004,7 +1616,7 @@ func (x *CameraPresetWatchItem) String() string {
 func (*CameraPresetWatchItem) ProtoMessage() {}
 
 func (x *CameraPresetWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2081,7 +1693,7 @@ type CameraPresetWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2089,7 +1701,8 @@ type CameraPresetWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraPreset
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2127,7 +1740,7 @@ type CameraPresetCreateRequest struct {
 
 func (x *CameraPresetCreateRequest) Reset() {
 	*x = CameraPresetCreateRequest{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2139,7 +1752,7 @@ func (x *CameraPresetCreateRequest) String() string {
 func (*CameraPresetCreateRequest) ProtoMessage() {}
 
 func (x *CameraPresetCreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2276,7 +1889,7 @@ type CameraPresetResolveForJobRequest struct {
 
 func (x *CameraPresetResolveForJobRequest) Reset() {
 	*x = CameraPresetResolveForJobRequest{}
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2288,7 +1901,7 @@ func (x *CameraPresetResolveForJobRequest) String() string {
 func (*CameraPresetResolveForJobRequest) ProtoMessage() {}
 
 func (x *CameraPresetResolveForJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_preset_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2389,9 +2002,9 @@ var File_shale_camera_preset_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_preset_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/camera_preset_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x18shale/camera_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xfe\x03\n" +
-	"\x16CameraPresetAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x1fshale/camera_preset_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x18shale/camera_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\x86\x04\n" +
+	"\x16CameraPresetAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -2409,9 +2022,9 @@ const file_shale_camera_preset_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
 	"\x16CameraPresetGetRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraPresetRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraPresetSelectR\x06select\"j\n" +
-	"\x0fCameraPresetRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12>\n" +
+	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraPresetSelectR\x06select\"r\n" +
+	"\x0fCameraPresetRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12>\n" +
 	"\brevision\x18\x02 \x01(\v2 .shale.CameraPresetRefByRevisionH\x00R\brevisionB\x05\n" +
 	"\x03key\"\x80\x01\n" +
 	"\x19CameraPresetRefByRevision\x12(\n" +
@@ -2435,29 +2048,13 @@ const file_shale_camera_preset_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xef\x02\n" +
-	"\x18CameraPresetPatchRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraPresetRefR\x03ref\x12\x14\n" +
-	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
-	"\x04name\x18\n" +
-	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12C\n" +
-	"\x06labels\x18\x0e \x03(\v2+.shale.CameraPresetPatchRequest.LabelsEntryR\x06labels\x12=\n" +
-	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
-	"\vLabelsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
-	"\x18CameraPresetApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraPresetRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
-	"\x19CameraPresetEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa7\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xda\x01\n" +
 	"\x17CameraPresetListRequest\x123\n" +
 	"\afilters\x18\x01 \x03(\v2\x19.shale.CameraPresetFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"`\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x121\n" +
+	"\x06select\x18\x06 \x01(\v2\x19.shale.CameraPresetSelectR\x06select\"`\n" +
 	"\x18CameraPresetListResponse\x12)\n" +
 	"\x05items\x18\x01 \x03(\v2\x13.shale.CameraPresetR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x8c\x01\n" +
@@ -2486,103 +2083,85 @@ const file_shale_camera_preset_svc_g_proto_rawDesc = "" +
 	"\x03job\x18\x01 \x01(\v2\x13.shale.CameraJobRefR\x03job\x120\n" +
 	"\x10lease_generation\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fleaseGeneration\x12:\n" +
 	"\x15assignment_generation\x18\x03 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x14assignmentGeneration\x129\n" +
-	"\bidentity\x18\x04 \x01(\v2\x1d.shale.CameraIdentityEvidenceR\bidentity2\xfb\x04\n" +
+	"\bidentity\x18\x04 \x01(\v2\x1d.shale.CameraIdentityEvidenceR\bidentity2\xba\x03\n" +
 	"\x13CameraPresetService\x129\n" +
 	"\x03Add\x12\x1d.shale.CameraPresetAddRequest\x1a\x13.shale.CameraPreset\x129\n" +
-	"\x03Get\x12\x1d.shale.CameraPresetGetRequest\x1a\x13.shale.CameraPreset\x12=\n" +
-	"\x05Patch\x12\x1f.shale.CameraPresetPatchRequest\x1a\x13.shale.CameraPreset\x12=\n" +
-	"\x05Apply\x12\x1f.shale.CameraPresetApplyRequest\x1a\x13.shale.CameraPreset\x12A\n" +
-	"\x05Erase\x12\x16.shale.CameraPresetRef\x1a .shale.CameraPresetEraseResponse\x12G\n" +
+	"\x03Get\x12\x1d.shale.CameraPresetGetRequest\x1a\x13.shale.CameraPreset\x12G\n" +
 	"\x04List\x12\x1e.shale.CameraPresetListRequest\x1a\x1f.shale.CameraPresetListResponse\x12L\n" +
 	"\x05Watch\x12\x1f.shale.CameraPresetWatchRequest\x1a .shale.CameraPresetWatchResponse0\x01\x12?\n" +
 	"\x06Create\x12 .shale.CameraPresetCreateRequest\x1a\x13.shale.CameraPreset\x12U\n" +
 	"\rResolveForJob\x12'.shale.CameraPresetResolveForJobRequest\x1a\x1b.shale.CameraResolvedPresetB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_camera_preset_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_shale_camera_preset_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_shale_camera_preset_svc_g_proto_goTypes = []any{
 	(*CameraPresetAddRequest)(nil),           // 0: shale.CameraPresetAddRequest
 	(*CameraPresetGetRequest)(nil),           // 1: shale.CameraPresetGetRequest
 	(*CameraPresetRef)(nil),                  // 2: shale.CameraPresetRef
 	(*CameraPresetRefByRevision)(nil),        // 3: shale.CameraPresetRefByRevision
 	(*CameraPresetSelect)(nil),               // 4: shale.CameraPresetSelect
-	(*CameraPresetPatchRequest)(nil),         // 5: shale.CameraPresetPatchRequest
-	(*CameraPresetApplyRequest)(nil),         // 6: shale.CameraPresetApplyRequest
-	(*CameraPresetEraseResponse)(nil),        // 7: shale.CameraPresetEraseResponse
-	(*CameraPresetListRequest)(nil),          // 8: shale.CameraPresetListRequest
-	(*CameraPresetListResponse)(nil),         // 9: shale.CameraPresetListResponse
-	(*CameraPresetFilter)(nil),               // 10: shale.CameraPresetFilter
-	(*CameraPresetWatchRequest)(nil),         // 11: shale.CameraPresetWatchRequest
-	(*CameraPresetWatchResponse)(nil),        // 12: shale.CameraPresetWatchResponse
-	(*CameraPresetWatchItem)(nil),            // 13: shale.CameraPresetWatchItem
-	(*CameraPresetCreateRequest)(nil),        // 14: shale.CameraPresetCreateRequest
-	(*CameraPresetResolveForJobRequest)(nil), // 15: shale.CameraPresetResolveForJobRequest
-	nil,                                      // 16: shale.CameraPresetAddRequest.LabelsEntry
-	nil,                                      // 17: shale.CameraPresetPatchRequest.LabelsEntry
-	(*TenantRef)(nil),                        // 18: shale.TenantRef
-	(*SiteRef)(nil),                          // 19: shale.SiteRef
-	(*CameraPresetRule)(nil),                 // 20: shale.CameraPresetRule
-	(*timestamppb.Timestamp)(nil),            // 21: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                     // 22: shale.TenantSelect
-	(*SiteSelect)(nil),                       // 23: shale.SiteSelect
-	(*patchpb.Patch)(nil),                    // 24: patch.Patch
-	(*CameraPreset)(nil),                     // 25: shale.CameraPreset
-	(*CameraJobRef)(nil),                     // 26: shale.CameraJobRef
-	(*CameraIdentityEvidence)(nil),           // 27: shale.CameraIdentityEvidence
-	(*CameraResolvedPreset)(nil),             // 28: shale.CameraResolvedPreset
+	(*CameraPresetListRequest)(nil),          // 5: shale.CameraPresetListRequest
+	(*CameraPresetListResponse)(nil),         // 6: shale.CameraPresetListResponse
+	(*CameraPresetFilter)(nil),               // 7: shale.CameraPresetFilter
+	(*CameraPresetWatchRequest)(nil),         // 8: shale.CameraPresetWatchRequest
+	(*CameraPresetWatchResponse)(nil),        // 9: shale.CameraPresetWatchResponse
+	(*CameraPresetWatchItem)(nil),            // 10: shale.CameraPresetWatchItem
+	(*CameraPresetCreateRequest)(nil),        // 11: shale.CameraPresetCreateRequest
+	(*CameraPresetResolveForJobRequest)(nil), // 12: shale.CameraPresetResolveForJobRequest
+	nil,                                      // 13: shale.CameraPresetAddRequest.LabelsEntry
+	(*TenantRef)(nil),                        // 14: shale.TenantRef
+	(*SiteRef)(nil),                          // 15: shale.SiteRef
+	(*CameraPresetRule)(nil),                 // 16: shale.CameraPresetRule
+	(*timestamppb.Timestamp)(nil),            // 17: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                     // 18: shale.TenantSelect
+	(*SiteSelect)(nil),                       // 19: shale.SiteSelect
+	(*CameraPreset)(nil),                     // 20: shale.CameraPreset
+	(*CameraJobRef)(nil),                     // 21: shale.CameraJobRef
+	(*CameraIdentityEvidence)(nil),           // 22: shale.CameraIdentityEvidence
+	(*CameraResolvedPreset)(nil),             // 23: shale.CameraResolvedPreset
 }
 var file_shale_camera_preset_svc_g_proto_depIdxs = []int32{
-	18, // 0: shale.CameraPresetAddRequest.tenant:type_name -> shale.TenantRef
-	19, // 1: shale.CameraPresetAddRequest.site:type_name -> shale.SiteRef
-	16, // 2: shale.CameraPresetAddRequest.labels:type_name -> shale.CameraPresetAddRequest.LabelsEntry
-	20, // 3: shale.CameraPresetAddRequest.rules:type_name -> shale.CameraPresetRule
-	21, // 4: shale.CameraPresetAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	14, // 0: shale.CameraPresetAddRequest.tenant:type_name -> shale.TenantRef
+	15, // 1: shale.CameraPresetAddRequest.site:type_name -> shale.SiteRef
+	13, // 2: shale.CameraPresetAddRequest.labels:type_name -> shale.CameraPresetAddRequest.LabelsEntry
+	16, // 3: shale.CameraPresetAddRequest.rules:type_name -> shale.CameraPresetRule
+	17, // 4: shale.CameraPresetAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 5: shale.CameraPresetGetRequest.ref:type_name -> shale.CameraPresetRef
 	4,  // 6: shale.CameraPresetGetRequest.select:type_name -> shale.CameraPresetSelect
 	3,  // 7: shale.CameraPresetRef.revision:type_name -> shale.CameraPresetRefByRevision
-	18, // 8: shale.CameraPresetRefByRevision.tenant:type_name -> shale.TenantRef
-	22, // 9: shale.CameraPresetSelect.tenant:type_name -> shale.TenantSelect
-	23, // 10: shale.CameraPresetSelect.site:type_name -> shale.SiteSelect
-	2,  // 11: shale.CameraPresetPatchRequest.ref:type_name -> shale.CameraPresetRef
-	17, // 12: shale.CameraPresetPatchRequest.labels:type_name -> shale.CameraPresetPatchRequest.LabelsEntry
-	21, // 13: shale.CameraPresetPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 14: shale.CameraPresetApplyRequest.ref:type_name -> shale.CameraPresetRef
-	24, // 15: shale.CameraPresetApplyRequest.patch:type_name -> patch.Patch
-	10, // 16: shale.CameraPresetListRequest.filters:type_name -> shale.CameraPresetFilter
-	25, // 17: shale.CameraPresetListResponse.items:type_name -> shale.CameraPreset
-	2,  // 18: shale.CameraPresetFilter.ref:type_name -> shale.CameraPresetRef
-	18, // 19: shale.CameraPresetFilter.tenant:type_name -> shale.TenantRef
-	19, // 20: shale.CameraPresetFilter.site:type_name -> shale.SiteRef
-	10, // 21: shale.CameraPresetWatchRequest.filters:type_name -> shale.CameraPresetFilter
-	13, // 22: shale.CameraPresetWatchResponse.items:type_name -> shale.CameraPresetWatchItem
-	25, // 23: shale.CameraPresetWatchItem.value:type_name -> shale.CameraPreset
-	18, // 24: shale.CameraPresetCreateRequest.tenant:type_name -> shale.TenantRef
-	19, // 25: shale.CameraPresetCreateRequest.site:type_name -> shale.SiteRef
-	20, // 26: shale.CameraPresetCreateRequest.rules:type_name -> shale.CameraPresetRule
-	26, // 27: shale.CameraPresetResolveForJobRequest.job:type_name -> shale.CameraJobRef
-	27, // 28: shale.CameraPresetResolveForJobRequest.identity:type_name -> shale.CameraIdentityEvidence
-	0,  // 29: shale.CameraPresetService.Add:input_type -> shale.CameraPresetAddRequest
-	1,  // 30: shale.CameraPresetService.Get:input_type -> shale.CameraPresetGetRequest
-	5,  // 31: shale.CameraPresetService.Patch:input_type -> shale.CameraPresetPatchRequest
-	6,  // 32: shale.CameraPresetService.Apply:input_type -> shale.CameraPresetApplyRequest
-	2,  // 33: shale.CameraPresetService.Erase:input_type -> shale.CameraPresetRef
-	8,  // 34: shale.CameraPresetService.List:input_type -> shale.CameraPresetListRequest
-	11, // 35: shale.CameraPresetService.Watch:input_type -> shale.CameraPresetWatchRequest
-	14, // 36: shale.CameraPresetService.Create:input_type -> shale.CameraPresetCreateRequest
-	15, // 37: shale.CameraPresetService.ResolveForJob:input_type -> shale.CameraPresetResolveForJobRequest
-	25, // 38: shale.CameraPresetService.Add:output_type -> shale.CameraPreset
-	25, // 39: shale.CameraPresetService.Get:output_type -> shale.CameraPreset
-	25, // 40: shale.CameraPresetService.Patch:output_type -> shale.CameraPreset
-	25, // 41: shale.CameraPresetService.Apply:output_type -> shale.CameraPreset
-	7,  // 42: shale.CameraPresetService.Erase:output_type -> shale.CameraPresetEraseResponse
-	9,  // 43: shale.CameraPresetService.List:output_type -> shale.CameraPresetListResponse
-	12, // 44: shale.CameraPresetService.Watch:output_type -> shale.CameraPresetWatchResponse
-	25, // 45: shale.CameraPresetService.Create:output_type -> shale.CameraPreset
-	28, // 46: shale.CameraPresetService.ResolveForJob:output_type -> shale.CameraResolvedPreset
-	38, // [38:47] is the sub-list for method output_type
-	29, // [29:38] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	14, // 8: shale.CameraPresetRefByRevision.tenant:type_name -> shale.TenantRef
+	18, // 9: shale.CameraPresetSelect.tenant:type_name -> shale.TenantSelect
+	19, // 10: shale.CameraPresetSelect.site:type_name -> shale.SiteSelect
+	7,  // 11: shale.CameraPresetListRequest.filters:type_name -> shale.CameraPresetFilter
+	4,  // 12: shale.CameraPresetListRequest.select:type_name -> shale.CameraPresetSelect
+	20, // 13: shale.CameraPresetListResponse.items:type_name -> shale.CameraPreset
+	2,  // 14: shale.CameraPresetFilter.ref:type_name -> shale.CameraPresetRef
+	14, // 15: shale.CameraPresetFilter.tenant:type_name -> shale.TenantRef
+	15, // 16: shale.CameraPresetFilter.site:type_name -> shale.SiteRef
+	7,  // 17: shale.CameraPresetWatchRequest.filters:type_name -> shale.CameraPresetFilter
+	10, // 18: shale.CameraPresetWatchResponse.items:type_name -> shale.CameraPresetWatchItem
+	20, // 19: shale.CameraPresetWatchItem.value:type_name -> shale.CameraPreset
+	14, // 20: shale.CameraPresetCreateRequest.tenant:type_name -> shale.TenantRef
+	15, // 21: shale.CameraPresetCreateRequest.site:type_name -> shale.SiteRef
+	16, // 22: shale.CameraPresetCreateRequest.rules:type_name -> shale.CameraPresetRule
+	21, // 23: shale.CameraPresetResolveForJobRequest.job:type_name -> shale.CameraJobRef
+	22, // 24: shale.CameraPresetResolveForJobRequest.identity:type_name -> shale.CameraIdentityEvidence
+	0,  // 25: shale.CameraPresetService.Add:input_type -> shale.CameraPresetAddRequest
+	1,  // 26: shale.CameraPresetService.Get:input_type -> shale.CameraPresetGetRequest
+	5,  // 27: shale.CameraPresetService.List:input_type -> shale.CameraPresetListRequest
+	8,  // 28: shale.CameraPresetService.Watch:input_type -> shale.CameraPresetWatchRequest
+	11, // 29: shale.CameraPresetService.Create:input_type -> shale.CameraPresetCreateRequest
+	12, // 30: shale.CameraPresetService.ResolveForJob:input_type -> shale.CameraPresetResolveForJobRequest
+	20, // 31: shale.CameraPresetService.Add:output_type -> shale.CameraPreset
+	20, // 32: shale.CameraPresetService.Get:output_type -> shale.CameraPreset
+	6,  // 33: shale.CameraPresetService.List:output_type -> shale.CameraPresetListResponse
+	9,  // 34: shale.CameraPresetService.Watch:output_type -> shale.CameraPresetWatchResponse
+	20, // 35: shale.CameraPresetService.Create:output_type -> shale.CameraPreset
+	23, // 36: shale.CameraPresetService.ResolveForJob:output_type -> shale.CameraResolvedPreset
+	31, // [31:37] is the sub-list for method output_type
+	25, // [25:31] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_preset_svc_g_proto_init() }
@@ -2605,7 +2184,7 @@ func file_shale_camera_preset_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_preset_svc_g_proto_rawDesc), len(file_shale_camera_preset_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

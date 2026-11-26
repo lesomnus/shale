@@ -104,7 +104,7 @@ func TestCameraAuthorityGateIsOperatorOnly(t *testing.T) {
 		}
 		require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: pdid.New(DomReader), Action: method}))
 	}
-	for _, method := range []string{api.CameraJobService_Add_FullMethodName, api.CameraJobService_Patch_FullMethodName, api.CameraAssignmentService_Apply_FullMethodName, api.CameraDeviceService_Erase_FullMethodName} {
+	for _, method := range []string{api.CameraJobService_Add_FullMethodName, api.CameraJobService_Patch_FullMethodName, api.CameraAssignmentService_Patch_FullMethodName, api.CameraDeviceService_Patch_FullMethodName} {
 		require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: admin, Action: method}))
 	}
 }

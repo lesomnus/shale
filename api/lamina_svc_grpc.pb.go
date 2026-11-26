@@ -22,7 +22,6 @@ const (
 	LaminaService_Add_FullMethodName           = "/shale.LaminaService/Add"
 	LaminaService_Get_FullMethodName           = "/shale.LaminaService/Get"
 	LaminaService_Patch_FullMethodName         = "/shale.LaminaService/Patch"
-	LaminaService_Apply_FullMethodName         = "/shale.LaminaService/Apply"
 	LaminaService_Erase_FullMethodName         = "/shale.LaminaService/Erase"
 	LaminaService_List_FullMethodName          = "/shale.LaminaService/List"
 	LaminaService_Watch_FullMethodName         = "/shale.LaminaService/Watch"
@@ -47,23 +46,29 @@ type LaminaServiceClient interface {
 	Get(ctx context.Context, in *LaminaGetRequest, opts ...grpc.CallOption) (*Lamina, error)
 	// Patch updates an existing Lamina
 	Patch(ctx context.Context, in *LaminaPatchRequest, opts ...grpc.CallOption) (*Lamina, error)
-	// Apply applies a patch document to an existing Lamina
-	Apply(ctx context.Context, in *LaminaApplyRequest, opts ...grpc.CallOption) (*Lamina, error)
 	// Erase deletes a Lamina
 	Erase(ctx context.Context, in *LaminaRef, opts ...grpc.CallOption) (*LaminaEraseResponse, error)
 	// List reads Laminas a page at a time.
 	List(ctx context.Context, in *LaminaListRequest, opts ...grpc.CallOption) (*LaminaListResponse, error)
 	// Watch the Laminas this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *LaminaWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LaminaWatchResponse], error)
 	// One allocation for one segment of one source. Idempotent per
 	// (source, expected date_started): asking twice answers the same lamina.
@@ -129,16 +134,6 @@ func (c *laminaServiceClient) Patch(ctx context.Context, in *LaminaPatchRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Lamina)
 	err := c.cc.Invoke(ctx, LaminaService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *laminaServiceClient) Apply(ctx context.Context, in *LaminaApplyRequest, opts ...grpc.CallOption) (*Lamina, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Lamina)
-	err := c.cc.Invoke(ctx, LaminaService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -284,23 +279,29 @@ type LaminaServiceServer interface {
 	Get(context.Context, *LaminaGetRequest) (*Lamina, error)
 	// Patch updates an existing Lamina
 	Patch(context.Context, *LaminaPatchRequest) (*Lamina, error)
-	// Apply applies a patch document to an existing Lamina
-	Apply(context.Context, *LaminaApplyRequest) (*Lamina, error)
 	// Erase deletes a Lamina
 	Erase(context.Context, *LaminaRef) (*LaminaEraseResponse, error)
 	// List reads Laminas a page at a time.
 	List(context.Context, *LaminaListRequest) (*LaminaListResponse, error)
 	// Watch the Laminas this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*LaminaWatchRequest, grpc.ServerStreamingServer[LaminaWatchResponse]) error
 	// One allocation for one segment of one source. Idempotent per
 	// (source, expected date_started): asking twice answers the same lamina.
@@ -350,9 +351,6 @@ func (UnimplementedLaminaServiceServer) Get(context.Context, *LaminaGetRequest) 
 }
 func (UnimplementedLaminaServiceServer) Patch(context.Context, *LaminaPatchRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedLaminaServiceServer) Apply(context.Context, *LaminaApplyRequest) (*Lamina, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedLaminaServiceServer) Erase(context.Context, *LaminaRef) (*LaminaEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -461,24 +459,6 @@ func _LaminaService_Patch_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LaminaServiceServer).Patch(ctx, req.(*LaminaPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LaminaService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LaminaApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LaminaServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LaminaService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LaminaServiceServer).Apply(ctx, req.(*LaminaApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -712,10 +692,6 @@ var LaminaService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LaminaService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _LaminaService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _LaminaService_Erase_Handler,
 		},
@@ -774,7 +750,6 @@ const (
 	AttemptService_Add_FullMethodName   = "/shale.AttemptService/Add"
 	AttemptService_Get_FullMethodName   = "/shale.AttemptService/Get"
 	AttemptService_Patch_FullMethodName = "/shale.AttemptService/Patch"
-	AttemptService_Apply_FullMethodName = "/shale.AttemptService/Apply"
 	AttemptService_Erase_FullMethodName = "/shale.AttemptService/Erase"
 	AttemptService_List_FullMethodName  = "/shale.AttemptService/List"
 )
@@ -789,8 +764,6 @@ type AttemptServiceClient interface {
 	Get(ctx context.Context, in *AttemptGetRequest, opts ...grpc.CallOption) (*Attempt, error)
 	// Patch updates an existing Attempt
 	Patch(ctx context.Context, in *AttemptPatchRequest, opts ...grpc.CallOption) (*Attempt, error)
-	// Apply applies a patch document to an existing Attempt
-	Apply(ctx context.Context, in *AttemptApplyRequest, opts ...grpc.CallOption) (*Attempt, error)
 	// Erase deletes a Attempt
 	Erase(ctx context.Context, in *AttemptRef, opts ...grpc.CallOption) (*AttemptEraseResponse, error)
 	// List reads Attempts a page at a time.
@@ -835,16 +808,6 @@ func (c *attemptServiceClient) Patch(ctx context.Context, in *AttemptPatchReques
 	return out, nil
 }
 
-func (c *attemptServiceClient) Apply(ctx context.Context, in *AttemptApplyRequest, opts ...grpc.CallOption) (*Attempt, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Attempt)
-	err := c.cc.Invoke(ctx, AttemptService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *attemptServiceClient) Erase(ctx context.Context, in *AttemptRef, opts ...grpc.CallOption) (*AttemptEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AttemptEraseResponse)
@@ -875,8 +838,6 @@ type AttemptServiceServer interface {
 	Get(context.Context, *AttemptGetRequest) (*Attempt, error)
 	// Patch updates an existing Attempt
 	Patch(context.Context, *AttemptPatchRequest) (*Attempt, error)
-	// Apply applies a patch document to an existing Attempt
-	Apply(context.Context, *AttemptApplyRequest) (*Attempt, error)
 	// Erase deletes a Attempt
 	Erase(context.Context, *AttemptRef) (*AttemptEraseResponse, error)
 	// List reads Attempts a page at a time.
@@ -899,9 +860,6 @@ func (UnimplementedAttemptServiceServer) Get(context.Context, *AttemptGetRequest
 }
 func (UnimplementedAttemptServiceServer) Patch(context.Context, *AttemptPatchRequest) (*Attempt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedAttemptServiceServer) Apply(context.Context, *AttemptApplyRequest) (*Attempt, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedAttemptServiceServer) Erase(context.Context, *AttemptRef) (*AttemptEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -984,24 +942,6 @@ func _AttemptService_Patch_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AttemptService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AttemptApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AttemptServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AttemptService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AttemptServiceServer).Apply(ctx, req.(*AttemptApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AttemptService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AttemptRef)
 	if err := dec(in); err != nil {
@@ -1056,10 +996,6 @@ var AttemptService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _AttemptService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _AttemptService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

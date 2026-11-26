@@ -27,6 +27,10 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldEvent holds the string denoting the event field in the database.
 	FieldEvent = "event"
+	// FieldRoutes holds the string denoting the routes field in the database.
+	FieldRoutes = "routes"
+	// FieldSignal holds the string denoting the signal field in the database.
+	FieldSignal = "signal"
 	// Table holds the table name of the outbox in the database.
 	Table = "outbox"
 )
@@ -42,6 +46,8 @@ var Columns = []string{
 	FieldPatch,
 	FieldDateCreated,
 	FieldEvent,
+	FieldRoutes,
+	FieldSignal,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

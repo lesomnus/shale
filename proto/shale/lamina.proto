@@ -96,7 +96,7 @@ message Lamina {
   Satellite satellite = 31 [(orm.edge) = {nullable: true}];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"
@@ -210,7 +210,7 @@ message Attempt {
   int32 rank = 18;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {add: {}, get: {}, patch: {}, erase: {}}
     indexes: [
       {
         name: "page"

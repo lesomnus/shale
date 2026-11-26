@@ -239,3 +239,12 @@ func TestCredentialScopeIsOpenedAfterBeginBeforeEveryAcquire(t *testing.T) {
 	require.Equal(t, []string{"begin", "scope", "acquire", "begin", "scope", "acquire"}, auth.events)
 	require.Len(t, auth.seen, 2)
 }
+
+// A CP answers a failure that carried no status as Internal, where it once
+// answered Unknown (payday's grpcx): the producer waits it out as it did.
+func TestProviderErrorReadsInternalAsUnknownWas(t *testing.T) {
+	for _, code := range []codes.Code{codes.Unknown, codes.Internal} {
+		require.ErrorIs(t, providerError(status.Error(code, "the server failed to answer this; it is on its log")), catalog.ErrUnavailable, code.String())
+	}
+	require.Equal(t, codes.PermissionDenied, status.Code(providerError(status.Error(codes.PermissionDenied, "no"))))
+}

@@ -10,10 +10,8 @@ import (
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
 	device "github.com/lesomnus/shale/internal/ent/device"
-	node "github.com/lesomnus/shale/internal/ent/node"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	sink "github.com/lesomnus/shale/internal/ent/sink"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -38,11 +36,14 @@ type DeviceServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewDeviceServiceServer(db *ent.Client, opts ...Option) api.DeviceServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return DeviceServiceServer{Store: s.Store}
 }
@@ -185,7 +186,10 @@ func (st DeviceServiceServer) create(ctx context.Context, req *api.DeviceAddRequ
 }
 
 func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest) (*api.Device, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +204,7 @@ func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest)
 	}
 
 	var stored *ent.Device
-	if snapshotOptions(s.Rec, api.DeviceService_Add_FullMethodName).Value {
+	if s.images(api.DeviceService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -226,10 +230,11 @@ func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest)
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.DeviceService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Device",
+		By:     api.DeviceService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -283,7 +288,9 @@ func (s DeviceServiceServer) Get(ctx context.Context, req *api.DeviceGetRequest)
 	}
 
 	q := s.Db.Device.Query().Where(p)
-	DeviceSelectInit(q, req.GetSelect())
+	if err := DeviceSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -366,26 +373,46 @@ func DeviceSelectedFields(m *api.DeviceSelect) []string {
 	return vs
 }
 
-func DeviceSelect(q *ent.DeviceQuery, m *api.DeviceSelect) {
+// DeviceSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func DeviceSelect(ctx context.Context, scope Scope, q *ent.DeviceQuery, m *api.DeviceSelect) error {
 	if !m.GetAll() {
 		fields := DeviceSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasNode() {
+		p, err := NodeNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithNode(func(q *ent.NodeQuery) {
-			q.Where(node.DateErasedIsNil())
-			NodeSelect(q, m.GetNode())
+			if p != nil {
+				q.Where(p)
+			}
+			err = NodeSelect(ctx, scope, q, m.GetNode())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func DeviceSelectInit(q *ent.DeviceQuery, m *api.DeviceSelect) {
+// DeviceSelectInit is [DeviceSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func DeviceSelectInit(ctx context.Context, scope Scope, q *ent.DeviceQuery, m *api.DeviceSelect) error {
 	if m != nil {
-		DeviceSelect(q, m)
+		return DeviceSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s DeviceServiceServer) Patch(ctx context.Context, req *api.DevicePatchRequest) (*api.Device, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(deviceOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 8:
@@ -444,13 +471,6 @@ var deviceOrmEntity = ormpatch.MustEntityOf(api.File_shale_storage_proto, "Devic
 var devicePatchColumns = entpatch.Columns{
 	1: device.FieldId, 4: device.FieldAlias, 5: device.FieldName, 6: device.FieldDesc, 7: device.FieldLabels, 8: device.NodeColumn, 9: device.FieldHardwareId, 10: device.FieldSlot, 11: device.FieldHealth, 12: device.FieldFailureScore, 13: device.FieldDateUpdated, 14: device.FieldDateErased, 15: device.FieldDateCreated, 16: device.FieldDateScored, 17: device.FieldQuarantine, 18: device.FieldSmart, 19: device.FieldCapacity, 20: device.FieldModel, 21: device.FieldReport, 22: device.FieldDateSeen}
 
-func (s DeviceServiceServer) Apply(ctx context.Context, req *api.DeviceApplyRequest) (*api.Device, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.DeviceService_Apply_FullMethodName)
-}
-
 func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc *patchpb.Patch, by string) (*api.Device, error) {
 	plan := &ormpatch.Plan{Entity: deviceOrmEntity}
 	if doc != nil {
@@ -472,7 +492,7 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +513,7 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 	}
 
 	var previous *api.Device
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -562,7 +582,8 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Device",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -576,76 +597,6 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s DeviceServiceServer) Erase(ctx context.Context, req *api.DeviceRef) (*api.DeviceEraseResponse, error) {
-	p, err := DevicePick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.Device
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.DeviceService_Erase_FullMethodName)
-		var v *ent.Device
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.Device.Query().Where(p).Select(device.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.DeviceEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = device.And(p, device.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.Device.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.DeviceService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.DeviceEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // DevicePick answers with the predicate this reference selects on,
@@ -695,11 +646,14 @@ type SinkServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewSinkServiceServer(db *ent.Client, opts ...Option) api.SinkServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return SinkServiceServer{Store: s.Store}
 }
@@ -871,7 +825,10 @@ func (st SinkServiceServer) create(ctx context.Context, req *api.SinkAddRequest)
 }
 
 func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*api.Sink, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -886,7 +843,7 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 	}
 
 	var stored *ent.Sink
-	if snapshotOptions(s.Rec, api.SinkService_Add_FullMethodName).Value {
+	if s.images(api.SinkService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -912,10 +869,11 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.SinkService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Sink",
+		By:     api.SinkService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -969,7 +927,9 @@ func (s SinkServiceServer) Get(ctx context.Context, req *api.SinkGetRequest) (*a
 	}
 
 	q := s.Db.Sink.Query().Where(p)
-	SinkSelectInit(q, req.GetSelect())
+	if err := SinkSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1061,32 +1021,61 @@ func SinkSelectedFields(m *api.SinkSelect) []string {
 	return vs
 }
 
-func SinkSelect(q *ent.SinkQuery, m *api.SinkSelect) {
+// SinkSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SinkSelect(ctx context.Context, scope Scope, q *ent.SinkQuery, m *api.SinkSelect) error {
 	if !m.GetAll() {
 		fields := SinkSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasNode() {
+		p, err := NodeNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithNode(func(q *ent.NodeQuery) {
-			q.Where(node.DateErasedIsNil())
-			NodeSelect(q, m.GetNode())
+			if p != nil {
+				q.Where(p)
+			}
+			err = NodeSelect(ctx, scope, q, m.GetNode())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasDevice() {
+		p, err := DeviceNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithDevice(func(q *ent.DeviceQuery) {
-			q.Where(device.DateErasedIsNil())
-			DeviceSelect(q, m.GetDevice())
+			if p != nil {
+				q.Where(p)
+			}
+			err = DeviceSelect(ctx, scope, q, m.GetDevice())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func SinkSelectInit(q *ent.SinkQuery, m *api.SinkSelect) {
+// SinkSelectInit is [SinkSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SinkSelectInit(ctx context.Context, scope Scope, q *ent.SinkQuery, m *api.SinkSelect) error {
 	if m != nil {
-		SinkSelect(q, m)
+		return SinkSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s SinkServiceServer) Patch(ctx context.Context, req *api.SinkPatchRequest) (*api.Sink, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(sinkOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 8:
@@ -1145,13 +1134,6 @@ var sinkOrmEntity = ormpatch.MustEntityOf(api.File_shale_storage_proto, "Sink")
 var sinkPatchColumns = entpatch.Columns{
 	1: sink.FieldId, 4: sink.FieldAlias, 5: sink.FieldName, 6: sink.FieldDesc, 7: sink.FieldLabels, 8: sink.NodeColumn, 9: sink.DeviceColumn, 10: sink.FieldPath, 11: sink.FieldCapacity, 12: sink.FieldFree, 13: sink.FieldDateUpdated, 14: sink.FieldDateErased, 15: sink.FieldDateCreated, 16: sink.FieldPressure, 17: sink.FieldCapabilities, 18: sink.FieldAttachment, 19: sink.FieldAcceptWrites, 20: sink.FieldDateSeen, 21: sink.FieldUploadsInFlight, 22: sink.FieldDateReconciled, 23: sink.FieldReportedBy, 24: sink.FieldWarnings, 25: sink.FieldCapacityClamped, 26: sink.FieldLaminae}
 
-func (s SinkServiceServer) Apply(ctx context.Context, req *api.SinkApplyRequest) (*api.Sink, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.SinkService_Apply_FullMethodName)
-}
-
 func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *patchpb.Patch, by string) (*api.Sink, error) {
 	plan := &ormpatch.Plan{Entity: sinkOrmEntity}
 	if doc != nil {
@@ -1173,7 +1155,7 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1194,7 +1176,7 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 	}
 
 	var previous *api.Sink
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1263,7 +1245,8 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Sink",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1277,76 +1260,6 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s SinkServiceServer) Erase(ctx context.Context, req *api.SinkRef) (*api.SinkEraseResponse, error) {
-	p, err := SinkPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.Sink
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.SinkService_Erase_FullMethodName)
-		var v *ent.Sink
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.Sink.Query().Where(p).Select(sink.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.SinkEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = sink.And(p, sink.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.Sink.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.SinkService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.SinkEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // SinkPick answers with the predicate this reference selects on,

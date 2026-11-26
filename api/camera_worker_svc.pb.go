@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -2498,99 +2498,6 @@ func (b0 CameraWorkerPatchRequest_builder) Build() *CameraWorkerPatchRequest {
 	return m0
 }
 
-type CameraWorkerApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraWorkerRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraWorkerApplyRequest) Reset() {
-	*x = CameraWorkerApplyRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraWorkerApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraWorkerApplyRequest) ProtoMessage() {}
-
-func (x *CameraWorkerApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraWorkerApplyRequest) GetRef() *CameraWorkerRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraWorkerApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraWorkerApplyRequest) SetRef(v *CameraWorkerRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraWorkerApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraWorkerApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraWorkerApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraWorkerApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraWorkerApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraWorkerApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraWorkerRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraWorkerApplyRequest_builder) Build() *CameraWorkerApplyRequest {
-	m0 := &CameraWorkerApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type CameraWorkerEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -2602,7 +2509,7 @@ type CameraWorkerEraseResponse struct {
 
 func (x *CameraWorkerEraseResponse) Reset() {
 	*x = CameraWorkerEraseResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[7]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2614,7 +2521,7 @@ func (x *CameraWorkerEraseResponse) String() string {
 func (*CameraWorkerEraseResponse) ProtoMessage() {}
 
 func (x *CameraWorkerEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[7]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2677,13 +2584,14 @@ type CameraWorkerListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraWorkerSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraWorkerListRequest) Reset() {
 	*x = CameraWorkerListRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2695,7 +2603,7 @@ func (x *CameraWorkerListRequest) String() string {
 func (*CameraWorkerListRequest) ProtoMessage() {}
 
 func (x *CameraWorkerListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2736,6 +2644,13 @@ func (x *CameraWorkerListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraWorkerListRequest) GetSelect() *CameraWorkerSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraWorkerListRequest) SetFilters(v []*CameraWorkerFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2750,6 +2665,21 @@ func (x *CameraWorkerListRequest) SetAfter(v string) {
 
 func (x *CameraWorkerListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraWorkerListRequest) SetSelect(v *CameraWorkerSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraWorkerListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraWorkerListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraWorkerListRequest_builder struct {
@@ -2772,6 +2702,15 @@ type CameraWorkerListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraWorkerSelect
 }
 
 func (b0 CameraWorkerListRequest_builder) Build() *CameraWorkerListRequest {
@@ -2782,6 +2721,7 @@ func (b0 CameraWorkerListRequest_builder) Build() *CameraWorkerListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2795,7 +2735,7 @@ type CameraWorkerListResponse struct {
 
 func (x *CameraWorkerListResponse) Reset() {
 	*x = CameraWorkerListResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2807,7 +2747,7 @@ func (x *CameraWorkerListResponse) String() string {
 func (*CameraWorkerListResponse) ProtoMessage() {}
 
 func (x *CameraWorkerListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2877,7 +2817,7 @@ type CameraWorkerFilter struct {
 
 func (x *CameraWorkerFilter) Reset() {
 	*x = CameraWorkerFilter{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2889,7 +2829,7 @@ func (x *CameraWorkerFilter) String() string {
 func (*CameraWorkerFilter) ProtoMessage() {}
 
 func (x *CameraWorkerFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3007,7 +2947,7 @@ type CameraWorkerWatchRequest struct {
 
 func (x *CameraWorkerWatchRequest) Reset() {
 	*x = CameraWorkerWatchRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3019,7 +2959,7 @@ func (x *CameraWorkerWatchRequest) String() string {
 func (*CameraWorkerWatchRequest) ProtoMessage() {}
 
 func (x *CameraWorkerWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3057,13 +2997,15 @@ func (x *CameraWorkerWatchRequest) SetSkipSnapshot(v bool) {
 type CameraWorkerWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraWorkerFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -3091,7 +3033,7 @@ type CameraWorkerWatchResponse struct {
 
 func (x *CameraWorkerWatchResponse) Reset() {
 	*x = CameraWorkerWatchResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3103,7 +3045,7 @@ func (x *CameraWorkerWatchResponse) String() string {
 func (*CameraWorkerWatchResponse) ProtoMessage() {}
 
 func (x *CameraWorkerWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3155,7 +3097,7 @@ type CameraWorkerWatchItem struct {
 
 func (x *CameraWorkerWatchItem) Reset() {
 	*x = CameraWorkerWatchItem{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3167,7 +3109,7 @@ func (x *CameraWorkerWatchItem) String() string {
 func (*CameraWorkerWatchItem) ProtoMessage() {}
 
 func (x *CameraWorkerWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3244,7 +3186,7 @@ type CameraWorkerWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -3252,7 +3194,8 @@ type CameraWorkerWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraWorker
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -3286,7 +3229,7 @@ type CameraWorkerJoinRequest struct {
 
 func (x *CameraWorkerJoinRequest) Reset() {
 	*x = CameraWorkerJoinRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3298,7 +3241,7 @@ func (x *CameraWorkerJoinRequest) String() string {
 func (*CameraWorkerJoinRequest) ProtoMessage() {}
 
 func (x *CameraWorkerJoinRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3367,7 +3310,7 @@ type CameraWorkerJoinResponse struct {
 
 func (x *CameraWorkerJoinResponse) Reset() {
 	*x = CameraWorkerJoinResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3379,7 +3322,7 @@ func (x *CameraWorkerJoinResponse) String() string {
 func (*CameraWorkerJoinResponse) ProtoMessage() {}
 
 func (x *CameraWorkerJoinResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3437,7 +3380,7 @@ type CameraWorkerAdoptRequest struct {
 
 func (x *CameraWorkerAdoptRequest) Reset() {
 	*x = CameraWorkerAdoptRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[16]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3449,7 +3392,7 @@ func (x *CameraWorkerAdoptRequest) String() string {
 func (*CameraWorkerAdoptRequest) ProtoMessage() {}
 
 func (x *CameraWorkerAdoptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[16]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3542,7 +3485,7 @@ type CameraWorkerRenewCertificateRequest struct {
 
 func (x *CameraWorkerRenewCertificateRequest) Reset() {
 	*x = CameraWorkerRenewCertificateRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[17]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3554,7 +3497,7 @@ func (x *CameraWorkerRenewCertificateRequest) String() string {
 func (*CameraWorkerRenewCertificateRequest) ProtoMessage() {}
 
 func (x *CameraWorkerRenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[17]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3603,7 +3546,7 @@ type CameraWorkerRenewCertificateResponse struct {
 
 func (x *CameraWorkerRenewCertificateResponse) Reset() {
 	*x = CameraWorkerRenewCertificateResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[18]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3615,7 +3558,7 @@ func (x *CameraWorkerRenewCertificateResponse) String() string {
 func (*CameraWorkerRenewCertificateResponse) ProtoMessage() {}
 
 func (x *CameraWorkerRenewCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[18]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3680,7 +3623,7 @@ type CameraWorkerHeartbeatRequest struct {
 
 func (x *CameraWorkerHeartbeatRequest) Reset() {
 	*x = CameraWorkerHeartbeatRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[19]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3692,7 +3635,7 @@ func (x *CameraWorkerHeartbeatRequest) String() string {
 func (*CameraWorkerHeartbeatRequest) ProtoMessage() {}
 
 func (x *CameraWorkerHeartbeatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[19]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3750,7 +3693,7 @@ type CameraWorkerHeartbeatResponse struct {
 
 func (x *CameraWorkerHeartbeatResponse) Reset() {
 	*x = CameraWorkerHeartbeatResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[20]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3762,7 +3705,7 @@ func (x *CameraWorkerHeartbeatResponse) String() string {
 func (*CameraWorkerHeartbeatResponse) ProtoMessage() {}
 
 func (x *CameraWorkerHeartbeatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[20]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3808,7 +3751,7 @@ type CameraWorkerRevokeRequest struct {
 
 func (x *CameraWorkerRevokeRequest) Reset() {
 	*x = CameraWorkerRevokeRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[21]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3820,7 +3763,7 @@ func (x *CameraWorkerRevokeRequest) String() string {
 func (*CameraWorkerRevokeRequest) ProtoMessage() {}
 
 func (x *CameraWorkerRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[21]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3901,7 +3844,7 @@ type CameraWorkerPollRequest struct {
 
 func (x *CameraWorkerPollRequest) Reset() {
 	*x = CameraWorkerPollRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[22]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3913,7 +3856,7 @@ func (x *CameraWorkerPollRequest) String() string {
 func (*CameraWorkerPollRequest) ProtoMessage() {}
 
 func (x *CameraWorkerPollRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[22]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3973,7 +3916,7 @@ type CameraWorkerPollResponse struct {
 
 func (x *CameraWorkerPollResponse) Reset() {
 	*x = CameraWorkerPollResponse{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[23]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3985,7 +3928,7 @@ func (x *CameraWorkerPollResponse) String() string {
 func (*CameraWorkerPollResponse) ProtoMessage() {}
 
 func (x *CameraWorkerPollResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[23]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4061,7 +4004,7 @@ type CameraWorkerAssignment struct {
 
 func (x *CameraWorkerAssignment) Reset() {
 	*x = CameraWorkerAssignment{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[24]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4073,7 +4016,7 @@ func (x *CameraWorkerAssignment) String() string {
 func (*CameraWorkerAssignment) ProtoMessage() {}
 
 func (x *CameraWorkerAssignment) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[24]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4157,7 +4100,7 @@ type CameraWorkerWork struct {
 
 func (x *CameraWorkerWork) Reset() {
 	*x = CameraWorkerWork{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[25]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4169,7 +4112,7 @@ func (x *CameraWorkerWork) String() string {
 func (*CameraWorkerWork) ProtoMessage() {}
 
 func (x *CameraWorkerWork) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[25]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4323,7 +4266,7 @@ type CameraWorkerCheckJobRequest struct {
 
 func (x *CameraWorkerCheckJobRequest) Reset() {
 	*x = CameraWorkerCheckJobRequest{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[26]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4335,7 +4278,7 @@ func (x *CameraWorkerCheckJobRequest) String() string {
 func (*CameraWorkerCheckJobRequest) ProtoMessage() {}
 
 func (x *CameraWorkerCheckJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[26]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4420,7 +4363,7 @@ type CameraWorkerObservation struct {
 
 func (x *CameraWorkerObservation) Reset() {
 	*x = CameraWorkerObservation{}
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[27]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4432,7 +4375,7 @@ func (x *CameraWorkerObservation) String() string {
 func (*CameraWorkerObservation) ProtoMessage() {}
 
 func (x *CameraWorkerObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[27]
+	mi := &file_shale_camera_worker_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4544,9 +4487,9 @@ var File_shale_camera_worker_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/camera_worker_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x18shale/camera_svc.g.proto\x1a\x19shale/camera_worker.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xf0\a\n" +
-	"\x16CameraWorkerAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x1fshale/camera_worker_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/camera.proto\x1a\x18shale/camera_svc.g.proto\x1a\x19shale/camera_worker.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xf8\a\n" +
+	"\x16CameraWorkerAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -4575,9 +4518,9 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
 	"\x16CameraWorkerGetRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraWorkerRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraWorkerSelectR\x06select\"^\n" +
-	"\x0fCameraWorkerRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x122\n" +
+	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraWorkerSelectR\x06select\"f\n" +
+	"\x0fCameraWorkerRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x122\n" +
 	"\x04slug\x18\x04 \x01(\v2\x1c.shale.CameraWorkerRefBySlugH\x00R\x04slugB\x05\n" +
 	"\x03key\"W\n" +
 	"\x15CameraWorkerRefBySlug\x12\x14\n" +
@@ -4645,17 +4588,15 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\aca_hash\x18. \x01(\tR\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
-	"\x18CameraWorkerApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraWorkerRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"3\n" +
 	"\x19CameraWorkerEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa7\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xda\x01\n" +
 	"\x17CameraWorkerListRequest\x123\n" +
 	"\afilters\x18\x01 \x03(\v2\x19.shale.CameraWorkerFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"`\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x121\n" +
+	"\x06select\x18\x06 \x01(\v2\x19.shale.CameraWorkerSelectR\x06select\"`\n" +
 	"\x18CameraWorkerListResponse\x12)\n" +
 	"\x05items\x18\x01 \x03(\v2\x13.shale.CameraWorkerR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x86\x02\n" +
@@ -4726,12 +4667,11 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\x04work\x18\x01 \x01(\v2\x17.shale.CameraWorkerWorkR\x04work\x12>\n" +
 	"\x0fproducer_status\x18\x02 \x01(\v2\x15.shale.ProducerStatusR\x0eproducerStatus\x12%\n" +
 	"\x04live\x18\x03 \x01(\v2\x11.shale.LiveSourceR\x04live\x124\n" +
-	"\x12recording_complete\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x11recordingComplete2\xd5\b\n" +
+	"\x12recording_complete\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x11recordingComplete2\x96\b\n" +
 	"\x13CameraWorkerService\x129\n" +
 	"\x03Add\x12\x1d.shale.CameraWorkerAddRequest\x1a\x13.shale.CameraWorker\x129\n" +
 	"\x03Get\x12\x1d.shale.CameraWorkerGetRequest\x1a\x13.shale.CameraWorker\x12=\n" +
-	"\x05Patch\x12\x1f.shale.CameraWorkerPatchRequest\x1a\x13.shale.CameraWorker\x12=\n" +
-	"\x05Apply\x12\x1f.shale.CameraWorkerApplyRequest\x1a\x13.shale.CameraWorker\x12A\n" +
+	"\x05Patch\x12\x1f.shale.CameraWorkerPatchRequest\x1a\x13.shale.CameraWorker\x12A\n" +
 	"\x05Erase\x12\x16.shale.CameraWorkerRef\x1a .shale.CameraWorkerEraseResponse\x12G\n" +
 	"\x04List\x12\x1e.shale.CameraWorkerListRequest\x1a\x1f.shale.CameraWorkerListResponse\x12L\n" +
 	"\x05Watch\x12\x1f.shale.CameraWorkerWatchRequest\x1a .shale.CameraWorkerWatchResponse0\x01\x12G\n" +
@@ -4745,7 +4685,7 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"ObserveJob\x12\".shale.CameraWorkerCheckJobRequest\x1a\x1e.shale.CameraWorkerObservationB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_camera_worker_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_shale_camera_worker_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_shale_camera_worker_svc_g_proto_goTypes = []any{
 	(*CameraWorkerAddRequest)(nil),               // 0: shale.CameraWorkerAddRequest
 	(*CameraWorkerGetRequest)(nil),               // 1: shale.CameraWorkerGetRequest
@@ -4753,142 +4693,137 @@ var file_shale_camera_worker_svc_g_proto_goTypes = []any{
 	(*CameraWorkerRefBySlug)(nil),                // 3: shale.CameraWorkerRefBySlug
 	(*CameraWorkerSelect)(nil),                   // 4: shale.CameraWorkerSelect
 	(*CameraWorkerPatchRequest)(nil),             // 5: shale.CameraWorkerPatchRequest
-	(*CameraWorkerApplyRequest)(nil),             // 6: shale.CameraWorkerApplyRequest
-	(*CameraWorkerEraseResponse)(nil),            // 7: shale.CameraWorkerEraseResponse
-	(*CameraWorkerListRequest)(nil),              // 8: shale.CameraWorkerListRequest
-	(*CameraWorkerListResponse)(nil),             // 9: shale.CameraWorkerListResponse
-	(*CameraWorkerFilter)(nil),                   // 10: shale.CameraWorkerFilter
-	(*CameraWorkerWatchRequest)(nil),             // 11: shale.CameraWorkerWatchRequest
-	(*CameraWorkerWatchResponse)(nil),            // 12: shale.CameraWorkerWatchResponse
-	(*CameraWorkerWatchItem)(nil),                // 13: shale.CameraWorkerWatchItem
-	(*CameraWorkerJoinRequest)(nil),              // 14: shale.CameraWorkerJoinRequest
-	(*CameraWorkerJoinResponse)(nil),             // 15: shale.CameraWorkerJoinResponse
-	(*CameraWorkerAdoptRequest)(nil),             // 16: shale.CameraWorkerAdoptRequest
-	(*CameraWorkerRenewCertificateRequest)(nil),  // 17: shale.CameraWorkerRenewCertificateRequest
-	(*CameraWorkerRenewCertificateResponse)(nil), // 18: shale.CameraWorkerRenewCertificateResponse
-	(*CameraWorkerHeartbeatRequest)(nil),         // 19: shale.CameraWorkerHeartbeatRequest
-	(*CameraWorkerHeartbeatResponse)(nil),        // 20: shale.CameraWorkerHeartbeatResponse
-	(*CameraWorkerRevokeRequest)(nil),            // 21: shale.CameraWorkerRevokeRequest
-	(*CameraWorkerPollRequest)(nil),              // 22: shale.CameraWorkerPollRequest
-	(*CameraWorkerPollResponse)(nil),             // 23: shale.CameraWorkerPollResponse
-	(*CameraWorkerAssignment)(nil),               // 24: shale.CameraWorkerAssignment
-	(*CameraWorkerWork)(nil),                     // 25: shale.CameraWorkerWork
-	(*CameraWorkerCheckJobRequest)(nil),          // 26: shale.CameraWorkerCheckJobRequest
-	(*CameraWorkerObservation)(nil),              // 27: shale.CameraWorkerObservation
-	nil,                                          // 28: shale.CameraWorkerAddRequest.LabelsEntry
-	nil,                                          // 29: shale.CameraWorkerPatchRequest.LabelsEntry
-	nil,                                          // 30: shale.CameraWorkerFilter.LabelsEntry
-	(*TenantRef)(nil),                            // 31: shale.TenantRef
-	(*SiteRef)(nil),                              // 32: shale.SiteRef
-	(HostState)(0),                               // 33: shale.HostState
-	(*HostJoin)(nil),                             // 34: shale.HostJoin
-	(*timestamppb.Timestamp)(nil),                // 35: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                         // 36: shale.TenantSelect
-	(*SiteSelect)(nil),                           // 37: shale.SiteSelect
-	(*patchpb.Patch)(nil),                        // 38: patch.Patch
-	(*CameraWorker)(nil),                         // 39: shale.CameraWorker
-	(*JoinAnswer)(nil),                           // 40: shale.JoinAnswer
-	(*CameraAssignment)(nil),                     // 41: shale.CameraAssignment
-	(*CameraNetwork)(nil),                        // 42: shale.CameraNetwork
-	(*CameraJob)(nil),                            // 43: shale.CameraJob
-	(*CameraBinding)(nil),                        // 44: shale.CameraBinding
-	(*CameraDevice)(nil),                         // 45: shale.CameraDevice
-	(*CameraJobRef)(nil),                         // 46: shale.CameraJobRef
-	(*ProducerStatus)(nil),                       // 47: shale.ProducerStatus
-	(*LiveSource)(nil),                           // 48: shale.LiveSource
+	(*CameraWorkerEraseResponse)(nil),            // 6: shale.CameraWorkerEraseResponse
+	(*CameraWorkerListRequest)(nil),              // 7: shale.CameraWorkerListRequest
+	(*CameraWorkerListResponse)(nil),             // 8: shale.CameraWorkerListResponse
+	(*CameraWorkerFilter)(nil),                   // 9: shale.CameraWorkerFilter
+	(*CameraWorkerWatchRequest)(nil),             // 10: shale.CameraWorkerWatchRequest
+	(*CameraWorkerWatchResponse)(nil),            // 11: shale.CameraWorkerWatchResponse
+	(*CameraWorkerWatchItem)(nil),                // 12: shale.CameraWorkerWatchItem
+	(*CameraWorkerJoinRequest)(nil),              // 13: shale.CameraWorkerJoinRequest
+	(*CameraWorkerJoinResponse)(nil),             // 14: shale.CameraWorkerJoinResponse
+	(*CameraWorkerAdoptRequest)(nil),             // 15: shale.CameraWorkerAdoptRequest
+	(*CameraWorkerRenewCertificateRequest)(nil),  // 16: shale.CameraWorkerRenewCertificateRequest
+	(*CameraWorkerRenewCertificateResponse)(nil), // 17: shale.CameraWorkerRenewCertificateResponse
+	(*CameraWorkerHeartbeatRequest)(nil),         // 18: shale.CameraWorkerHeartbeatRequest
+	(*CameraWorkerHeartbeatResponse)(nil),        // 19: shale.CameraWorkerHeartbeatResponse
+	(*CameraWorkerRevokeRequest)(nil),            // 20: shale.CameraWorkerRevokeRequest
+	(*CameraWorkerPollRequest)(nil),              // 21: shale.CameraWorkerPollRequest
+	(*CameraWorkerPollResponse)(nil),             // 22: shale.CameraWorkerPollResponse
+	(*CameraWorkerAssignment)(nil),               // 23: shale.CameraWorkerAssignment
+	(*CameraWorkerWork)(nil),                     // 24: shale.CameraWorkerWork
+	(*CameraWorkerCheckJobRequest)(nil),          // 25: shale.CameraWorkerCheckJobRequest
+	(*CameraWorkerObservation)(nil),              // 26: shale.CameraWorkerObservation
+	nil,                                          // 27: shale.CameraWorkerAddRequest.LabelsEntry
+	nil,                                          // 28: shale.CameraWorkerPatchRequest.LabelsEntry
+	nil,                                          // 29: shale.CameraWorkerFilter.LabelsEntry
+	(*TenantRef)(nil),                            // 30: shale.TenantRef
+	(*SiteRef)(nil),                              // 31: shale.SiteRef
+	(HostState)(0),                               // 32: shale.HostState
+	(*HostJoin)(nil),                             // 33: shale.HostJoin
+	(*timestamppb.Timestamp)(nil),                // 34: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                         // 35: shale.TenantSelect
+	(*SiteSelect)(nil),                           // 36: shale.SiteSelect
+	(*CameraWorker)(nil),                         // 37: shale.CameraWorker
+	(*JoinAnswer)(nil),                           // 38: shale.JoinAnswer
+	(*CameraAssignment)(nil),                     // 39: shale.CameraAssignment
+	(*CameraNetwork)(nil),                        // 40: shale.CameraNetwork
+	(*CameraJob)(nil),                            // 41: shale.CameraJob
+	(*CameraBinding)(nil),                        // 42: shale.CameraBinding
+	(*CameraDevice)(nil),                         // 43: shale.CameraDevice
+	(*CameraJobRef)(nil),                         // 44: shale.CameraJobRef
+	(*ProducerStatus)(nil),                       // 45: shale.ProducerStatus
+	(*LiveSource)(nil),                           // 46: shale.LiveSource
 }
 var file_shale_camera_worker_svc_g_proto_depIdxs = []int32{
-	31, // 0: shale.CameraWorkerAddRequest.tenant:type_name -> shale.TenantRef
-	32, // 1: shale.CameraWorkerAddRequest.site:type_name -> shale.SiteRef
-	28, // 2: shale.CameraWorkerAddRequest.labels:type_name -> shale.CameraWorkerAddRequest.LabelsEntry
-	33, // 3: shale.CameraWorkerAddRequest.state:type_name -> shale.HostState
-	34, // 4: shale.CameraWorkerAddRequest.join:type_name -> shale.HostJoin
-	35, // 5: shale.CameraWorkerAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	35, // 6: shale.CameraWorkerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	35, // 7: shale.CameraWorkerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	35, // 8: shale.CameraWorkerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	35, // 9: shale.CameraWorkerAddRequest.date_cert_issued:type_name -> google.protobuf.Timestamp
+	30, // 0: shale.CameraWorkerAddRequest.tenant:type_name -> shale.TenantRef
+	31, // 1: shale.CameraWorkerAddRequest.site:type_name -> shale.SiteRef
+	27, // 2: shale.CameraWorkerAddRequest.labels:type_name -> shale.CameraWorkerAddRequest.LabelsEntry
+	32, // 3: shale.CameraWorkerAddRequest.state:type_name -> shale.HostState
+	33, // 4: shale.CameraWorkerAddRequest.join:type_name -> shale.HostJoin
+	34, // 5: shale.CameraWorkerAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	34, // 6: shale.CameraWorkerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	34, // 7: shale.CameraWorkerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	34, // 8: shale.CameraWorkerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	34, // 9: shale.CameraWorkerAddRequest.date_cert_issued:type_name -> google.protobuf.Timestamp
 	2,  // 10: shale.CameraWorkerGetRequest.ref:type_name -> shale.CameraWorkerRef
 	4,  // 11: shale.CameraWorkerGetRequest.select:type_name -> shale.CameraWorkerSelect
 	3,  // 12: shale.CameraWorkerRef.slug:type_name -> shale.CameraWorkerRefBySlug
-	31, // 13: shale.CameraWorkerRefBySlug.tenant:type_name -> shale.TenantRef
-	36, // 14: shale.CameraWorkerSelect.tenant:type_name -> shale.TenantSelect
-	37, // 15: shale.CameraWorkerSelect.site:type_name -> shale.SiteSelect
+	30, // 13: shale.CameraWorkerRefBySlug.tenant:type_name -> shale.TenantRef
+	35, // 14: shale.CameraWorkerSelect.tenant:type_name -> shale.TenantSelect
+	36, // 15: shale.CameraWorkerSelect.site:type_name -> shale.SiteSelect
 	2,  // 16: shale.CameraWorkerPatchRequest.ref:type_name -> shale.CameraWorkerRef
-	32, // 17: shale.CameraWorkerPatchRequest.site:type_name -> shale.SiteRef
-	29, // 18: shale.CameraWorkerPatchRequest.labels:type_name -> shale.CameraWorkerPatchRequest.LabelsEntry
-	33, // 19: shale.CameraWorkerPatchRequest.state:type_name -> shale.HostState
-	34, // 20: shale.CameraWorkerPatchRequest.join:type_name -> shale.HostJoin
-	35, // 21: shale.CameraWorkerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	35, // 22: shale.CameraWorkerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	35, // 23: shale.CameraWorkerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	35, // 24: shale.CameraWorkerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	35, // 25: shale.CameraWorkerPatchRequest.date_cert_issued:type_name -> google.protobuf.Timestamp
-	2,  // 26: shale.CameraWorkerApplyRequest.ref:type_name -> shale.CameraWorkerRef
-	38, // 27: shale.CameraWorkerApplyRequest.patch:type_name -> patch.Patch
-	10, // 28: shale.CameraWorkerListRequest.filters:type_name -> shale.CameraWorkerFilter
-	39, // 29: shale.CameraWorkerListResponse.items:type_name -> shale.CameraWorker
-	2,  // 30: shale.CameraWorkerFilter.ref:type_name -> shale.CameraWorkerRef
-	31, // 31: shale.CameraWorkerFilter.tenant:type_name -> shale.TenantRef
-	32, // 32: shale.CameraWorkerFilter.site:type_name -> shale.SiteRef
-	30, // 33: shale.CameraWorkerFilter.labels:type_name -> shale.CameraWorkerFilter.LabelsEntry
-	10, // 34: shale.CameraWorkerWatchRequest.filters:type_name -> shale.CameraWorkerFilter
-	13, // 35: shale.CameraWorkerWatchResponse.items:type_name -> shale.CameraWorkerWatchItem
-	39, // 36: shale.CameraWorkerWatchItem.value:type_name -> shale.CameraWorker
-	34, // 37: shale.CameraWorkerJoinRequest.host:type_name -> shale.HostJoin
-	40, // 38: shale.CameraWorkerJoinResponse.answer:type_name -> shale.JoinAnswer
-	2,  // 39: shale.CameraWorkerAdoptRequest.ref:type_name -> shale.CameraWorkerRef
-	32, // 40: shale.CameraWorkerAdoptRequest.site:type_name -> shale.SiteRef
-	2,  // 41: shale.CameraWorkerRevokeRequest.ref:type_name -> shale.CameraWorkerRef
-	35, // 42: shale.CameraWorkerRevokeRequest.expected_version:type_name -> google.protobuf.Timestamp
-	24, // 43: shale.CameraWorkerPollResponse.assignments:type_name -> shale.CameraWorkerAssignment
-	25, // 44: shale.CameraWorkerPollResponse.jobs:type_name -> shale.CameraWorkerWork
-	41, // 45: shale.CameraWorkerAssignment.assignment:type_name -> shale.CameraAssignment
-	42, // 46: shale.CameraWorkerAssignment.network:type_name -> shale.CameraNetwork
-	43, // 47: shale.CameraWorkerWork.job:type_name -> shale.CameraJob
-	41, // 48: shale.CameraWorkerWork.assignment:type_name -> shale.CameraAssignment
-	42, // 49: shale.CameraWorkerWork.network:type_name -> shale.CameraNetwork
-	44, // 50: shale.CameraWorkerWork.binding:type_name -> shale.CameraBinding
-	45, // 51: shale.CameraWorkerWork.device:type_name -> shale.CameraDevice
-	46, // 52: shale.CameraWorkerCheckJobRequest.ref:type_name -> shale.CameraJobRef
-	25, // 53: shale.CameraWorkerObservation.work:type_name -> shale.CameraWorkerWork
-	47, // 54: shale.CameraWorkerObservation.producer_status:type_name -> shale.ProducerStatus
-	48, // 55: shale.CameraWorkerObservation.live:type_name -> shale.LiveSource
-	0,  // 56: shale.CameraWorkerService.Add:input_type -> shale.CameraWorkerAddRequest
-	1,  // 57: shale.CameraWorkerService.Get:input_type -> shale.CameraWorkerGetRequest
-	5,  // 58: shale.CameraWorkerService.Patch:input_type -> shale.CameraWorkerPatchRequest
-	6,  // 59: shale.CameraWorkerService.Apply:input_type -> shale.CameraWorkerApplyRequest
-	2,  // 60: shale.CameraWorkerService.Erase:input_type -> shale.CameraWorkerRef
-	8,  // 61: shale.CameraWorkerService.List:input_type -> shale.CameraWorkerListRequest
-	11, // 62: shale.CameraWorkerService.Watch:input_type -> shale.CameraWorkerWatchRequest
-	14, // 63: shale.CameraWorkerService.Join:input_type -> shale.CameraWorkerJoinRequest
-	16, // 64: shale.CameraWorkerService.Adopt:input_type -> shale.CameraWorkerAdoptRequest
-	17, // 65: shale.CameraWorkerService.RenewCertificate:input_type -> shale.CameraWorkerRenewCertificateRequest
-	19, // 66: shale.CameraWorkerService.Heartbeat:input_type -> shale.CameraWorkerHeartbeatRequest
-	21, // 67: shale.CameraWorkerService.Revoke:input_type -> shale.CameraWorkerRevokeRequest
-	22, // 68: shale.CameraWorkerService.Poll:input_type -> shale.CameraWorkerPollRequest
-	26, // 69: shale.CameraWorkerService.CheckJob:input_type -> shale.CameraWorkerCheckJobRequest
-	26, // 70: shale.CameraWorkerService.ObserveJob:input_type -> shale.CameraWorkerCheckJobRequest
-	39, // 71: shale.CameraWorkerService.Add:output_type -> shale.CameraWorker
-	39, // 72: shale.CameraWorkerService.Get:output_type -> shale.CameraWorker
-	39, // 73: shale.CameraWorkerService.Patch:output_type -> shale.CameraWorker
-	39, // 74: shale.CameraWorkerService.Apply:output_type -> shale.CameraWorker
-	7,  // 75: shale.CameraWorkerService.Erase:output_type -> shale.CameraWorkerEraseResponse
-	9,  // 76: shale.CameraWorkerService.List:output_type -> shale.CameraWorkerListResponse
-	12, // 77: shale.CameraWorkerService.Watch:output_type -> shale.CameraWorkerWatchResponse
-	15, // 78: shale.CameraWorkerService.Join:output_type -> shale.CameraWorkerJoinResponse
-	39, // 79: shale.CameraWorkerService.Adopt:output_type -> shale.CameraWorker
-	18, // 80: shale.CameraWorkerService.RenewCertificate:output_type -> shale.CameraWorkerRenewCertificateResponse
-	20, // 81: shale.CameraWorkerService.Heartbeat:output_type -> shale.CameraWorkerHeartbeatResponse
-	39, // 82: shale.CameraWorkerService.Revoke:output_type -> shale.CameraWorker
-	23, // 83: shale.CameraWorkerService.Poll:output_type -> shale.CameraWorkerPollResponse
-	25, // 84: shale.CameraWorkerService.CheckJob:output_type -> shale.CameraWorkerWork
-	27, // 85: shale.CameraWorkerService.ObserveJob:output_type -> shale.CameraWorkerObservation
-	71, // [71:86] is the sub-list for method output_type
-	56, // [56:71] is the sub-list for method input_type
-	56, // [56:56] is the sub-list for extension type_name
-	56, // [56:56] is the sub-list for extension extendee
-	0,  // [0:56] is the sub-list for field type_name
+	31, // 17: shale.CameraWorkerPatchRequest.site:type_name -> shale.SiteRef
+	28, // 18: shale.CameraWorkerPatchRequest.labels:type_name -> shale.CameraWorkerPatchRequest.LabelsEntry
+	32, // 19: shale.CameraWorkerPatchRequest.state:type_name -> shale.HostState
+	33, // 20: shale.CameraWorkerPatchRequest.join:type_name -> shale.HostJoin
+	34, // 21: shale.CameraWorkerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	34, // 22: shale.CameraWorkerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	34, // 23: shale.CameraWorkerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	34, // 24: shale.CameraWorkerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	34, // 25: shale.CameraWorkerPatchRequest.date_cert_issued:type_name -> google.protobuf.Timestamp
+	9,  // 26: shale.CameraWorkerListRequest.filters:type_name -> shale.CameraWorkerFilter
+	4,  // 27: shale.CameraWorkerListRequest.select:type_name -> shale.CameraWorkerSelect
+	37, // 28: shale.CameraWorkerListResponse.items:type_name -> shale.CameraWorker
+	2,  // 29: shale.CameraWorkerFilter.ref:type_name -> shale.CameraWorkerRef
+	30, // 30: shale.CameraWorkerFilter.tenant:type_name -> shale.TenantRef
+	31, // 31: shale.CameraWorkerFilter.site:type_name -> shale.SiteRef
+	29, // 32: shale.CameraWorkerFilter.labels:type_name -> shale.CameraWorkerFilter.LabelsEntry
+	9,  // 33: shale.CameraWorkerWatchRequest.filters:type_name -> shale.CameraWorkerFilter
+	12, // 34: shale.CameraWorkerWatchResponse.items:type_name -> shale.CameraWorkerWatchItem
+	37, // 35: shale.CameraWorkerWatchItem.value:type_name -> shale.CameraWorker
+	33, // 36: shale.CameraWorkerJoinRequest.host:type_name -> shale.HostJoin
+	38, // 37: shale.CameraWorkerJoinResponse.answer:type_name -> shale.JoinAnswer
+	2,  // 38: shale.CameraWorkerAdoptRequest.ref:type_name -> shale.CameraWorkerRef
+	31, // 39: shale.CameraWorkerAdoptRequest.site:type_name -> shale.SiteRef
+	2,  // 40: shale.CameraWorkerRevokeRequest.ref:type_name -> shale.CameraWorkerRef
+	34, // 41: shale.CameraWorkerRevokeRequest.expected_version:type_name -> google.protobuf.Timestamp
+	23, // 42: shale.CameraWorkerPollResponse.assignments:type_name -> shale.CameraWorkerAssignment
+	24, // 43: shale.CameraWorkerPollResponse.jobs:type_name -> shale.CameraWorkerWork
+	39, // 44: shale.CameraWorkerAssignment.assignment:type_name -> shale.CameraAssignment
+	40, // 45: shale.CameraWorkerAssignment.network:type_name -> shale.CameraNetwork
+	41, // 46: shale.CameraWorkerWork.job:type_name -> shale.CameraJob
+	39, // 47: shale.CameraWorkerWork.assignment:type_name -> shale.CameraAssignment
+	40, // 48: shale.CameraWorkerWork.network:type_name -> shale.CameraNetwork
+	42, // 49: shale.CameraWorkerWork.binding:type_name -> shale.CameraBinding
+	43, // 50: shale.CameraWorkerWork.device:type_name -> shale.CameraDevice
+	44, // 51: shale.CameraWorkerCheckJobRequest.ref:type_name -> shale.CameraJobRef
+	24, // 52: shale.CameraWorkerObservation.work:type_name -> shale.CameraWorkerWork
+	45, // 53: shale.CameraWorkerObservation.producer_status:type_name -> shale.ProducerStatus
+	46, // 54: shale.CameraWorkerObservation.live:type_name -> shale.LiveSource
+	0,  // 55: shale.CameraWorkerService.Add:input_type -> shale.CameraWorkerAddRequest
+	1,  // 56: shale.CameraWorkerService.Get:input_type -> shale.CameraWorkerGetRequest
+	5,  // 57: shale.CameraWorkerService.Patch:input_type -> shale.CameraWorkerPatchRequest
+	2,  // 58: shale.CameraWorkerService.Erase:input_type -> shale.CameraWorkerRef
+	7,  // 59: shale.CameraWorkerService.List:input_type -> shale.CameraWorkerListRequest
+	10, // 60: shale.CameraWorkerService.Watch:input_type -> shale.CameraWorkerWatchRequest
+	13, // 61: shale.CameraWorkerService.Join:input_type -> shale.CameraWorkerJoinRequest
+	15, // 62: shale.CameraWorkerService.Adopt:input_type -> shale.CameraWorkerAdoptRequest
+	16, // 63: shale.CameraWorkerService.RenewCertificate:input_type -> shale.CameraWorkerRenewCertificateRequest
+	18, // 64: shale.CameraWorkerService.Heartbeat:input_type -> shale.CameraWorkerHeartbeatRequest
+	20, // 65: shale.CameraWorkerService.Revoke:input_type -> shale.CameraWorkerRevokeRequest
+	21, // 66: shale.CameraWorkerService.Poll:input_type -> shale.CameraWorkerPollRequest
+	25, // 67: shale.CameraWorkerService.CheckJob:input_type -> shale.CameraWorkerCheckJobRequest
+	25, // 68: shale.CameraWorkerService.ObserveJob:input_type -> shale.CameraWorkerCheckJobRequest
+	37, // 69: shale.CameraWorkerService.Add:output_type -> shale.CameraWorker
+	37, // 70: shale.CameraWorkerService.Get:output_type -> shale.CameraWorker
+	37, // 71: shale.CameraWorkerService.Patch:output_type -> shale.CameraWorker
+	6,  // 72: shale.CameraWorkerService.Erase:output_type -> shale.CameraWorkerEraseResponse
+	8,  // 73: shale.CameraWorkerService.List:output_type -> shale.CameraWorkerListResponse
+	11, // 74: shale.CameraWorkerService.Watch:output_type -> shale.CameraWorkerWatchResponse
+	14, // 75: shale.CameraWorkerService.Join:output_type -> shale.CameraWorkerJoinResponse
+	37, // 76: shale.CameraWorkerService.Adopt:output_type -> shale.CameraWorker
+	17, // 77: shale.CameraWorkerService.RenewCertificate:output_type -> shale.CameraWorkerRenewCertificateResponse
+	19, // 78: shale.CameraWorkerService.Heartbeat:output_type -> shale.CameraWorkerHeartbeatResponse
+	37, // 79: shale.CameraWorkerService.Revoke:output_type -> shale.CameraWorker
+	22, // 80: shale.CameraWorkerService.Poll:output_type -> shale.CameraWorkerPollResponse
+	24, // 81: shale.CameraWorkerService.CheckJob:output_type -> shale.CameraWorkerWork
+	26, // 82: shale.CameraWorkerService.ObserveJob:output_type -> shale.CameraWorkerObservation
+	69, // [69:83] is the sub-list for method output_type
+	55, // [55:69] is the sub-list for method input_type
+	55, // [55:55] is the sub-list for extension type_name
+	55, // [55:55] is the sub-list for extension extendee
+	0,  // [0:55] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_worker_svc_g_proto_init() }
@@ -4915,7 +4850,7 @@ func file_shale_camera_worker_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_worker_svc_g_proto_rawDesc), len(file_shale_camera_worker_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -14,7 +14,6 @@ import (
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	signingkey "github.com/lesomnus/shale/internal/ent/signingkey"
 	uploadpolicy "github.com/lesomnus/shale/internal/ent/uploadpolicy"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -37,11 +36,14 @@ type SigningKeyServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewSigningKeyServiceServer(db *ent.Client, opts ...Option) api.SigningKeyServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return SigningKeyServiceServer{Store: s.Store}
 }
@@ -155,7 +157,10 @@ func (st SigningKeyServiceServer) create(ctx context.Context, req *api.SigningKe
 }
 
 func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAddRequest) (*api.SigningKey, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +175,7 @@ func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAdd
 	}
 
 	var stored *ent.SigningKey
-	if snapshotOptions(s.Rec, api.SigningKeyService_Add_FullMethodName).Value {
+	if s.images(api.SigningKeyService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -196,10 +201,11 @@ func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAdd
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.SigningKeyService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.SigningKey",
+		By:     api.SigningKeyService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -253,7 +259,9 @@ func (s SigningKeyServiceServer) Get(ctx context.Context, req *api.SigningKeyGet
 	}
 
 	q := s.Db.SigningKey.Query().Where(p)
-	SigningKeySelectInit(q, req.GetSelect())
+	if err := SigningKeySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -318,20 +326,31 @@ func SigningKeySelectedFields(m *api.SigningKeySelect) []string {
 	return vs
 }
 
-func SigningKeySelect(q *ent.SigningKeyQuery, m *api.SigningKeySelect) {
+// SigningKeySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SigningKeySelect(ctx context.Context, scope Scope, q *ent.SigningKeyQuery, m *api.SigningKeySelect) error {
 	if !m.GetAll() {
 		fields := SigningKeySelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func SigningKeySelectInit(q *ent.SigningKeyQuery, m *api.SigningKeySelect) {
+// SigningKeySelectInit is [SigningKeySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SigningKeySelectInit(ctx context.Context, scope Scope, q *ent.SigningKeyQuery, m *api.SigningKeySelect) error {
 	if m != nil {
-		SigningKeySelect(q, m)
+		return SigningKeySelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s SigningKeyServiceServer) Patch(ctx context.Context, req *api.SigningKeyPatchRequest) (*api.SigningKey, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(signingKeyOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -380,13 +399,6 @@ var signingKeyOrmEntity = ormpatch.MustEntityOf(api.File_shale_policy_proto, "Si
 var signingKeyPatchColumns = entpatch.Columns{
 	1: signingkey.FieldId, 4: signingkey.FieldAlias, 5: signingkey.FieldName, 6: signingkey.FieldDesc, 7: signingkey.FieldLabels, 8: signingkey.FieldPublicKey, 9: signingkey.FieldPrivateKey, 10: signingkey.FieldState, 13: signingkey.FieldDateUpdated, 14: signingkey.FieldDateErased, 15: signingkey.FieldDateCreated, 16: signingkey.FieldDateSigning, 17: signingkey.FieldDateRetired}
 
-func (s SigningKeyServiceServer) Apply(ctx context.Context, req *api.SigningKeyApplyRequest) (*api.SigningKey, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.SigningKeyService_Apply_FullMethodName)
-}
-
 func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyRef, doc *patchpb.Patch, by string) (*api.SigningKey, error) {
 	plan := &ormpatch.Plan{Entity: signingKeyOrmEntity}
 	if doc != nil {
@@ -408,7 +420,7 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +441,7 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 	}
 
 	var previous *api.SigningKey
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -498,7 +510,8 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.SigningKey",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -512,76 +525,6 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s SigningKeyServiceServer) Erase(ctx context.Context, req *api.SigningKeyRef) (*api.SigningKeyEraseResponse, error) {
-	p, err := SigningKeyPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.SigningKey
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.SigningKeyService_Erase_FullMethodName)
-		var v *ent.SigningKey
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.SigningKey.Query().Where(p).Select(signingkey.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.SigningKeyEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = signingkey.And(p, signingkey.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.SigningKey.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.SigningKeyService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.SigningKeyEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // SigningKeyPick answers with the predicate this reference selects on,
@@ -629,11 +572,14 @@ type PlacementPolicyServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewPlacementPolicyServiceServer(db *ent.Client, opts ...Option) api.PlacementPolicyServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return PlacementPolicyServiceServer{Store: s.Store}
 }
@@ -738,7 +684,10 @@ func (st PlacementPolicyServiceServer) create(ctx context.Context, req *api.Plac
 }
 
 func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.PlacementPolicyAddRequest) (*api.PlacementPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +702,7 @@ func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.Placemen
 	}
 
 	var stored *ent.PlacementPolicy
-	if snapshotOptions(s.Rec, api.PlacementPolicyService_Add_FullMethodName).Value {
+	if s.images(api.PlacementPolicyService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -779,10 +728,11 @@ func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.Placemen
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.PlacementPolicyService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.PlacementPolicy",
+		By:     api.PlacementPolicyService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -836,7 +786,9 @@ func (s PlacementPolicyServiceServer) Get(ctx context.Context, req *api.Placemen
 	}
 
 	q := s.Db.PlacementPolicy.Query().Where(p)
-	PlacementPolicySelectInit(q, req.GetSelect())
+	if err := PlacementPolicySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -898,20 +850,31 @@ func PlacementPolicySelectedFields(m *api.PlacementPolicySelect) []string {
 	return vs
 }
 
-func PlacementPolicySelect(q *ent.PlacementPolicyQuery, m *api.PlacementPolicySelect) {
+// PlacementPolicySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func PlacementPolicySelect(ctx context.Context, scope Scope, q *ent.PlacementPolicyQuery, m *api.PlacementPolicySelect) error {
 	if !m.GetAll() {
 		fields := PlacementPolicySelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func PlacementPolicySelectInit(q *ent.PlacementPolicyQuery, m *api.PlacementPolicySelect) {
+// PlacementPolicySelectInit is [PlacementPolicySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func PlacementPolicySelectInit(ctx context.Context, scope Scope, q *ent.PlacementPolicyQuery, m *api.PlacementPolicySelect) error {
 	if m != nil {
-		PlacementPolicySelect(q, m)
+		return PlacementPolicySelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s PlacementPolicyServiceServer) Patch(ctx context.Context, req *api.PlacementPolicyPatchRequest) (*api.PlacementPolicy, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(placementPolicyOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -960,13 +923,6 @@ var placementPolicyOrmEntity = ormpatch.MustEntityOf(api.File_shale_policy_proto
 var placementPolicyPatchColumns = entpatch.Columns{
 	1: placementpolicy.FieldId, 4: placementpolicy.FieldAlias, 5: placementpolicy.FieldName, 6: placementpolicy.FieldDesc, 7: placementpolicy.FieldLabels, 8: placementpolicy.FieldVersion, 9: placementpolicy.FieldParams, 10: placementpolicy.FieldActive, 13: placementpolicy.FieldDateUpdated, 14: placementpolicy.FieldDateErased, 15: placementpolicy.FieldDateCreated, 16: placementpolicy.FieldDateActivated}
 
-func (s PlacementPolicyServiceServer) Apply(ctx context.Context, req *api.PlacementPolicyApplyRequest) (*api.PlacementPolicy, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.PlacementPolicyService_Apply_FullMethodName)
-}
-
 func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.PlacementPolicyRef, doc *patchpb.Patch, by string) (*api.PlacementPolicy, error) {
 	plan := &ormpatch.Plan{Entity: placementPolicyOrmEntity}
 	if doc != nil {
@@ -988,7 +944,7 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1009,7 +965,7 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 	}
 
 	var previous *api.PlacementPolicy
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1078,7 +1034,8 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.PlacementPolicy",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1092,76 +1049,6 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s PlacementPolicyServiceServer) Erase(ctx context.Context, req *api.PlacementPolicyRef) (*api.PlacementPolicyEraseResponse, error) {
-	p, err := PlacementPolicyPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.PlacementPolicy
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.PlacementPolicyService_Erase_FullMethodName)
-		var v *ent.PlacementPolicy
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.PlacementPolicy.Query().Where(p).Select(placementpolicy.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.PlacementPolicyEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = placementpolicy.And(p, placementpolicy.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.PlacementPolicy.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.PlacementPolicyService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.PlacementPolicyEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // PlacementPolicyPick answers with the predicate this reference selects on,
@@ -1211,11 +1098,14 @@ type UploadPolicyServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewUploadPolicyServiceServer(db *ent.Client, opts ...Option) api.UploadPolicyServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return UploadPolicyServiceServer{Store: s.Store}
 }
@@ -1320,7 +1210,10 @@ func (st UploadPolicyServiceServer) create(ctx context.Context, req *api.UploadP
 }
 
 func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolicyAddRequest) (*api.UploadPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1335,7 +1228,7 @@ func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolic
 	}
 
 	var stored *ent.UploadPolicy
-	if snapshotOptions(s.Rec, api.UploadPolicyService_Add_FullMethodName).Value {
+	if s.images(api.UploadPolicyService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1361,10 +1254,11 @@ func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolic
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.UploadPolicyService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.UploadPolicy",
+		By:     api.UploadPolicyService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1418,7 +1312,9 @@ func (s UploadPolicyServiceServer) Get(ctx context.Context, req *api.UploadPolic
 	}
 
 	q := s.Db.UploadPolicy.Query().Where(p)
-	UploadPolicySelectInit(q, req.GetSelect())
+	if err := UploadPolicySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1480,20 +1376,31 @@ func UploadPolicySelectedFields(m *api.UploadPolicySelect) []string {
 	return vs
 }
 
-func UploadPolicySelect(q *ent.UploadPolicyQuery, m *api.UploadPolicySelect) {
+// UploadPolicySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func UploadPolicySelect(ctx context.Context, scope Scope, q *ent.UploadPolicyQuery, m *api.UploadPolicySelect) error {
 	if !m.GetAll() {
 		fields := UploadPolicySelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func UploadPolicySelectInit(q *ent.UploadPolicyQuery, m *api.UploadPolicySelect) {
+// UploadPolicySelectInit is [UploadPolicySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func UploadPolicySelectInit(ctx context.Context, scope Scope, q *ent.UploadPolicyQuery, m *api.UploadPolicySelect) error {
 	if m != nil {
-		UploadPolicySelect(q, m)
+		return UploadPolicySelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s UploadPolicyServiceServer) Patch(ctx context.Context, req *api.UploadPolicyPatchRequest) (*api.UploadPolicy, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(uploadPolicyOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1542,13 +1449,6 @@ var uploadPolicyOrmEntity = ormpatch.MustEntityOf(api.File_shale_policy_proto, "
 var uploadPolicyPatchColumns = entpatch.Columns{
 	1: uploadpolicy.FieldId, 4: uploadpolicy.FieldAlias, 5: uploadpolicy.FieldName, 6: uploadpolicy.FieldDesc, 7: uploadpolicy.FieldLabels, 8: uploadpolicy.FieldVersion, 9: uploadpolicy.FieldBounds, 10: uploadpolicy.FieldActive, 13: uploadpolicy.FieldDateUpdated, 14: uploadpolicy.FieldDateErased, 15: uploadpolicy.FieldDateCreated, 16: uploadpolicy.FieldDateActivated}
 
-func (s UploadPolicyServiceServer) Apply(ctx context.Context, req *api.UploadPolicyApplyRequest) (*api.UploadPolicy, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.UploadPolicyService_Apply_FullMethodName)
-}
-
 func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPolicyRef, doc *patchpb.Patch, by string) (*api.UploadPolicy, error) {
 	plan := &ormpatch.Plan{Entity: uploadPolicyOrmEntity}
 	if doc != nil {
@@ -1570,7 +1470,7 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1591,7 +1491,7 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 	}
 
 	var previous *api.UploadPolicy
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1660,7 +1560,8 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.UploadPolicy",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1674,76 +1575,6 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s UploadPolicyServiceServer) Erase(ctx context.Context, req *api.UploadPolicyRef) (*api.UploadPolicyEraseResponse, error) {
-	p, err := UploadPolicyPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.UploadPolicy
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.UploadPolicyService_Erase_FullMethodName)
-		var v *ent.UploadPolicy
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.UploadPolicy.Query().Where(p).Select(uploadpolicy.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.UploadPolicyEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = uploadpolicy.And(p, uploadpolicy.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.UploadPolicy.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.UploadPolicyService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.UploadPolicyEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // UploadPolicyPick answers with the predicate this reference selects on,
@@ -1793,11 +1624,14 @@ type AddressPolicyServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewAddressPolicyServiceServer(db *ent.Client, opts ...Option) api.AddressPolicyServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return AddressPolicyServiceServer{Store: s.Store}
 }
@@ -1910,7 +1744,10 @@ func (st AddressPolicyServiceServer) create(ctx context.Context, req *api.Addres
 }
 
 func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1925,7 +1762,7 @@ func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPol
 	}
 
 	var stored *ent.AddressPolicy
-	if snapshotOptions(s.Rec, api.AddressPolicyService_Add_FullMethodName).Value {
+	if s.images(api.AddressPolicyService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1951,10 +1788,11 @@ func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPol
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.AddressPolicyService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.AddressPolicy",
+		By:     api.AddressPolicyService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -2008,7 +1846,9 @@ func (s AddressPolicyServiceServer) Get(ctx context.Context, req *api.AddressPol
 	}
 
 	q := s.Db.AddressPolicy.Query().Where(p)
-	AddressPolicySelectInit(q, req.GetSelect())
+	if err := AddressPolicySelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -2076,20 +1916,31 @@ func AddressPolicySelectedFields(m *api.AddressPolicySelect) []string {
 	return vs
 }
 
-func AddressPolicySelect(q *ent.AddressPolicyQuery, m *api.AddressPolicySelect) {
+// AddressPolicySelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func AddressPolicySelect(ctx context.Context, scope Scope, q *ent.AddressPolicyQuery, m *api.AddressPolicySelect) error {
 	if !m.GetAll() {
 		fields := AddressPolicySelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func AddressPolicySelectInit(q *ent.AddressPolicyQuery, m *api.AddressPolicySelect) {
+// AddressPolicySelectInit is [AddressPolicySelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func AddressPolicySelectInit(ctx context.Context, scope Scope, q *ent.AddressPolicyQuery, m *api.AddressPolicySelect) error {
 	if m != nil {
-		AddressPolicySelect(q, m)
+		return AddressPolicySelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s AddressPolicyServiceServer) Patch(ctx context.Context, req *api.AddressPolicyPatchRequest) (*api.AddressPolicy, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(addressPolicyOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -2138,13 +1989,6 @@ var addressPolicyOrmEntity = ormpatch.MustEntityOf(api.File_shale_policy_proto, 
 var addressPolicyPatchColumns = entpatch.Columns{
 	1: addresspolicy.FieldId, 4: addresspolicy.FieldAlias, 5: addresspolicy.FieldName, 6: addresspolicy.FieldDesc, 7: addresspolicy.FieldLabels, 8: addresspolicy.FieldVersion, 9: addresspolicy.FieldParams, 10: addresspolicy.FieldActive, 11: addresspolicy.FieldDnsTsigSecret, 13: addresspolicy.FieldDateUpdated, 14: addresspolicy.FieldDateErased, 15: addresspolicy.FieldDateCreated, 16: addresspolicy.FieldDateActivated, 17: addresspolicy.FieldDnsSync}
 
-func (s AddressPolicyServiceServer) Apply(ctx context.Context, req *api.AddressPolicyApplyRequest) (*api.AddressPolicy, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.AddressPolicyService_Apply_FullMethodName)
-}
-
 func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressPolicyRef, doc *patchpb.Patch, by string) (*api.AddressPolicy, error) {
 	plan := &ormpatch.Plan{Entity: addressPolicyOrmEntity}
 	if doc != nil {
@@ -2166,7 +2010,7 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2187,7 +2031,7 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 	}
 
 	var previous *api.AddressPolicy
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -2256,7 +2100,8 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.AddressPolicy",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -2270,76 +2115,6 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 		return nil, err
 	}
 	return out, nil
-}
-
-func (s AddressPolicyServiceServer) Erase(ctx context.Context, req *api.AddressPolicyRef) (*api.AddressPolicyEraseResponse, error) {
-	p, err := AddressPolicyPick(req)
-	if err != nil {
-		return nil, err
-	}
-	p, err = s.narrow(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	var k any
-	var previous *api.AddressPolicy
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.AddressPolicyService_Erase_FullMethodName)
-		var v *ent.AddressPolicy
-		var err error
-		if images.Previous {
-			v, err = st.snapshot(ctx, p, true)
-		} else {
-			v, err = st.Db.AddressPolicy.Query().Where(p).Select(addresspolicy.FieldId).Only(ctx)
-		}
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return &api.AddressPolicyEraseResponse{}, nil
-			}
-			return nil, err
-		}
-
-		k = v.Id
-		if images.Previous {
-			previous = s.image(v.Proto())
-		}
-		p = addresspolicy.And(p, addresspolicy.IdEQ(v.Id))
-	}
-
-	tx.Writing()
-	u := st.Db.AddressPolicy.Update().Where(p)
-	u.SetDateErased(st.now())
-	u.SetDateUpdated(st.now())
-	n, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       api.AddressPolicyService_Erase_FullMethodName,
-			Key:      k,
-			Previous: previous,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	res := &api.AddressPolicyEraseResponse{}
-	res.SetErased(n > 0)
-
-	return res, nil
 }
 
 // AddressPolicyPick answers with the predicate this reference selects on,

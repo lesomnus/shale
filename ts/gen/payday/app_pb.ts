@@ -5,13 +5,19 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Ref } from "../orm/ref_pb.js";
+import { file_orm_ref } from "../orm/ref_pb.js";
+import type { Entity_Global, Entity_Tenanted } from "./entity_pb.js";
+import { file_payday_entity } from "./entity_pb.js";
+import type { Meter } from "./meter_pb.js";
+import { file_payday_meter } from "./meter_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file payday/app.proto.
  */
 export const file_payday_app: GenFile = /*@__PURE__*/
-  fileDesc("ChBwYXlkYXkvYXBwLnByb3RvEgZwYXlkYXkiQwoDQXBwEhoKBHBhc3QYASABKAsyDC5wYXlkYXkuUGFzdBIgCgdkb21haW5zGAIgASgLMg8ucGF5ZGF5LkRvbWFpbnMiIwoEUGFzdBINCgVldmVudBgBIAEoDRIMCgRmYWN0GAIgASgNIisKB0RvbWFpbnMSEAoIYXJjaGl2ZWQYASABKA0SDgoGYWNjZXNzGAIgASgNQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGKSAwIIAmIIZWRpdGlvbnNw6Ac");
+  fileDesc("ChBwYXlkYXkvYXBwLnByb3RvEgZwYXlkYXki0gEKA0FwcBIaCgRwYXN0GAEgASgLMgwucGF5ZGF5LlBhc3QSIAoHZG9tYWlucxgCIAEoCzIPLnBheWRheS5Eb21haW5zEh4KBm5vdGlmeRgDIAEoCzIOLnBheWRheS5Ob3RpZnkSHQoGbWV0ZXJzGAQgAygLMg0ucGF5ZGF5Lk1ldGVyEioKDGVudGl0bGVtZW50cxgFIAEoCzIULnBheWRheS5FbnRpdGxlbWVudHMSIgoIYWNjb3VudHMYBiABKAsyEC5wYXlkYXkuQWNjb3VudHMiIwoIQWNjb3VudHMSFwoFZmllbGQYASABKAsyCC5vcm0uUmVmIiMKBFBhc3QSDQoFZXZlbnQYASABKA0SDAoEZmFjdBgCIAEoDSIrCgdEb21haW5zEhAKCGFyY2hpdmVkGAEgASgNEg4KBmFjY2VzcxgCIAEoDSLrAgoGTm90aWZ5EhQKDG5vdGlmaWNhdGlvbhgBIAEoDRIPCgdyZWNlaXB0GAIgASgNEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEa2VlcBgGIAEoCzITLnBheWRheS5Ob3RpZnkuS2VlcBIpCghhY2NvdW50cxgHIAEoCzIXLnBheWRheS5Ob3RpZnkuQWNjb3VudHMaCgoIQWNjb3VudHMaeQoES2VlcBIOCgRkYXlzGAEgASgNSAASLgoHZm9yZXZlchgCIAEoCzIbLnBheWRheS5Ob3RpZnkuS2VlcC5Gb3JldmVySAASEgoKcmV0cnlfZGF5cxgDIAEoDRoWCgdGb3JldmVyEgsKA3doeRgBIAEoCUIFCgNob3dCCQoHdGVuYW5jeUoECAMQBCIeCgxFbnRpdGxlbWVudHMSDgoGZG9tYWluGAEgASgNQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_orm_ref, file_payday_entity, file_payday_meter]);
 
 /**
  * App says that this file's proto package is the app's own.
@@ -45,7 +51,8 @@ export const file_payday_app: GenFile = /*@__PURE__*/
  * say: a file either says it or does not. It is a message rather than a `bool`
  * so that something could be added to it without every app that set it having
  * to change, and [App.past] is the first thing that was, [App.domains] the
- * second.
+ * second, [App.notify] the third, [App.meters] the fourth, [App.entitlements]
+ * the fifth, [App.accounts] the sixth.
  *
  * Setting it on more than one package is refused. Two answers to "where do
  * payday's entities go" is the thing this exists to avoid, and getting two of
@@ -87,6 +94,63 @@ export type App = Message<"payday.App"> & {
    * @generated from field: payday.Domains domains = 2;
    */
   domains?: Domains | undefined;
+
+  /**
+   * Notify opts this app into notifications and assigns its internal records
+   * domains of the app's own. Topic and reader policy remain the app's.
+   *
+   * @generated from field: payday.Notify notify = 3;
+   */
+  notify?: Notify | undefined;
+
+  /**
+   * Meters are what each tenant holds that the app is paid by, which payday
+   * measures for it (payday#186): `pd gen` holds each to the entity it names
+   * and writes the query that measures it, and `meter.Reader` reads them all,
+   * tenant by tenant, and hands the readings to the app's sink. See [Meter].
+   *
+   * Here and not on the entity, because a meter may count payday's own
+   * entities as well as the app's -- a seat is a Holder -- and an overlay may
+   * add nothing to payday's declaration of one.
+   *
+   * @generated from field: repeated payday.Meter meters = 4;
+   */
+  meters: Meter[];
+
+  /**
+   * Entitlements opts this app into a copy of what each of its tenants is
+   * entitled to, kept in its own database and read inside the transaction of
+   * the write it decides (payday#185):
+   *
+   * 	option (payday.app) = {entitlements: {domain: 43}};
+   *
+   * `pd gen` then writes payday's `Entitlement` into the app at that domain,
+   * and takes it out again when this goes. What fills it is a source of
+   * grants -- a billing service -- speaking `payday.GrantService`, followed by
+   * `entitle.Follower`. See [Entitlements].
+   *
+   * @generated from field: payday.Entitlements entitlements = 5;
+   */
+  entitlements?: Entitlements | undefined;
+
+  /**
+   * Accounts says this app's holders are memberships of accounts an identity
+   * provider keeps, and which holder field names the account (payday#184):
+   *
+   * 	option (payday.app) = {accounts: {field: {name: "account", number: 9}}};
+   *
+   * `pd gen` then writes what answers an account's memberships and a holder's
+   * account, the resolver's half that turns an account and the tenant a call
+   * names into one of them, and the frame of a call an account makes as
+   * itself -- the methods marked `(payday.method) = {account: {}}`. See
+   * [Accounts].
+   *
+   * Here rather than on the holder, because the holder is payday's entity and
+   * an overlay may add nothing to payday's declaration of one.
+   *
+   * @generated from field: payday.Accounts accounts = 6;
+   */
+  accounts?: Accounts | undefined;
 };
 
 /**
@@ -95,6 +159,55 @@ export type App = Message<"payday.App"> & {
  */
 export const AppSchema: GenMessage<App> = /*@__PURE__*/
   messageDesc(file_payday_app, 0);
+
+/**
+ * Accounts is the holder field that names the account a holder is a
+ * membership of (payday#184).
+ *
+ * # What payday keeps, and what it does not
+ *
+ * The **reference**: which account a membership is of, the frame of a call an
+ * account makes outside any tenant, and resolving a call to one membership.
+ * Not the account. Its names, its addresses, how it signs in and whether it
+ * may are the identity provider's, and a copy of them in every app is one more
+ * place a person has to be erased from. So an account is an identifier here
+ * and nothing else.
+ *
+ * # Why the app numbers the field
+ *
+ * For the reason the past's two entities are numbered by the app: the field
+ * is on payday's Holder, an app adds it with an overlay at a number of its own
+ * (3, 8..12, 16 and up), and an app that kept the reference before payday did
+ * has spent a number on it already. A deployment keeps its column, and payday
+ * is told where it is.
+ *
+ * @generated from message payday.Accounts
+ */
+export type Accounts = Message<"payday.Accounts"> & {
+  /**
+   * Field is the holder's field that holds the account's identifier, named by
+   * both its name and its number, which have to agree: a field renamed under
+   * a declaration that followed the name would resolve calls by another
+   * column, with nothing failing.
+   *
+   * It is a `bytes` field of `TYPE_UUID` the app's overlay adds to the holder,
+   * and may be nullable -- a holder that is no account's membership, made
+   * before accounts were or for a deployment's own use, is one nobody signs
+   * in as through an account. It is not `personal`: it is an identifier, as an
+   * edge is, and who moved a membership from one account to another is the
+   * record.
+   *
+   * @generated from field: orm.Ref field = 1;
+   */
+  field?: Ref | undefined;
+};
+
+/**
+ * Describes the message payday.Accounts.
+ * Use `create(AccountsSchema)` to create a new message.
+ */
+export const AccountsSchema: GenMessage<Accounts> = /*@__PURE__*/
+  messageDesc(file_payday_app, 1);
 
 /**
  * Past is the domain of each of the two entities an app's past is kept in.
@@ -139,7 +252,7 @@ export type Past = Message<"payday.Past"> & {
  * Use `create(PastSchema)` to create a new message.
  */
 export const PastSchema: GenMessage<Past> = /*@__PURE__*/
-  messageDesc(file_payday_app, 1);
+  messageDesc(file_payday_app, 2);
 
 /**
  * Domains is the domain of each of the two entities of payday's that an app may
@@ -194,5 +307,213 @@ export type Domains = Message<"payday.Domains"> & {
  * Use `create(DomainsSchema)` to create a new message.
  */
 export const DomainsSchema: GenMessage<Domains> = /*@__PURE__*/
-  messageDesc(file_payday_app, 2);
+  messageDesc(file_payday_app, 3);
+
+/**
+ * Notify numbers the two records copied into an app that enables notifications.
+ * Each is a distinct domain in 7..247, held by no other entity or optional
+ * feature. The records and public NotificationService live in the app's package.
+ *
+ * @generated from message payday.Notify
+ */
+export type Notify = Message<"payday.Notify"> & {
+  /**
+   * @generated from field: uint32 notification = 1;
+   */
+  notification: number;
+
+  /**
+   * @generated from field: uint32 receipt = 2;
+   */
+  receipt: number;
+
+  /**
+   * Uses the same tenancy choices as an Entity. By default the copied records
+   * remain tenanted through their tenant_id field; global removes that field.
+   *
+   * @generated from oneof payday.Notify.tenancy
+   */
+  tenancy: {
+    /**
+     * @generated from field: payday.Entity.Tenanted tenanted = 4;
+     */
+    value: Entity_Tenanted;
+    case: "tenanted";
+  } | {
+    /**
+     * @generated from field: payday.Entity.Global global = 5;
+     */
+    value: Entity_Global;
+    case: "global";
+  } | { case: undefined; value?: undefined };
+
+  /**
+   * Keep is how long a notification is kept from its publication, and with
+   * it every receipt of it and its idempotency key (payday#194):
+   *
+   * 	notify: {notification: 40, receipt: 41, keep: {days: 90}}
+   *
+   * Required. A notification and its receipts hold what the people who use an
+   * app are interested in and what they read, and kept for no purpose once
+   * read or stale, they grow without bound. So an app says how long, or says
+   * `forever` with why -- the dangerous answer is the one written down.
+   *
+   * @generated from field: payday.Notify.Keep keep = 6;
+   */
+  keep?: Notify_Keep | undefined;
+
+  /**
+   * Accounts gives an app whose holders are memberships of accounts -- one
+   * that declares [App.accounts] -- a namespace of notifications no tenant
+   * holds, which an account reads as itself (payday#195):
+   *
+   * 	notify: {notification: 40, receipt: 41, keep: {days: 90}, accounts: {}}
+   *
+   * `pd gen` copies `NotificationAccountService` beside `NotificationService`,
+   * each of its methods the account's own, and writes
+   * `pd.AccountNotifications`, which serves it with a policy of its own. An
+   * account reads no tenant's notifications through it, and no tenant reads
+   * the account namespace. It is a message so that something can be said of
+   * it later; for now it is said or not.
+   *
+   * @generated from field: payday.Notify.Accounts accounts = 7;
+   */
+  accounts?: Notify_Accounts | undefined;
+};
+
+/**
+ * Describes the message payday.Notify.
+ * Use `create(NotifySchema)` to create a new message.
+ */
+export const NotifySchema: GenMessage<Notify> = /*@__PURE__*/
+  messageDesc(file_payday_app, 4);
+
+/**
+ * Accounts is the account namespace, said. See [Notify.accounts].
+ *
+ * @generated from message payday.Notify.Accounts
+ */
+export type Notify_Accounts = Message<"payday.Notify.Accounts"> & {
+};
+
+/**
+ * Describes the message payday.Notify.Accounts.
+ * Use `create(Notify_AccountsSchema)` to create a new message.
+ */
+export const Notify_AccountsSchema: GenMessage<Notify_Accounts> = /*@__PURE__*/
+  messageDesc(file_payday_app, 4, 0);
+
+/**
+ * Keep is one of the two answers. See [Notify.keep].
+ *
+ * @generated from message payday.Notify.Keep
+ */
+export type Notify_Keep = Message<"payday.Notify.Keep"> & {
+  /**
+   * @generated from oneof payday.Notify.Keep.how
+   */
+  how: {
+    /**
+     * Days is how many days from its publication a notification is kept.
+     * `pd gen` writes `pd.NotificationExpirer`, which erases what is older
+     * with its receipts, each erasure on the trail; the app spins it. At
+     * least 1.
+     *
+     * @generated from field: uint32 days = 1;
+     */
+    value: number;
+    case: "days";
+  } | {
+    /**
+     * Forever keeps every notification for as long as the app runs, and
+     * writes no expirer. Said with why, as `trail: {off: ...}` is.
+     *
+     * @generated from field: payday.Notify.Keep.Forever forever = 2;
+     */
+    value: Notify_Keep_Forever;
+    case: "forever";
+  } | { case: undefined; value?: undefined };
+
+  /**
+   * RetryDays is how long after a first attempt the app's producers may
+   * still retry one publication. A retry finds its notification by its
+   * key for as long as both are kept, and publishes again once they are
+   * gone, so it is at most `days`, and `pd gen` refuses one longer: a
+   * `keep` made shorter than it is a guarantee made shorter, said where it
+   * is decided. Zero says nothing, and the guarantee is `days` itself.
+   *
+   * @generated from field: uint32 retry_days = 3;
+   */
+  retryDays: number;
+};
+
+/**
+ * Describes the message payday.Notify.Keep.
+ * Use `create(Notify_KeepSchema)` to create a new message.
+ */
+export const Notify_KeepSchema: GenMessage<Notify_Keep> = /*@__PURE__*/
+  messageDesc(file_payday_app, 4, 1);
+
+/**
+ * @generated from message payday.Notify.Keep.Forever
+ */
+export type Notify_Keep_Forever = Message<"payday.Notify.Keep.Forever"> & {
+  /**
+   * Why says why nothing an app publishes is ever let go. Required.
+   *
+   * @generated from field: string why = 1;
+   */
+  why: string;
+};
+
+/**
+ * Describes the message payday.Notify.Keep.Forever.
+ * Use `create(Notify_Keep_ForeverSchema)` to create a new message.
+ */
+export const Notify_Keep_ForeverSchema: GenMessage<Notify_Keep_Forever> = /*@__PURE__*/
+  messageDesc(file_payday_app, 4, 1, 0);
+
+/**
+ * Entitlements is the domain of the one table an app's copy of its tenants'
+ * entitlements is kept in: one row for each grant a source issued a tenant
+ * (payday#185).
+ *
+ * # Why the app numbers it
+ *
+ * For the reason [Past] says: a table an app opts into is numbered by the app,
+ * because payday cannot fix a number for it without taking that number from
+ * every app that already spent it. The generator finds it by its `own:`
+ * marker, never by its number.
+ *
+ * A domain like any other: 7..247, and one no other entity of the app's
+ * declares, the past's, the notifications' and the two of [Domains] included.
+ * Chosen once and never changed, since an identifier carries it for as long
+ * as anything names the row.
+ *
+ * # Why nothing else is said here
+ *
+ * What a tenant may have is the source's to say and the app's to read, and
+ * neither is a declaration: a key is a string the source grants and the app
+ * asks for (`entitle.Has(ctx, r, "acme.export")`), and a key nobody granted
+ * is a tenant not entitled to it, which is the answer it should be. A list of
+ * keys here would be a second copy of the source's price book in every app it
+ * sells for, and the one that went stale would be the one that answers.
+ *
+ * @generated from message payday.Entitlements
+ */
+export type Entitlements = Message<"payday.Entitlements"> & {
+  /**
+   * Domain is the domain of `Entitlement`.
+   *
+   * @generated from field: uint32 domain = 1;
+   */
+  domain: number;
+};
+
+/**
+ * Describes the message payday.Entitlements.
+ * Use `create(EntitlementsSchema)` to create a new message.
+ */
+export const EntitlementsSchema: GenMessage<Entitlements> = /*@__PURE__*/
+  messageDesc(file_payday_app, 5);
 

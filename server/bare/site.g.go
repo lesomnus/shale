@@ -11,7 +11,6 @@ import (
 	ent "github.com/lesomnus/shale/internal/ent"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	site "github.com/lesomnus/shale/internal/ent/site"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -35,11 +34,14 @@ type SiteServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewSiteServiceServer(db *ent.Client, opts ...Option) api.SiteServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return SiteServiceServer{Store: s.Store}
 }
@@ -165,7 +167,10 @@ func (st SiteServiceServer) create(ctx context.Context, req *api.SiteAddRequest)
 }
 
 func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*api.Site, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +185,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*a
 	}
 
 	var stored *ent.Site
-	if snapshotOptions(s.Rec, api.SiteService_Add_FullMethodName).Value {
+	if s.images(api.SiteService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -206,10 +211,11 @@ func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*a
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.SiteService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Site",
+		By:     api.SiteService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -263,7 +269,9 @@ func (s SiteServiceServer) Get(ctx context.Context, req *api.SiteGetRequest) (*a
 	}
 
 	q := s.Db.Site.Query().Where(p)
-	SiteSelectInit(q, req.GetSelect())
+	if err := SiteSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -319,25 +327,46 @@ func SiteSelectedFields(m *api.SiteSelect) []string {
 	return vs
 }
 
-func SiteSelect(q *ent.SiteQuery, m *api.SiteSelect) {
+// SiteSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SiteSelect(ctx context.Context, scope Scope, q *ent.SiteQuery, m *api.SiteSelect) error {
 	if !m.GetAll() {
 		fields := SiteSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func SiteSelectInit(q *ent.SiteQuery, m *api.SiteSelect) {
+// SiteSelectInit is [SiteSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SiteSelectInit(ctx context.Context, scope Scope, q *ent.SiteQuery, m *api.SiteSelect) error {
 	if m != nil {
-		SiteSelect(q, m)
+		return SiteSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s SiteServiceServer) Patch(ctx context.Context, req *api.SitePatchRequest) (*api.Site, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(siteOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -386,13 +415,6 @@ var siteOrmEntity = ormpatch.MustEntityOf(api.File_shale_site_proto, "Site")
 var sitePatchColumns = entpatch.Columns{
 	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 8: site.FieldRelaySelector, 9: site.FieldSatelliteSelector, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
 
-func (s SiteServiceServer) Apply(ctx context.Context, req *api.SiteApplyRequest) (*api.Site, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.SiteService_Apply_FullMethodName)
-}
-
 func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *patchpb.Patch, by string) (*api.Site, error) {
 	plan := &ormpatch.Plan{Entity: siteOrmEntity}
 	if doc != nil {
@@ -414,7 +436,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +457,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 	}
 
 	var previous *api.Site
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -504,7 +526,8 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Site",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -521,6 +544,9 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 }
 
 func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.SiteEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := SitePick(req)
 	if err != nil {
 		return nil, err
@@ -530,7 +556,7 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.Si
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -541,8 +567,8 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.Si
 
 	var k any
 	var previous *api.Site
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.SiteService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.SiteService_Erase_FullMethodName)
 		var v *ent.Site
 		var err error
 		if images.Previous {
@@ -573,7 +599,8 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.Si
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Site",
 			By:       api.SiteService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

@@ -2,7 +2,7 @@ edition = "2023";
 package shale;
 
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
+import "orm.proto";
 import "shale/host_svc.g.proto";
 import "shale/member.proto";
 import "shale/payday/holder_svc.g.proto";
@@ -16,10 +16,6 @@ service SiteMemberService {
   rpc Add(SiteMemberAddRequest) returns (SiteMember);
   // Get retrieves a SiteMember
   rpc Get(SiteMemberGetRequest) returns (SiteMember);
-  // Patch updates an existing SiteMember
-  rpc Patch(SiteMemberPatchRequest) returns (SiteMember);
-  // Apply applies a patch document to an existing SiteMember
-  rpc Apply(SiteMemberApplyRequest) returns (SiteMember);
   // Erase deletes a SiteMember
   rpc Erase(SiteMemberRef) returns (SiteMemberEraseResponse);
   // List reads SiteMembers a page at a time.
@@ -27,7 +23,7 @@ service SiteMemberService {
 }
 
 message SiteMemberAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   HolderRef holder = 8;
@@ -42,7 +38,7 @@ message SiteMemberGetRequest {
 
 message SiteMemberRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   }
 }
 
@@ -54,29 +50,6 @@ message SiteMemberSelect {
   ReaderSelect reader = 9;
   bool date_updated = 13;
   bool date_created = 15;
-}
-
-message SiteMemberPatchRequest {
-  SiteMemberRef ref = 1;
-  // The version this update requires the stored date_updated to be.
-  // It is a precondition, not a write: the update applies only if the row
-  // still holds this value, and the server stamps the new version itself.
-  // Setting it together with date_updated_force is an error --
-  // the version is the token every client's compare-and-swap is measured
-  // against, so it is not the caller's to choose.
-  google.protobuf.Timestamp date_updated = 26;
-  // Update whatever the stored date_updated is, with no precondition.
-  // The server still stamps a new version, so other clients' tokens are
-  // invalidated as usual; this declines the check for THIS update only.
-  // One of date_updated or this must be set. An omitted version is
-  // refused rather than assumed, because an unset field cannot be told
-  // apart from a caller who never considered locking at all.
-  bool date_updated_force = 27;
-}
-
-message SiteMemberApplyRequest {
-  SiteMemberRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message SiteMemberEraseResponse {
@@ -109,6 +82,16 @@ message SiteMemberListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  SiteMemberSelect select = 6;
 }
 
 message SiteMemberListResponse {

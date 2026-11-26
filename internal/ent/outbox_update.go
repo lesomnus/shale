@@ -117,6 +117,30 @@ func (_u *OutboxUpdate) ClearEvent() *OutboxUpdate {
 	return _u
 }
 
+// SetRoutes sets the "routes" field.
+func (_u *OutboxUpdate) SetRoutes(v []byte) *OutboxUpdate {
+	_u.mutation.SetRoutes(v)
+	return _u
+}
+
+// ClearRoutes clears the value of the "routes" field.
+func (_u *OutboxUpdate) ClearRoutes() *OutboxUpdate {
+	_u.mutation.ClearRoutes()
+	return _u
+}
+
+// SetSignal sets the "signal" field.
+func (_u *OutboxUpdate) SetSignal(v []byte) *OutboxUpdate {
+	_u.mutation.SetSignal(v)
+	return _u
+}
+
+// ClearSignal clears the value of the "signal" field.
+func (_u *OutboxUpdate) ClearSignal() *OutboxUpdate {
+	_u.mutation.ClearSignal()
+	return _u
+}
+
 // Mutation returns the OutboxMutation object of the builder.
 func (_u *OutboxUpdate) Mutation() *OutboxMutation {
 	return _u.mutation
@@ -211,6 +235,24 @@ func (_u *OutboxUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.EventCleared() {
 		_spec.ClearField(outbox.FieldEvent, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.Routes(); ok {
+		_spec.SetField(outbox.FieldRoutes, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(outbox.FieldRoutes); ok {
+		_spec.SetField(outbox.FieldRoutes, field.TypeBytes, e)
+	}
+	if _u.mutation.RoutesCleared() {
+		_spec.ClearField(outbox.FieldRoutes, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.Signal(); ok {
+		_spec.SetField(outbox.FieldSignal, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(outbox.FieldSignal); ok {
+		_spec.SetField(outbox.FieldSignal, field.TypeBytes, e)
+	}
+	if _u.mutation.SignalCleared() {
+		_spec.ClearField(outbox.FieldSignal, field.TypeBytes)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -319,6 +361,30 @@ func (_u *OutboxUpdateOne) SetEvent(v []byte) *OutboxUpdateOne {
 // ClearEvent clears the value of the "event" field.
 func (_u *OutboxUpdateOne) ClearEvent() *OutboxUpdateOne {
 	_u.mutation.ClearEvent()
+	return _u
+}
+
+// SetRoutes sets the "routes" field.
+func (_u *OutboxUpdateOne) SetRoutes(v []byte) *OutboxUpdateOne {
+	_u.mutation.SetRoutes(v)
+	return _u
+}
+
+// ClearRoutes clears the value of the "routes" field.
+func (_u *OutboxUpdateOne) ClearRoutes() *OutboxUpdateOne {
+	_u.mutation.ClearRoutes()
+	return _u
+}
+
+// SetSignal sets the "signal" field.
+func (_u *OutboxUpdateOne) SetSignal(v []byte) *OutboxUpdateOne {
+	_u.mutation.SetSignal(v)
+	return _u
+}
+
+// ClearSignal clears the value of the "signal" field.
+func (_u *OutboxUpdateOne) ClearSignal() *OutboxUpdateOne {
+	_u.mutation.ClearSignal()
 	return _u
 }
 
@@ -446,6 +512,24 @@ func (_u *OutboxUpdateOne) sqlSave(ctx context.Context) (_node *Outbox, err erro
 	}
 	if _u.mutation.EventCleared() {
 		_spec.ClearField(outbox.FieldEvent, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.Routes(); ok {
+		_spec.SetField(outbox.FieldRoutes, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(outbox.FieldRoutes); ok {
+		_spec.SetField(outbox.FieldRoutes, field.TypeBytes, e)
+	}
+	if _u.mutation.RoutesCleared() {
+		_spec.ClearField(outbox.FieldRoutes, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.Signal(); ok {
+		_spec.SetField(outbox.FieldSignal, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(outbox.FieldSignal); ok {
+		_spec.SetField(outbox.FieldSignal, field.TypeBytes, e)
+	}
+	if _u.mutation.SignalCleared() {
+		_spec.ClearField(outbox.FieldSignal, field.TypeBytes)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Outbox{config: _u.config}

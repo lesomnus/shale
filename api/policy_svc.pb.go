@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1471,192 +1471,20 @@ func (b0 SigningKeyPatchRequest_builder) Build() *SigningKeyPatchRequest {
 	return m0
 }
 
-type SigningKeyApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *SigningKeyRef         `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SigningKeyApplyRequest) Reset() {
-	*x = SigningKeyApplyRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SigningKeyApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SigningKeyApplyRequest) ProtoMessage() {}
-
-func (x *SigningKeyApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SigningKeyApplyRequest) GetRef() *SigningKeyRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *SigningKeyApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *SigningKeyApplyRequest) SetRef(v *SigningKeyRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *SigningKeyApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *SigningKeyApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *SigningKeyApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *SigningKeyApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *SigningKeyApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type SigningKeyApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *SigningKeyRef
-	Patch *patchpb.Patch
-}
-
-func (b0 SigningKeyApplyRequest_builder) Build() *SigningKeyApplyRequest {
-	m0 := &SigningKeyApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type SigningKeyEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *SigningKeyEraseResponse) Reset() {
-	*x = SigningKeyEraseResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SigningKeyEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SigningKeyEraseResponse) ProtoMessage() {}
-
-func (x *SigningKeyEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SigningKeyEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *SigningKeyEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *SigningKeyEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *SigningKeyEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type SigningKeyEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 SigningKeyEraseResponse_builder) Build() *SigningKeyEraseResponse {
-	m0 := &SigningKeyEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type SigningKeyListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*SigningKeyFilter   `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *SigningKeySelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SigningKeyListRequest) Reset() {
 	*x = SigningKeyListRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[7]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1668,7 +1496,7 @@ func (x *SigningKeyListRequest) String() string {
 func (*SigningKeyListRequest) ProtoMessage() {}
 
 func (x *SigningKeyListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[7]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1709,6 +1537,13 @@ func (x *SigningKeyListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *SigningKeyListRequest) GetSelect() *SigningKeySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *SigningKeyListRequest) SetFilters(v []*SigningKeyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1723,6 +1558,21 @@ func (x *SigningKeyListRequest) SetAfter(v string) {
 
 func (x *SigningKeyListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *SigningKeyListRequest) SetSelect(v *SigningKeySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SigningKeyListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SigningKeyListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type SigningKeyListRequest_builder struct {
@@ -1745,6 +1595,15 @@ type SigningKeyListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *SigningKeySelect
 }
 
 func (b0 SigningKeyListRequest_builder) Build() *SigningKeyListRequest {
@@ -1755,6 +1614,7 @@ func (b0 SigningKeyListRequest_builder) Build() *SigningKeyListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1768,7 +1628,7 @@ type SigningKeyListResponse struct {
 
 func (x *SigningKeyListResponse) Reset() {
 	*x = SigningKeyListResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[8]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1780,7 +1640,7 @@ func (x *SigningKeyListResponse) String() string {
 func (*SigningKeyListResponse) ProtoMessage() {}
 
 func (x *SigningKeyListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[8]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1847,7 +1707,7 @@ type SigningKeyFilter struct {
 
 func (x *SigningKeyFilter) Reset() {
 	*x = SigningKeyFilter{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[9]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1859,7 +1719,7 @@ func (x *SigningKeyFilter) String() string {
 func (*SigningKeyFilter) ProtoMessage() {}
 
 func (x *SigningKeyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[9]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1916,7 +1776,7 @@ type SigningKeyWatchRequest struct {
 
 func (x *SigningKeyWatchRequest) Reset() {
 	*x = SigningKeyWatchRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[10]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1928,7 +1788,7 @@ func (x *SigningKeyWatchRequest) String() string {
 func (*SigningKeyWatchRequest) ProtoMessage() {}
 
 func (x *SigningKeyWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[10]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1966,13 +1826,15 @@ func (x *SigningKeyWatchRequest) SetSkipSnapshot(v bool) {
 type SigningKeyWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*SigningKeyFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2000,7 +1862,7 @@ type SigningKeyWatchResponse struct {
 
 func (x *SigningKeyWatchResponse) Reset() {
 	*x = SigningKeyWatchResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[11]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2012,7 +1874,7 @@ func (x *SigningKeyWatchResponse) String() string {
 func (*SigningKeyWatchResponse) ProtoMessage() {}
 
 func (x *SigningKeyWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[11]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2064,7 +1926,7 @@ type SigningKeyWatchItem struct {
 
 func (x *SigningKeyWatchItem) Reset() {
 	*x = SigningKeyWatchItem{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[12]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2076,7 +1938,7 @@ func (x *SigningKeyWatchItem) String() string {
 func (*SigningKeyWatchItem) ProtoMessage() {}
 
 func (x *SigningKeyWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[12]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2153,7 +2015,7 @@ type SigningKeyWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2161,7 +2023,8 @@ type SigningKeyWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *SigningKey
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2194,7 +2057,7 @@ type SigningKeyRotateRequest struct {
 
 func (x *SigningKeyRotateRequest) Reset() {
 	*x = SigningKeyRotateRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[13]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2206,7 +2069,7 @@ func (x *SigningKeyRotateRequest) String() string {
 func (*SigningKeyRotateRequest) ProtoMessage() {}
 
 func (x *SigningKeyRotateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[13]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2263,7 +2126,7 @@ type PlacementPolicyAddRequest struct {
 
 func (x *PlacementPolicyAddRequest) Reset() {
 	*x = PlacementPolicyAddRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[14]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2275,7 +2138,7 @@ func (x *PlacementPolicyAddRequest) String() string {
 func (*PlacementPolicyAddRequest) ProtoMessage() {}
 
 func (x *PlacementPolicyAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[14]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2490,7 +2353,7 @@ type PlacementPolicyGetRequest struct {
 
 func (x *PlacementPolicyGetRequest) Reset() {
 	*x = PlacementPolicyGetRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[15]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2502,7 +2365,7 @@ func (x *PlacementPolicyGetRequest) String() string {
 func (*PlacementPolicyGetRequest) ProtoMessage() {}
 
 func (x *PlacementPolicyGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[15]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2582,7 +2445,7 @@ type PlacementPolicyRef struct {
 
 func (x *PlacementPolicyRef) Reset() {
 	*x = PlacementPolicyRef{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[16]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2594,7 +2457,7 @@ func (x *PlacementPolicyRef) String() string {
 func (*PlacementPolicyRef) ProtoMessage() {}
 
 func (x *PlacementPolicyRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[16]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2750,7 +2613,7 @@ func (b0 PlacementPolicyRef_builder) Build() *PlacementPolicyRef {
 type case_PlacementPolicyRef_Key protoreflect.FieldNumber
 
 func (x case_PlacementPolicyRef_Key) String() string {
-	md := file_shale_policy_svc_g_proto_msgTypes[16].Descriptor()
+	md := file_shale_policy_svc_g_proto_msgTypes[14].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -2801,7 +2664,7 @@ type PlacementPolicySelect struct {
 
 func (x *PlacementPolicySelect) Reset() {
 	*x = PlacementPolicySelect{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[17]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2813,7 +2676,7 @@ func (x *PlacementPolicySelect) String() string {
 func (*PlacementPolicySelect) ProtoMessage() {}
 
 func (x *PlacementPolicySelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[17]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3206,7 +3069,7 @@ type PlacementPolicyPatchRequest struct {
 
 func (x *PlacementPolicyPatchRequest) Reset() {
 	*x = PlacementPolicyPatchRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[18]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3218,7 +3081,7 @@ func (x *PlacementPolicyPatchRequest) String() string {
 func (*PlacementPolicyPatchRequest) ProtoMessage() {}
 
 func (x *PlacementPolicyPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[18]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3582,192 +3445,20 @@ func (b0 PlacementPolicyPatchRequest_builder) Build() *PlacementPolicyPatchReque
 	return m0
 }
 
-type PlacementPolicyApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *PlacementPolicyRef    `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *PlacementPolicyApplyRequest) Reset() {
-	*x = PlacementPolicyApplyRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlacementPolicyApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlacementPolicyApplyRequest) ProtoMessage() {}
-
-func (x *PlacementPolicyApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *PlacementPolicyApplyRequest) GetRef() *PlacementPolicyRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *PlacementPolicyApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *PlacementPolicyApplyRequest) SetRef(v *PlacementPolicyRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *PlacementPolicyApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *PlacementPolicyApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *PlacementPolicyApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *PlacementPolicyApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *PlacementPolicyApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type PlacementPolicyApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *PlacementPolicyRef
-	Patch *patchpb.Patch
-}
-
-func (b0 PlacementPolicyApplyRequest_builder) Build() *PlacementPolicyApplyRequest {
-	m0 := &PlacementPolicyApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type PlacementPolicyEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *PlacementPolicyEraseResponse) Reset() {
-	*x = PlacementPolicyEraseResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlacementPolicyEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlacementPolicyEraseResponse) ProtoMessage() {}
-
-func (x *PlacementPolicyEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *PlacementPolicyEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *PlacementPolicyEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *PlacementPolicyEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *PlacementPolicyEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type PlacementPolicyEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 PlacementPolicyEraseResponse_builder) Build() *PlacementPolicyEraseResponse {
-	m0 := &PlacementPolicyEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type PlacementPolicyListRequest struct {
 	state              protoimpl.MessageState    `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*PlacementPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                     `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                    `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                      `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *PlacementPolicySelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *PlacementPolicyListRequest) Reset() {
 	*x = PlacementPolicyListRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[21]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3779,7 +3470,7 @@ func (x *PlacementPolicyListRequest) String() string {
 func (*PlacementPolicyListRequest) ProtoMessage() {}
 
 func (x *PlacementPolicyListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[21]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3820,6 +3511,13 @@ func (x *PlacementPolicyListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *PlacementPolicyListRequest) GetSelect() *PlacementPolicySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *PlacementPolicyListRequest) SetFilters(v []*PlacementPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -3834,6 +3532,21 @@ func (x *PlacementPolicyListRequest) SetAfter(v string) {
 
 func (x *PlacementPolicyListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *PlacementPolicyListRequest) SetSelect(v *PlacementPolicySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *PlacementPolicyListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *PlacementPolicyListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type PlacementPolicyListRequest_builder struct {
@@ -3856,6 +3569,15 @@ type PlacementPolicyListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *PlacementPolicySelect
 }
 
 func (b0 PlacementPolicyListRequest_builder) Build() *PlacementPolicyListRequest {
@@ -3866,6 +3588,7 @@ func (b0 PlacementPolicyListRequest_builder) Build() *PlacementPolicyListRequest
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -3879,7 +3602,7 @@ type PlacementPolicyListResponse struct {
 
 func (x *PlacementPolicyListResponse) Reset() {
 	*x = PlacementPolicyListResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[22]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3891,7 +3614,7 @@ func (x *PlacementPolicyListResponse) String() string {
 func (*PlacementPolicyListResponse) ProtoMessage() {}
 
 func (x *PlacementPolicyListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[22]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3961,7 +3684,7 @@ type PlacementPolicyFilter struct {
 
 func (x *PlacementPolicyFilter) Reset() {
 	*x = PlacementPolicyFilter{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[23]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3973,7 +3696,7 @@ func (x *PlacementPolicyFilter) String() string {
 func (*PlacementPolicyFilter) ProtoMessage() {}
 
 func (x *PlacementPolicyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[23]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4058,7 +3781,7 @@ type PlacementPolicyActivateRequest struct {
 
 func (x *PlacementPolicyActivateRequest) Reset() {
 	*x = PlacementPolicyActivateRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[24]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4070,7 +3793,7 @@ func (x *PlacementPolicyActivateRequest) String() string {
 func (*PlacementPolicyActivateRequest) ProtoMessage() {}
 
 func (x *PlacementPolicyActivateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[24]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4137,7 +3860,7 @@ type UploadPolicyAddRequest struct {
 
 func (x *UploadPolicyAddRequest) Reset() {
 	*x = UploadPolicyAddRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[25]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4149,7 +3872,7 @@ func (x *UploadPolicyAddRequest) String() string {
 func (*UploadPolicyAddRequest) ProtoMessage() {}
 
 func (x *UploadPolicyAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[25]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4364,7 +4087,7 @@ type UploadPolicyGetRequest struct {
 
 func (x *UploadPolicyGetRequest) Reset() {
 	*x = UploadPolicyGetRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[26]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4376,7 +4099,7 @@ func (x *UploadPolicyGetRequest) String() string {
 func (*UploadPolicyGetRequest) ProtoMessage() {}
 
 func (x *UploadPolicyGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[26]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4456,7 +4179,7 @@ type UploadPolicyRef struct {
 
 func (x *UploadPolicyRef) Reset() {
 	*x = UploadPolicyRef{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[27]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4468,7 +4191,7 @@ func (x *UploadPolicyRef) String() string {
 func (*UploadPolicyRef) ProtoMessage() {}
 
 func (x *UploadPolicyRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[27]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4624,7 +4347,7 @@ func (b0 UploadPolicyRef_builder) Build() *UploadPolicyRef {
 type case_UploadPolicyRef_Key protoreflect.FieldNumber
 
 func (x case_UploadPolicyRef_Key) String() string {
-	md := file_shale_policy_svc_g_proto_msgTypes[27].Descriptor()
+	md := file_shale_policy_svc_g_proto_msgTypes[23].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -4675,7 +4398,7 @@ type UploadPolicySelect struct {
 
 func (x *UploadPolicySelect) Reset() {
 	*x = UploadPolicySelect{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[28]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4687,7 +4410,7 @@ func (x *UploadPolicySelect) String() string {
 func (*UploadPolicySelect) ProtoMessage() {}
 
 func (x *UploadPolicySelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[28]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5080,7 +4803,7 @@ type UploadPolicyPatchRequest struct {
 
 func (x *UploadPolicyPatchRequest) Reset() {
 	*x = UploadPolicyPatchRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[29]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5092,7 +4815,7 @@ func (x *UploadPolicyPatchRequest) String() string {
 func (*UploadPolicyPatchRequest) ProtoMessage() {}
 
 func (x *UploadPolicyPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[29]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5456,192 +5179,20 @@ func (b0 UploadPolicyPatchRequest_builder) Build() *UploadPolicyPatchRequest {
 	return m0
 }
 
-type UploadPolicyApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *UploadPolicyRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *UploadPolicyApplyRequest) Reset() {
-	*x = UploadPolicyApplyRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[30]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadPolicyApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadPolicyApplyRequest) ProtoMessage() {}
-
-func (x *UploadPolicyApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[30]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *UploadPolicyApplyRequest) GetRef() *UploadPolicyRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *UploadPolicyApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *UploadPolicyApplyRequest) SetRef(v *UploadPolicyRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *UploadPolicyApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *UploadPolicyApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *UploadPolicyApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *UploadPolicyApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *UploadPolicyApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type UploadPolicyApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *UploadPolicyRef
-	Patch *patchpb.Patch
-}
-
-func (b0 UploadPolicyApplyRequest_builder) Build() *UploadPolicyApplyRequest {
-	m0 := &UploadPolicyApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type UploadPolicyEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *UploadPolicyEraseResponse) Reset() {
-	*x = UploadPolicyEraseResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[31]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadPolicyEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadPolicyEraseResponse) ProtoMessage() {}
-
-func (x *UploadPolicyEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[31]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *UploadPolicyEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *UploadPolicyEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *UploadPolicyEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *UploadPolicyEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type UploadPolicyEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 UploadPolicyEraseResponse_builder) Build() *UploadPolicyEraseResponse {
-	m0 := &UploadPolicyEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type UploadPolicyListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*UploadPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *UploadPolicySelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *UploadPolicyListRequest) Reset() {
 	*x = UploadPolicyListRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[32]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5653,7 +5204,7 @@ func (x *UploadPolicyListRequest) String() string {
 func (*UploadPolicyListRequest) ProtoMessage() {}
 
 func (x *UploadPolicyListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[32]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5694,6 +5245,13 @@ func (x *UploadPolicyListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *UploadPolicyListRequest) GetSelect() *UploadPolicySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *UploadPolicyListRequest) SetFilters(v []*UploadPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -5708,6 +5266,21 @@ func (x *UploadPolicyListRequest) SetAfter(v string) {
 
 func (x *UploadPolicyListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *UploadPolicyListRequest) SetSelect(v *UploadPolicySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *UploadPolicyListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *UploadPolicyListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type UploadPolicyListRequest_builder struct {
@@ -5730,6 +5303,15 @@ type UploadPolicyListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *UploadPolicySelect
 }
 
 func (b0 UploadPolicyListRequest_builder) Build() *UploadPolicyListRequest {
@@ -5740,6 +5322,7 @@ func (b0 UploadPolicyListRequest_builder) Build() *UploadPolicyListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -5753,7 +5336,7 @@ type UploadPolicyListResponse struct {
 
 func (x *UploadPolicyListResponse) Reset() {
 	*x = UploadPolicyListResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[33]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5765,7 +5348,7 @@ func (x *UploadPolicyListResponse) String() string {
 func (*UploadPolicyListResponse) ProtoMessage() {}
 
 func (x *UploadPolicyListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[33]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5835,7 +5418,7 @@ type UploadPolicyFilter struct {
 
 func (x *UploadPolicyFilter) Reset() {
 	*x = UploadPolicyFilter{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[34]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5847,7 +5430,7 @@ func (x *UploadPolicyFilter) String() string {
 func (*UploadPolicyFilter) ProtoMessage() {}
 
 func (x *UploadPolicyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[34]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5932,7 +5515,7 @@ type UploadPolicyActivateRequest struct {
 
 func (x *UploadPolicyActivateRequest) Reset() {
 	*x = UploadPolicyActivateRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[35]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5944,7 +5527,7 @@ func (x *UploadPolicyActivateRequest) String() string {
 func (*UploadPolicyActivateRequest) ProtoMessage() {}
 
 func (x *UploadPolicyActivateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[35]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6013,7 +5596,7 @@ type AddressPolicyAddRequest struct {
 
 func (x *AddressPolicyAddRequest) Reset() {
 	*x = AddressPolicyAddRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[36]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6025,7 +5608,7 @@ func (x *AddressPolicyAddRequest) String() string {
 func (*AddressPolicyAddRequest) ProtoMessage() {}
 
 func (x *AddressPolicyAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[36]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6296,7 +5879,7 @@ type AddressPolicyGetRequest struct {
 
 func (x *AddressPolicyGetRequest) Reset() {
 	*x = AddressPolicyGetRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[37]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6308,7 +5891,7 @@ func (x *AddressPolicyGetRequest) String() string {
 func (*AddressPolicyGetRequest) ProtoMessage() {}
 
 func (x *AddressPolicyGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[37]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6388,7 +5971,7 @@ type AddressPolicyRef struct {
 
 func (x *AddressPolicyRef) Reset() {
 	*x = AddressPolicyRef{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[38]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6400,7 +5983,7 @@ func (x *AddressPolicyRef) String() string {
 func (*AddressPolicyRef) ProtoMessage() {}
 
 func (x *AddressPolicyRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[38]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6556,7 +6139,7 @@ func (b0 AddressPolicyRef_builder) Build() *AddressPolicyRef {
 type case_AddressPolicyRef_Key protoreflect.FieldNumber
 
 func (x case_AddressPolicyRef_Key) String() string {
-	md := file_shale_policy_svc_g_proto_msgTypes[38].Descriptor()
+	md := file_shale_policy_svc_g_proto_msgTypes[32].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -6609,7 +6192,7 @@ type AddressPolicySelect struct {
 
 func (x *AddressPolicySelect) Reset() {
 	*x = AddressPolicySelect{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[39]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6621,7 +6204,7 @@ func (x *AddressPolicySelect) String() string {
 func (*AddressPolicySelect) ProtoMessage() {}
 
 func (x *AddressPolicySelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[39]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7075,7 +6658,7 @@ type AddressPolicyPatchRequest struct {
 
 func (x *AddressPolicyPatchRequest) Reset() {
 	*x = AddressPolicyPatchRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[40]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7087,7 +6670,7 @@ func (x *AddressPolicyPatchRequest) String() string {
 func (*AddressPolicyPatchRequest) ProtoMessage() {}
 
 func (x *AddressPolicyPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[40]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7540,192 +7123,20 @@ func (b0 AddressPolicyPatchRequest_builder) Build() *AddressPolicyPatchRequest {
 	return m0
 }
 
-type AddressPolicyApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *AddressPolicyRef      `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *AddressPolicyApplyRequest) Reset() {
-	*x = AddressPolicyApplyRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[41]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AddressPolicyApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddressPolicyApplyRequest) ProtoMessage() {}
-
-func (x *AddressPolicyApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[41]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *AddressPolicyApplyRequest) GetRef() *AddressPolicyRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *AddressPolicyApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *AddressPolicyApplyRequest) SetRef(v *AddressPolicyRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *AddressPolicyApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *AddressPolicyApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *AddressPolicyApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *AddressPolicyApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *AddressPolicyApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type AddressPolicyApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *AddressPolicyRef
-	Patch *patchpb.Patch
-}
-
-func (b0 AddressPolicyApplyRequest_builder) Build() *AddressPolicyApplyRequest {
-	m0 := &AddressPolicyApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type AddressPolicyEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *AddressPolicyEraseResponse) Reset() {
-	*x = AddressPolicyEraseResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[42]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AddressPolicyEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddressPolicyEraseResponse) ProtoMessage() {}
-
-func (x *AddressPolicyEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[42]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *AddressPolicyEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *AddressPolicyEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *AddressPolicyEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *AddressPolicyEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type AddressPolicyEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 AddressPolicyEraseResponse_builder) Build() *AddressPolicyEraseResponse {
-	m0 := &AddressPolicyEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type AddressPolicyListRequest struct {
 	state              protoimpl.MessageState  `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*AddressPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                   `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                  `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                    `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *AddressPolicySelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *AddressPolicyListRequest) Reset() {
 	*x = AddressPolicyListRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[43]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7737,7 +7148,7 @@ func (x *AddressPolicyListRequest) String() string {
 func (*AddressPolicyListRequest) ProtoMessage() {}
 
 func (x *AddressPolicyListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[43]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7778,6 +7189,13 @@ func (x *AddressPolicyListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *AddressPolicyListRequest) GetSelect() *AddressPolicySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *AddressPolicyListRequest) SetFilters(v []*AddressPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -7792,6 +7210,21 @@ func (x *AddressPolicyListRequest) SetAfter(v string) {
 
 func (x *AddressPolicyListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *AddressPolicyListRequest) SetSelect(v *AddressPolicySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *AddressPolicyListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *AddressPolicyListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type AddressPolicyListRequest_builder struct {
@@ -7814,6 +7247,15 @@ type AddressPolicyListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *AddressPolicySelect
 }
 
 func (b0 AddressPolicyListRequest_builder) Build() *AddressPolicyListRequest {
@@ -7824,6 +7266,7 @@ func (b0 AddressPolicyListRequest_builder) Build() *AddressPolicyListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -7837,7 +7280,7 @@ type AddressPolicyListResponse struct {
 
 func (x *AddressPolicyListResponse) Reset() {
 	*x = AddressPolicyListResponse{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[44]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7849,7 +7292,7 @@ func (x *AddressPolicyListResponse) String() string {
 func (*AddressPolicyListResponse) ProtoMessage() {}
 
 func (x *AddressPolicyListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[44]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7919,7 +7362,7 @@ type AddressPolicyFilter struct {
 
 func (x *AddressPolicyFilter) Reset() {
 	*x = AddressPolicyFilter{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[45]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7931,7 +7374,7 @@ func (x *AddressPolicyFilter) String() string {
 func (*AddressPolicyFilter) ProtoMessage() {}
 
 func (x *AddressPolicyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[45]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8016,7 +7459,7 @@ type AddressPolicyActivateRequest struct {
 
 func (x *AddressPolicyActivateRequest) Reset() {
 	*x = AddressPolicyActivateRequest{}
-	mi := &file_shale_policy_svc_g_proto_msgTypes[46]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8028,7 +7471,7 @@ func (x *AddressPolicyActivateRequest) String() string {
 func (*AddressPolicyActivateRequest) ProtoMessage() {}
 
 func (x *AddressPolicyActivateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_svc_g_proto_msgTypes[46]
+	mi := &file_shale_policy_svc_g_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8079,9 +7522,9 @@ var File_shale_policy_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/policy_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/policy.proto\"\xa7\x04\n" +
-	"\x14SigningKeyAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x18shale/policy_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/policy.proto\"\xaf\x04\n" +
+	"\x14SigningKeyAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12?\n" +
@@ -8100,9 +7543,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"o\n" +
 	"\x14SigningKeyGetRequest\x12&\n" +
 	"\x03ref\x18\x01 \x01(\v2\x14.shale.SigningKeyRefR\x03ref\x12/\n" +
-	"\x06select\x18\x02 \x01(\v2\x17.shale.SigningKeySelectR\x06select\"@\n" +
-	"\rSigningKeyRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x17.shale.SigningKeySelectR\x06select\"H\n" +
+	"\rSigningKeyRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
 	"\x03key\"\xfd\x02\n" +
 	"\x10SigningKeySelect\x12\x10\n" +
@@ -8143,17 +7586,13 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x11date_retired_null\x18# \x01(\bR\x0fdateRetiredNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
-	"\x16SigningKeyApplyRequest\x12&\n" +
-	"\x03ref\x18\x01 \x01(\v2\x14.shale.SigningKeyRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
-	"\x17SigningKeyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa3\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd4\x01\n" +
 	"\x15SigningKeyListRequest\x121\n" +
 	"\afilters\x18\x01 \x03(\v2\x17.shale.SigningKeyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"\\\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12/\n" +
+	"\x06select\x18\x06 \x01(\v2\x17.shale.SigningKeySelectR\x06select\"\\\n" +
 	"\x16SigningKeyListResponse\x12'\n" +
 	"\x05items\x18\x01 \x03(\v2\x11.shale.SigningKeyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\":\n" +
@@ -8169,9 +7608,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x11.shale.SigningKeyR\x05value\x12\x1d\n" +
 	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\">\n" +
 	"\x17SigningKeyRotateRequest\x12#\n" +
-	"\timmediate\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\timmediate\"\xf1\x03\n" +
-	"\x19PlacementPolicyAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\timmediate\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\timmediate\"\xf9\x03\n" +
+	"\x19PlacementPolicyAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12D\n" +
@@ -8187,9 +7626,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"~\n" +
 	"\x19PlacementPolicyGetRequest\x12+\n" +
 	"\x03ref\x18\x01 \x01(\v2\x19.shale.PlacementPolicyRefR\x03ref\x124\n" +
-	"\x06select\x18\x02 \x01(\v2\x1c.shale.PlacementPolicySelectR\x06select\"a\n" +
-	"\x12PlacementPolicyRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x1c.shale.PlacementPolicySelectR\x06select\"i\n" +
+	"\x12PlacementPolicyRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12\x1a\n" +
 	"\aversion\x18\b \x01(\x03H\x00R\aversionB\x05\n" +
 	"\x03key\"\xd7\x02\n" +
@@ -8225,17 +7664,13 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x13date_activated_null\x18! \x01(\bR\x11dateActivatedNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"n\n" +
-	"\x1bPlacementPolicyApplyRequest\x12+\n" +
-	"\x03ref\x18\x01 \x01(\v2\x19.shale.PlacementPolicyRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"6\n" +
-	"\x1cPlacementPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xad\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe3\x01\n" +
 	"\x1aPlacementPolicyListRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.shale.PlacementPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x124\n" +
+	"\x06select\x18\x06 \x01(\v2\x1c.shale.PlacementPolicySelectR\x06select\"f\n" +
 	"\x1bPlacementPolicyListResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.shale.PlacementPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\\\n" +
@@ -8243,9 +7678,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x19.shale.PlacementPolicyRefR\x03ref\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\bR\x06active\"M\n" +
 	"\x1ePlacementPolicyActivateRequest\x12+\n" +
-	"\x03ref\x18\x01 \x01(\v2\x19.shale.PlacementPolicyRefR\x03ref\"\xe8\x03\n" +
-	"\x16UploadPolicyAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.shale.PlacementPolicyRefR\x03ref\"\xf0\x03\n" +
+	"\x16UploadPolicyAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12A\n" +
@@ -8261,9 +7696,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
 	"\x16UploadPolicyGetRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.shale.UploadPolicySelectR\x06select\"^\n" +
-	"\x0fUploadPolicyRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x19.shale.UploadPolicySelectR\x06select\"f\n" +
+	"\x0fUploadPolicyRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12\x1a\n" +
 	"\aversion\x18\b \x01(\x03H\x00R\aversionB\x05\n" +
 	"\x03key\"\xd4\x02\n" +
@@ -8299,17 +7734,13 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x13date_activated_null\x18! \x01(\bR\x11dateActivatedNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
-	"\x18UploadPolicyApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
-	"\x19UploadPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa7\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xda\x01\n" +
 	"\x17UploadPolicyListRequest\x123\n" +
 	"\afilters\x18\x01 \x03(\v2\x19.shale.UploadPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"`\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x121\n" +
+	"\x06select\x18\x06 \x01(\v2\x19.shale.UploadPolicySelectR\x06select\"`\n" +
 	"\x18UploadPolicyListResponse\x12)\n" +
 	"\x05items\x18\x01 \x03(\v2\x13.shale.UploadPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"V\n" +
@@ -8317,9 +7748,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\bR\x06active\"G\n" +
 	"\x1bUploadPolicyActivateRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\"\xbe\x04\n" +
-	"\x17AddressPolicyAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\"\xc6\x04\n" +
+	"\x17AddressPolicyAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12B\n" +
@@ -8337,9 +7768,9 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"x\n" +
 	"\x17AddressPolicyGetRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref\x122\n" +
-	"\x06select\x18\x02 \x01(\v2\x1a.shale.AddressPolicySelectR\x06select\"_\n" +
-	"\x10AddressPolicyRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2\x1a.shale.AddressPolicySelectR\x06select\"g\n" +
+	"\x10AddressPolicyRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12\x1a\n" +
 	"\aversion\x18\b \x01(\x03H\x00R\aversionB\x05\n" +
 	"\x03key\"\x98\x03\n" +
@@ -8380,17 +7811,13 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\rdns_sync_null\x18# \x01(\bR\vdnsSyncNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
-	"\x19AddressPolicyApplyRequest\x12)\n" +
-	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"4\n" +
-	"\x1aAddressPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa9\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xdd\x01\n" +
 	"\x18AddressPolicyListRequest\x124\n" +
 	"\afilters\x18\x01 \x03(\v2\x1a.shale.AddressPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"b\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x122\n" +
+	"\x06select\x18\x06 \x01(\v2\x1a.shale.AddressPolicySelectR\x06select\"b\n" +
 	"\x19AddressPolicyListResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.shale.AddressPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"X\n" +
@@ -8398,248 +7825,211 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\bR\x06active\"I\n" +
 	"\x1cAddressPolicyActivateRequest\x12)\n" +
-	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref2\x82\x04\n" +
+	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref2\x88\x03\n" +
 	"\x11SigningKeyService\x125\n" +
 	"\x03Add\x12\x1b.shale.SigningKeyAddRequest\x1a\x11.shale.SigningKey\x125\n" +
 	"\x03Get\x12\x1b.shale.SigningKeyGetRequest\x1a\x11.shale.SigningKey\x129\n" +
-	"\x05Patch\x12\x1d.shale.SigningKeyPatchRequest\x1a\x11.shale.SigningKey\x129\n" +
-	"\x05Apply\x12\x1d.shale.SigningKeyApplyRequest\x1a\x11.shale.SigningKey\x12=\n" +
-	"\x05Erase\x12\x14.shale.SigningKeyRef\x1a\x1e.shale.SigningKeyEraseResponse\x12C\n" +
+	"\x05Patch\x12\x1d.shale.SigningKeyPatchRequest\x1a\x11.shale.SigningKey\x12C\n" +
 	"\x04List\x12\x1c.shale.SigningKeyListRequest\x1a\x1d.shale.SigningKeyListResponse\x12H\n" +
 	"\x05Watch\x12\x1d.shale.SigningKeyWatchRequest\x1a\x1e.shale.SigningKeyWatchResponse0\x01\x12;\n" +
-	"\x06Rotate\x12\x1e.shale.SigningKeyRotateRequest\x1a\x11.shale.SigningKey2\x87\x04\n" +
+	"\x06Rotate\x12\x1e.shale.SigningKeyRotateRequest\x1a\x11.shale.SigningKey2\xf9\x02\n" +
 	"\x16PlacementPolicyService\x12?\n" +
 	"\x03Add\x12 .shale.PlacementPolicyAddRequest\x1a\x16.shale.PlacementPolicy\x12?\n" +
 	"\x03Get\x12 .shale.PlacementPolicyGetRequest\x1a\x16.shale.PlacementPolicy\x12C\n" +
-	"\x05Patch\x12\".shale.PlacementPolicyPatchRequest\x1a\x16.shale.PlacementPolicy\x12C\n" +
-	"\x05Apply\x12\".shale.PlacementPolicyApplyRequest\x1a\x16.shale.PlacementPolicy\x12G\n" +
-	"\x05Erase\x12\x19.shale.PlacementPolicyRef\x1a#.shale.PlacementPolicyEraseResponse\x12M\n" +
+	"\x05Patch\x12\".shale.PlacementPolicyPatchRequest\x1a\x16.shale.PlacementPolicy\x12M\n" +
 	"\x04List\x12!.shale.PlacementPolicyListRequest\x1a\".shale.PlacementPolicyListResponse\x12I\n" +
-	"\bActivate\x12%.shale.PlacementPolicyActivateRequest\x1a\x16.shale.PlacementPolicy2\xda\x03\n" +
+	"\bActivate\x12%.shale.PlacementPolicyActivateRequest\x1a\x16.shale.PlacementPolicy2\xd8\x02\n" +
 	"\x13UploadPolicyService\x129\n" +
 	"\x03Add\x12\x1d.shale.UploadPolicyAddRequest\x1a\x13.shale.UploadPolicy\x129\n" +
 	"\x03Get\x12\x1d.shale.UploadPolicyGetRequest\x1a\x13.shale.UploadPolicy\x12=\n" +
-	"\x05Patch\x12\x1f.shale.UploadPolicyPatchRequest\x1a\x13.shale.UploadPolicy\x12=\n" +
-	"\x05Apply\x12\x1f.shale.UploadPolicyApplyRequest\x1a\x13.shale.UploadPolicy\x12A\n" +
-	"\x05Erase\x12\x16.shale.UploadPolicyRef\x1a .shale.UploadPolicyEraseResponse\x12G\n" +
+	"\x05Patch\x12\x1f.shale.UploadPolicyPatchRequest\x1a\x13.shale.UploadPolicy\x12G\n" +
 	"\x04List\x12\x1e.shale.UploadPolicyListRequest\x1a\x1f.shale.UploadPolicyListResponse\x12C\n" +
-	"\bActivate\x12\".shale.UploadPolicyActivateRequest\x1a\x13.shale.UploadPolicy2\xe9\x03\n" +
+	"\bActivate\x12\".shale.UploadPolicyActivateRequest\x1a\x13.shale.UploadPolicy2\xe3\x02\n" +
 	"\x14AddressPolicyService\x12;\n" +
 	"\x03Add\x12\x1e.shale.AddressPolicyAddRequest\x1a\x14.shale.AddressPolicy\x12;\n" +
 	"\x03Get\x12\x1e.shale.AddressPolicyGetRequest\x1a\x14.shale.AddressPolicy\x12?\n" +
-	"\x05Patch\x12 .shale.AddressPolicyPatchRequest\x1a\x14.shale.AddressPolicy\x12?\n" +
-	"\x05Apply\x12 .shale.AddressPolicyApplyRequest\x1a\x14.shale.AddressPolicy\x12C\n" +
-	"\x05Erase\x12\x17.shale.AddressPolicyRef\x1a!.shale.AddressPolicyEraseResponse\x12I\n" +
+	"\x05Patch\x12 .shale.AddressPolicyPatchRequest\x1a\x14.shale.AddressPolicy\x12I\n" +
 	"\x04List\x12\x1f.shale.AddressPolicyListRequest\x1a .shale.AddressPolicyListResponse\x12E\n" +
 	"\bActivate\x12#.shale.AddressPolicyActivateRequest\x1a\x14.shale.AddressPolicyB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_policy_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 55)
+var file_shale_policy_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
 var file_shale_policy_svc_g_proto_goTypes = []any{
 	(*SigningKeyAddRequest)(nil),           // 0: shale.SigningKeyAddRequest
 	(*SigningKeyGetRequest)(nil),           // 1: shale.SigningKeyGetRequest
 	(*SigningKeyRef)(nil),                  // 2: shale.SigningKeyRef
 	(*SigningKeySelect)(nil),               // 3: shale.SigningKeySelect
 	(*SigningKeyPatchRequest)(nil),         // 4: shale.SigningKeyPatchRequest
-	(*SigningKeyApplyRequest)(nil),         // 5: shale.SigningKeyApplyRequest
-	(*SigningKeyEraseResponse)(nil),        // 6: shale.SigningKeyEraseResponse
-	(*SigningKeyListRequest)(nil),          // 7: shale.SigningKeyListRequest
-	(*SigningKeyListResponse)(nil),         // 8: shale.SigningKeyListResponse
-	(*SigningKeyFilter)(nil),               // 9: shale.SigningKeyFilter
-	(*SigningKeyWatchRequest)(nil),         // 10: shale.SigningKeyWatchRequest
-	(*SigningKeyWatchResponse)(nil),        // 11: shale.SigningKeyWatchResponse
-	(*SigningKeyWatchItem)(nil),            // 12: shale.SigningKeyWatchItem
-	(*SigningKeyRotateRequest)(nil),        // 13: shale.SigningKeyRotateRequest
-	(*PlacementPolicyAddRequest)(nil),      // 14: shale.PlacementPolicyAddRequest
-	(*PlacementPolicyGetRequest)(nil),      // 15: shale.PlacementPolicyGetRequest
-	(*PlacementPolicyRef)(nil),             // 16: shale.PlacementPolicyRef
-	(*PlacementPolicySelect)(nil),          // 17: shale.PlacementPolicySelect
-	(*PlacementPolicyPatchRequest)(nil),    // 18: shale.PlacementPolicyPatchRequest
-	(*PlacementPolicyApplyRequest)(nil),    // 19: shale.PlacementPolicyApplyRequest
-	(*PlacementPolicyEraseResponse)(nil),   // 20: shale.PlacementPolicyEraseResponse
-	(*PlacementPolicyListRequest)(nil),     // 21: shale.PlacementPolicyListRequest
-	(*PlacementPolicyListResponse)(nil),    // 22: shale.PlacementPolicyListResponse
-	(*PlacementPolicyFilter)(nil),          // 23: shale.PlacementPolicyFilter
-	(*PlacementPolicyActivateRequest)(nil), // 24: shale.PlacementPolicyActivateRequest
-	(*UploadPolicyAddRequest)(nil),         // 25: shale.UploadPolicyAddRequest
-	(*UploadPolicyGetRequest)(nil),         // 26: shale.UploadPolicyGetRequest
-	(*UploadPolicyRef)(nil),                // 27: shale.UploadPolicyRef
-	(*UploadPolicySelect)(nil),             // 28: shale.UploadPolicySelect
-	(*UploadPolicyPatchRequest)(nil),       // 29: shale.UploadPolicyPatchRequest
-	(*UploadPolicyApplyRequest)(nil),       // 30: shale.UploadPolicyApplyRequest
-	(*UploadPolicyEraseResponse)(nil),      // 31: shale.UploadPolicyEraseResponse
-	(*UploadPolicyListRequest)(nil),        // 32: shale.UploadPolicyListRequest
-	(*UploadPolicyListResponse)(nil),       // 33: shale.UploadPolicyListResponse
-	(*UploadPolicyFilter)(nil),             // 34: shale.UploadPolicyFilter
-	(*UploadPolicyActivateRequest)(nil),    // 35: shale.UploadPolicyActivateRequest
-	(*AddressPolicyAddRequest)(nil),        // 36: shale.AddressPolicyAddRequest
-	(*AddressPolicyGetRequest)(nil),        // 37: shale.AddressPolicyGetRequest
-	(*AddressPolicyRef)(nil),               // 38: shale.AddressPolicyRef
-	(*AddressPolicySelect)(nil),            // 39: shale.AddressPolicySelect
-	(*AddressPolicyPatchRequest)(nil),      // 40: shale.AddressPolicyPatchRequest
-	(*AddressPolicyApplyRequest)(nil),      // 41: shale.AddressPolicyApplyRequest
-	(*AddressPolicyEraseResponse)(nil),     // 42: shale.AddressPolicyEraseResponse
-	(*AddressPolicyListRequest)(nil),       // 43: shale.AddressPolicyListRequest
-	(*AddressPolicyListResponse)(nil),      // 44: shale.AddressPolicyListResponse
-	(*AddressPolicyFilter)(nil),            // 45: shale.AddressPolicyFilter
-	(*AddressPolicyActivateRequest)(nil),   // 46: shale.AddressPolicyActivateRequest
-	nil,                                    // 47: shale.SigningKeyAddRequest.LabelsEntry
-	nil,                                    // 48: shale.SigningKeyPatchRequest.LabelsEntry
-	nil,                                    // 49: shale.PlacementPolicyAddRequest.LabelsEntry
-	nil,                                    // 50: shale.PlacementPolicyPatchRequest.LabelsEntry
-	nil,                                    // 51: shale.UploadPolicyAddRequest.LabelsEntry
-	nil,                                    // 52: shale.UploadPolicyPatchRequest.LabelsEntry
-	nil,                                    // 53: shale.AddressPolicyAddRequest.LabelsEntry
-	nil,                                    // 54: shale.AddressPolicyPatchRequest.LabelsEntry
-	(SigningKeyState)(0),                   // 55: shale.SigningKeyState
-	(*timestamppb.Timestamp)(nil),          // 56: google.protobuf.Timestamp
-	(*patchpb.Patch)(nil),                  // 57: patch.Patch
-	(*SigningKey)(nil),                     // 58: shale.SigningKey
-	(*PlacementParams)(nil),                // 59: shale.PlacementParams
-	(*PlacementPolicy)(nil),                // 60: shale.PlacementPolicy
-	(*UploadBounds)(nil),                   // 61: shale.UploadBounds
-	(*UploadPolicy)(nil),                   // 62: shale.UploadPolicy
-	(*AddressParams)(nil),                  // 63: shale.AddressParams
-	(*DnsSync)(nil),                        // 64: shale.DnsSync
-	(*AddressPolicy)(nil),                  // 65: shale.AddressPolicy
+	(*SigningKeyListRequest)(nil),          // 5: shale.SigningKeyListRequest
+	(*SigningKeyListResponse)(nil),         // 6: shale.SigningKeyListResponse
+	(*SigningKeyFilter)(nil),               // 7: shale.SigningKeyFilter
+	(*SigningKeyWatchRequest)(nil),         // 8: shale.SigningKeyWatchRequest
+	(*SigningKeyWatchResponse)(nil),        // 9: shale.SigningKeyWatchResponse
+	(*SigningKeyWatchItem)(nil),            // 10: shale.SigningKeyWatchItem
+	(*SigningKeyRotateRequest)(nil),        // 11: shale.SigningKeyRotateRequest
+	(*PlacementPolicyAddRequest)(nil),      // 12: shale.PlacementPolicyAddRequest
+	(*PlacementPolicyGetRequest)(nil),      // 13: shale.PlacementPolicyGetRequest
+	(*PlacementPolicyRef)(nil),             // 14: shale.PlacementPolicyRef
+	(*PlacementPolicySelect)(nil),          // 15: shale.PlacementPolicySelect
+	(*PlacementPolicyPatchRequest)(nil),    // 16: shale.PlacementPolicyPatchRequest
+	(*PlacementPolicyListRequest)(nil),     // 17: shale.PlacementPolicyListRequest
+	(*PlacementPolicyListResponse)(nil),    // 18: shale.PlacementPolicyListResponse
+	(*PlacementPolicyFilter)(nil),          // 19: shale.PlacementPolicyFilter
+	(*PlacementPolicyActivateRequest)(nil), // 20: shale.PlacementPolicyActivateRequest
+	(*UploadPolicyAddRequest)(nil),         // 21: shale.UploadPolicyAddRequest
+	(*UploadPolicyGetRequest)(nil),         // 22: shale.UploadPolicyGetRequest
+	(*UploadPolicyRef)(nil),                // 23: shale.UploadPolicyRef
+	(*UploadPolicySelect)(nil),             // 24: shale.UploadPolicySelect
+	(*UploadPolicyPatchRequest)(nil),       // 25: shale.UploadPolicyPatchRequest
+	(*UploadPolicyListRequest)(nil),        // 26: shale.UploadPolicyListRequest
+	(*UploadPolicyListResponse)(nil),       // 27: shale.UploadPolicyListResponse
+	(*UploadPolicyFilter)(nil),             // 28: shale.UploadPolicyFilter
+	(*UploadPolicyActivateRequest)(nil),    // 29: shale.UploadPolicyActivateRequest
+	(*AddressPolicyAddRequest)(nil),        // 30: shale.AddressPolicyAddRequest
+	(*AddressPolicyGetRequest)(nil),        // 31: shale.AddressPolicyGetRequest
+	(*AddressPolicyRef)(nil),               // 32: shale.AddressPolicyRef
+	(*AddressPolicySelect)(nil),            // 33: shale.AddressPolicySelect
+	(*AddressPolicyPatchRequest)(nil),      // 34: shale.AddressPolicyPatchRequest
+	(*AddressPolicyListRequest)(nil),       // 35: shale.AddressPolicyListRequest
+	(*AddressPolicyListResponse)(nil),      // 36: shale.AddressPolicyListResponse
+	(*AddressPolicyFilter)(nil),            // 37: shale.AddressPolicyFilter
+	(*AddressPolicyActivateRequest)(nil),   // 38: shale.AddressPolicyActivateRequest
+	nil,                                    // 39: shale.SigningKeyAddRequest.LabelsEntry
+	nil,                                    // 40: shale.SigningKeyPatchRequest.LabelsEntry
+	nil,                                    // 41: shale.PlacementPolicyAddRequest.LabelsEntry
+	nil,                                    // 42: shale.PlacementPolicyPatchRequest.LabelsEntry
+	nil,                                    // 43: shale.UploadPolicyAddRequest.LabelsEntry
+	nil,                                    // 44: shale.UploadPolicyPatchRequest.LabelsEntry
+	nil,                                    // 45: shale.AddressPolicyAddRequest.LabelsEntry
+	nil,                                    // 46: shale.AddressPolicyPatchRequest.LabelsEntry
+	(SigningKeyState)(0),                   // 47: shale.SigningKeyState
+	(*timestamppb.Timestamp)(nil),          // 48: google.protobuf.Timestamp
+	(*SigningKey)(nil),                     // 49: shale.SigningKey
+	(*PlacementParams)(nil),                // 50: shale.PlacementParams
+	(*PlacementPolicy)(nil),                // 51: shale.PlacementPolicy
+	(*UploadBounds)(nil),                   // 52: shale.UploadBounds
+	(*UploadPolicy)(nil),                   // 53: shale.UploadPolicy
+	(*AddressParams)(nil),                  // 54: shale.AddressParams
+	(*DnsSync)(nil),                        // 55: shale.DnsSync
+	(*AddressPolicy)(nil),                  // 56: shale.AddressPolicy
 }
 var file_shale_policy_svc_g_proto_depIdxs = []int32{
-	47,  // 0: shale.SigningKeyAddRequest.labels:type_name -> shale.SigningKeyAddRequest.LabelsEntry
-	55,  // 1: shale.SigningKeyAddRequest.state:type_name -> shale.SigningKeyState
-	56,  // 2: shale.SigningKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	56,  // 3: shale.SigningKeyAddRequest.date_signing:type_name -> google.protobuf.Timestamp
-	56,  // 4: shale.SigningKeyAddRequest.date_retired:type_name -> google.protobuf.Timestamp
-	2,   // 5: shale.SigningKeyGetRequest.ref:type_name -> shale.SigningKeyRef
-	3,   // 6: shale.SigningKeyGetRequest.select:type_name -> shale.SigningKeySelect
-	2,   // 7: shale.SigningKeyPatchRequest.ref:type_name -> shale.SigningKeyRef
-	48,  // 8: shale.SigningKeyPatchRequest.labels:type_name -> shale.SigningKeyPatchRequest.LabelsEntry
-	55,  // 9: shale.SigningKeyPatchRequest.state:type_name -> shale.SigningKeyState
-	56,  // 10: shale.SigningKeyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	56,  // 11: shale.SigningKeyPatchRequest.date_signing:type_name -> google.protobuf.Timestamp
-	56,  // 12: shale.SigningKeyPatchRequest.date_retired:type_name -> google.protobuf.Timestamp
-	2,   // 13: shale.SigningKeyApplyRequest.ref:type_name -> shale.SigningKeyRef
-	57,  // 14: shale.SigningKeyApplyRequest.patch:type_name -> patch.Patch
-	9,   // 15: shale.SigningKeyListRequest.filters:type_name -> shale.SigningKeyFilter
-	58,  // 16: shale.SigningKeyListResponse.items:type_name -> shale.SigningKey
-	2,   // 17: shale.SigningKeyFilter.ref:type_name -> shale.SigningKeyRef
-	9,   // 18: shale.SigningKeyWatchRequest.filters:type_name -> shale.SigningKeyFilter
-	12,  // 19: shale.SigningKeyWatchResponse.items:type_name -> shale.SigningKeyWatchItem
-	58,  // 20: shale.SigningKeyWatchItem.value:type_name -> shale.SigningKey
-	49,  // 21: shale.PlacementPolicyAddRequest.labels:type_name -> shale.PlacementPolicyAddRequest.LabelsEntry
-	59,  // 22: shale.PlacementPolicyAddRequest.params:type_name -> shale.PlacementParams
-	56,  // 23: shale.PlacementPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	56,  // 24: shale.PlacementPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
-	16,  // 25: shale.PlacementPolicyGetRequest.ref:type_name -> shale.PlacementPolicyRef
-	17,  // 26: shale.PlacementPolicyGetRequest.select:type_name -> shale.PlacementPolicySelect
-	16,  // 27: shale.PlacementPolicyPatchRequest.ref:type_name -> shale.PlacementPolicyRef
-	50,  // 28: shale.PlacementPolicyPatchRequest.labels:type_name -> shale.PlacementPolicyPatchRequest.LabelsEntry
-	59,  // 29: shale.PlacementPolicyPatchRequest.params:type_name -> shale.PlacementParams
-	56,  // 30: shale.PlacementPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	56,  // 31: shale.PlacementPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
-	16,  // 32: shale.PlacementPolicyApplyRequest.ref:type_name -> shale.PlacementPolicyRef
-	57,  // 33: shale.PlacementPolicyApplyRequest.patch:type_name -> patch.Patch
-	23,  // 34: shale.PlacementPolicyListRequest.filters:type_name -> shale.PlacementPolicyFilter
-	60,  // 35: shale.PlacementPolicyListResponse.items:type_name -> shale.PlacementPolicy
-	16,  // 36: shale.PlacementPolicyFilter.ref:type_name -> shale.PlacementPolicyRef
-	16,  // 37: shale.PlacementPolicyActivateRequest.ref:type_name -> shale.PlacementPolicyRef
-	51,  // 38: shale.UploadPolicyAddRequest.labels:type_name -> shale.UploadPolicyAddRequest.LabelsEntry
-	61,  // 39: shale.UploadPolicyAddRequest.bounds:type_name -> shale.UploadBounds
-	56,  // 40: shale.UploadPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	56,  // 41: shale.UploadPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
-	27,  // 42: shale.UploadPolicyGetRequest.ref:type_name -> shale.UploadPolicyRef
-	28,  // 43: shale.UploadPolicyGetRequest.select:type_name -> shale.UploadPolicySelect
-	27,  // 44: shale.UploadPolicyPatchRequest.ref:type_name -> shale.UploadPolicyRef
-	52,  // 45: shale.UploadPolicyPatchRequest.labels:type_name -> shale.UploadPolicyPatchRequest.LabelsEntry
-	61,  // 46: shale.UploadPolicyPatchRequest.bounds:type_name -> shale.UploadBounds
-	56,  // 47: shale.UploadPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	56,  // 48: shale.UploadPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
-	27,  // 49: shale.UploadPolicyApplyRequest.ref:type_name -> shale.UploadPolicyRef
-	57,  // 50: shale.UploadPolicyApplyRequest.patch:type_name -> patch.Patch
-	34,  // 51: shale.UploadPolicyListRequest.filters:type_name -> shale.UploadPolicyFilter
-	62,  // 52: shale.UploadPolicyListResponse.items:type_name -> shale.UploadPolicy
-	27,  // 53: shale.UploadPolicyFilter.ref:type_name -> shale.UploadPolicyRef
-	27,  // 54: shale.UploadPolicyActivateRequest.ref:type_name -> shale.UploadPolicyRef
-	53,  // 55: shale.AddressPolicyAddRequest.labels:type_name -> shale.AddressPolicyAddRequest.LabelsEntry
-	63,  // 56: shale.AddressPolicyAddRequest.params:type_name -> shale.AddressParams
-	56,  // 57: shale.AddressPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	56,  // 58: shale.AddressPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
-	64,  // 59: shale.AddressPolicyAddRequest.dns_sync:type_name -> shale.DnsSync
-	38,  // 60: shale.AddressPolicyGetRequest.ref:type_name -> shale.AddressPolicyRef
-	39,  // 61: shale.AddressPolicyGetRequest.select:type_name -> shale.AddressPolicySelect
-	38,  // 62: shale.AddressPolicyPatchRequest.ref:type_name -> shale.AddressPolicyRef
-	54,  // 63: shale.AddressPolicyPatchRequest.labels:type_name -> shale.AddressPolicyPatchRequest.LabelsEntry
-	63,  // 64: shale.AddressPolicyPatchRequest.params:type_name -> shale.AddressParams
-	56,  // 65: shale.AddressPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	56,  // 66: shale.AddressPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
-	64,  // 67: shale.AddressPolicyPatchRequest.dns_sync:type_name -> shale.DnsSync
-	38,  // 68: shale.AddressPolicyApplyRequest.ref:type_name -> shale.AddressPolicyRef
-	57,  // 69: shale.AddressPolicyApplyRequest.patch:type_name -> patch.Patch
-	45,  // 70: shale.AddressPolicyListRequest.filters:type_name -> shale.AddressPolicyFilter
-	65,  // 71: shale.AddressPolicyListResponse.items:type_name -> shale.AddressPolicy
-	38,  // 72: shale.AddressPolicyFilter.ref:type_name -> shale.AddressPolicyRef
-	38,  // 73: shale.AddressPolicyActivateRequest.ref:type_name -> shale.AddressPolicyRef
-	0,   // 74: shale.SigningKeyService.Add:input_type -> shale.SigningKeyAddRequest
-	1,   // 75: shale.SigningKeyService.Get:input_type -> shale.SigningKeyGetRequest
-	4,   // 76: shale.SigningKeyService.Patch:input_type -> shale.SigningKeyPatchRequest
-	5,   // 77: shale.SigningKeyService.Apply:input_type -> shale.SigningKeyApplyRequest
-	2,   // 78: shale.SigningKeyService.Erase:input_type -> shale.SigningKeyRef
-	7,   // 79: shale.SigningKeyService.List:input_type -> shale.SigningKeyListRequest
-	10,  // 80: shale.SigningKeyService.Watch:input_type -> shale.SigningKeyWatchRequest
-	13,  // 81: shale.SigningKeyService.Rotate:input_type -> shale.SigningKeyRotateRequest
-	14,  // 82: shale.PlacementPolicyService.Add:input_type -> shale.PlacementPolicyAddRequest
-	15,  // 83: shale.PlacementPolicyService.Get:input_type -> shale.PlacementPolicyGetRequest
-	18,  // 84: shale.PlacementPolicyService.Patch:input_type -> shale.PlacementPolicyPatchRequest
-	19,  // 85: shale.PlacementPolicyService.Apply:input_type -> shale.PlacementPolicyApplyRequest
-	16,  // 86: shale.PlacementPolicyService.Erase:input_type -> shale.PlacementPolicyRef
-	21,  // 87: shale.PlacementPolicyService.List:input_type -> shale.PlacementPolicyListRequest
-	24,  // 88: shale.PlacementPolicyService.Activate:input_type -> shale.PlacementPolicyActivateRequest
-	25,  // 89: shale.UploadPolicyService.Add:input_type -> shale.UploadPolicyAddRequest
-	26,  // 90: shale.UploadPolicyService.Get:input_type -> shale.UploadPolicyGetRequest
-	29,  // 91: shale.UploadPolicyService.Patch:input_type -> shale.UploadPolicyPatchRequest
-	30,  // 92: shale.UploadPolicyService.Apply:input_type -> shale.UploadPolicyApplyRequest
-	27,  // 93: shale.UploadPolicyService.Erase:input_type -> shale.UploadPolicyRef
-	32,  // 94: shale.UploadPolicyService.List:input_type -> shale.UploadPolicyListRequest
-	35,  // 95: shale.UploadPolicyService.Activate:input_type -> shale.UploadPolicyActivateRequest
-	36,  // 96: shale.AddressPolicyService.Add:input_type -> shale.AddressPolicyAddRequest
-	37,  // 97: shale.AddressPolicyService.Get:input_type -> shale.AddressPolicyGetRequest
-	40,  // 98: shale.AddressPolicyService.Patch:input_type -> shale.AddressPolicyPatchRequest
-	41,  // 99: shale.AddressPolicyService.Apply:input_type -> shale.AddressPolicyApplyRequest
-	38,  // 100: shale.AddressPolicyService.Erase:input_type -> shale.AddressPolicyRef
-	43,  // 101: shale.AddressPolicyService.List:input_type -> shale.AddressPolicyListRequest
-	46,  // 102: shale.AddressPolicyService.Activate:input_type -> shale.AddressPolicyActivateRequest
-	58,  // 103: shale.SigningKeyService.Add:output_type -> shale.SigningKey
-	58,  // 104: shale.SigningKeyService.Get:output_type -> shale.SigningKey
-	58,  // 105: shale.SigningKeyService.Patch:output_type -> shale.SigningKey
-	58,  // 106: shale.SigningKeyService.Apply:output_type -> shale.SigningKey
-	6,   // 107: shale.SigningKeyService.Erase:output_type -> shale.SigningKeyEraseResponse
-	8,   // 108: shale.SigningKeyService.List:output_type -> shale.SigningKeyListResponse
-	11,  // 109: shale.SigningKeyService.Watch:output_type -> shale.SigningKeyWatchResponse
-	58,  // 110: shale.SigningKeyService.Rotate:output_type -> shale.SigningKey
-	60,  // 111: shale.PlacementPolicyService.Add:output_type -> shale.PlacementPolicy
-	60,  // 112: shale.PlacementPolicyService.Get:output_type -> shale.PlacementPolicy
-	60,  // 113: shale.PlacementPolicyService.Patch:output_type -> shale.PlacementPolicy
-	60,  // 114: shale.PlacementPolicyService.Apply:output_type -> shale.PlacementPolicy
-	20,  // 115: shale.PlacementPolicyService.Erase:output_type -> shale.PlacementPolicyEraseResponse
-	22,  // 116: shale.PlacementPolicyService.List:output_type -> shale.PlacementPolicyListResponse
-	60,  // 117: shale.PlacementPolicyService.Activate:output_type -> shale.PlacementPolicy
-	62,  // 118: shale.UploadPolicyService.Add:output_type -> shale.UploadPolicy
-	62,  // 119: shale.UploadPolicyService.Get:output_type -> shale.UploadPolicy
-	62,  // 120: shale.UploadPolicyService.Patch:output_type -> shale.UploadPolicy
-	62,  // 121: shale.UploadPolicyService.Apply:output_type -> shale.UploadPolicy
-	31,  // 122: shale.UploadPolicyService.Erase:output_type -> shale.UploadPolicyEraseResponse
-	33,  // 123: shale.UploadPolicyService.List:output_type -> shale.UploadPolicyListResponse
-	62,  // 124: shale.UploadPolicyService.Activate:output_type -> shale.UploadPolicy
-	65,  // 125: shale.AddressPolicyService.Add:output_type -> shale.AddressPolicy
-	65,  // 126: shale.AddressPolicyService.Get:output_type -> shale.AddressPolicy
-	65,  // 127: shale.AddressPolicyService.Patch:output_type -> shale.AddressPolicy
-	65,  // 128: shale.AddressPolicyService.Apply:output_type -> shale.AddressPolicy
-	42,  // 129: shale.AddressPolicyService.Erase:output_type -> shale.AddressPolicyEraseResponse
-	44,  // 130: shale.AddressPolicyService.List:output_type -> shale.AddressPolicyListResponse
-	65,  // 131: shale.AddressPolicyService.Activate:output_type -> shale.AddressPolicy
-	103, // [103:132] is the sub-list for method output_type
-	74,  // [74:103] is the sub-list for method input_type
-	74,  // [74:74] is the sub-list for extension type_name
-	74,  // [74:74] is the sub-list for extension extendee
-	0,   // [0:74] is the sub-list for field type_name
+	39, // 0: shale.SigningKeyAddRequest.labels:type_name -> shale.SigningKeyAddRequest.LabelsEntry
+	47, // 1: shale.SigningKeyAddRequest.state:type_name -> shale.SigningKeyState
+	48, // 2: shale.SigningKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	48, // 3: shale.SigningKeyAddRequest.date_signing:type_name -> google.protobuf.Timestamp
+	48, // 4: shale.SigningKeyAddRequest.date_retired:type_name -> google.protobuf.Timestamp
+	2,  // 5: shale.SigningKeyGetRequest.ref:type_name -> shale.SigningKeyRef
+	3,  // 6: shale.SigningKeyGetRequest.select:type_name -> shale.SigningKeySelect
+	2,  // 7: shale.SigningKeyPatchRequest.ref:type_name -> shale.SigningKeyRef
+	40, // 8: shale.SigningKeyPatchRequest.labels:type_name -> shale.SigningKeyPatchRequest.LabelsEntry
+	47, // 9: shale.SigningKeyPatchRequest.state:type_name -> shale.SigningKeyState
+	48, // 10: shale.SigningKeyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	48, // 11: shale.SigningKeyPatchRequest.date_signing:type_name -> google.protobuf.Timestamp
+	48, // 12: shale.SigningKeyPatchRequest.date_retired:type_name -> google.protobuf.Timestamp
+	7,  // 13: shale.SigningKeyListRequest.filters:type_name -> shale.SigningKeyFilter
+	3,  // 14: shale.SigningKeyListRequest.select:type_name -> shale.SigningKeySelect
+	49, // 15: shale.SigningKeyListResponse.items:type_name -> shale.SigningKey
+	2,  // 16: shale.SigningKeyFilter.ref:type_name -> shale.SigningKeyRef
+	7,  // 17: shale.SigningKeyWatchRequest.filters:type_name -> shale.SigningKeyFilter
+	10, // 18: shale.SigningKeyWatchResponse.items:type_name -> shale.SigningKeyWatchItem
+	49, // 19: shale.SigningKeyWatchItem.value:type_name -> shale.SigningKey
+	41, // 20: shale.PlacementPolicyAddRequest.labels:type_name -> shale.PlacementPolicyAddRequest.LabelsEntry
+	50, // 21: shale.PlacementPolicyAddRequest.params:type_name -> shale.PlacementParams
+	48, // 22: shale.PlacementPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	48, // 23: shale.PlacementPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
+	14, // 24: shale.PlacementPolicyGetRequest.ref:type_name -> shale.PlacementPolicyRef
+	15, // 25: shale.PlacementPolicyGetRequest.select:type_name -> shale.PlacementPolicySelect
+	14, // 26: shale.PlacementPolicyPatchRequest.ref:type_name -> shale.PlacementPolicyRef
+	42, // 27: shale.PlacementPolicyPatchRequest.labels:type_name -> shale.PlacementPolicyPatchRequest.LabelsEntry
+	50, // 28: shale.PlacementPolicyPatchRequest.params:type_name -> shale.PlacementParams
+	48, // 29: shale.PlacementPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	48, // 30: shale.PlacementPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
+	19, // 31: shale.PlacementPolicyListRequest.filters:type_name -> shale.PlacementPolicyFilter
+	15, // 32: shale.PlacementPolicyListRequest.select:type_name -> shale.PlacementPolicySelect
+	51, // 33: shale.PlacementPolicyListResponse.items:type_name -> shale.PlacementPolicy
+	14, // 34: shale.PlacementPolicyFilter.ref:type_name -> shale.PlacementPolicyRef
+	14, // 35: shale.PlacementPolicyActivateRequest.ref:type_name -> shale.PlacementPolicyRef
+	43, // 36: shale.UploadPolicyAddRequest.labels:type_name -> shale.UploadPolicyAddRequest.LabelsEntry
+	52, // 37: shale.UploadPolicyAddRequest.bounds:type_name -> shale.UploadBounds
+	48, // 38: shale.UploadPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	48, // 39: shale.UploadPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
+	23, // 40: shale.UploadPolicyGetRequest.ref:type_name -> shale.UploadPolicyRef
+	24, // 41: shale.UploadPolicyGetRequest.select:type_name -> shale.UploadPolicySelect
+	23, // 42: shale.UploadPolicyPatchRequest.ref:type_name -> shale.UploadPolicyRef
+	44, // 43: shale.UploadPolicyPatchRequest.labels:type_name -> shale.UploadPolicyPatchRequest.LabelsEntry
+	52, // 44: shale.UploadPolicyPatchRequest.bounds:type_name -> shale.UploadBounds
+	48, // 45: shale.UploadPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	48, // 46: shale.UploadPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
+	28, // 47: shale.UploadPolicyListRequest.filters:type_name -> shale.UploadPolicyFilter
+	24, // 48: shale.UploadPolicyListRequest.select:type_name -> shale.UploadPolicySelect
+	53, // 49: shale.UploadPolicyListResponse.items:type_name -> shale.UploadPolicy
+	23, // 50: shale.UploadPolicyFilter.ref:type_name -> shale.UploadPolicyRef
+	23, // 51: shale.UploadPolicyActivateRequest.ref:type_name -> shale.UploadPolicyRef
+	45, // 52: shale.AddressPolicyAddRequest.labels:type_name -> shale.AddressPolicyAddRequest.LabelsEntry
+	54, // 53: shale.AddressPolicyAddRequest.params:type_name -> shale.AddressParams
+	48, // 54: shale.AddressPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	48, // 55: shale.AddressPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
+	55, // 56: shale.AddressPolicyAddRequest.dns_sync:type_name -> shale.DnsSync
+	32, // 57: shale.AddressPolicyGetRequest.ref:type_name -> shale.AddressPolicyRef
+	33, // 58: shale.AddressPolicyGetRequest.select:type_name -> shale.AddressPolicySelect
+	32, // 59: shale.AddressPolicyPatchRequest.ref:type_name -> shale.AddressPolicyRef
+	46, // 60: shale.AddressPolicyPatchRequest.labels:type_name -> shale.AddressPolicyPatchRequest.LabelsEntry
+	54, // 61: shale.AddressPolicyPatchRequest.params:type_name -> shale.AddressParams
+	48, // 62: shale.AddressPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	48, // 63: shale.AddressPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
+	55, // 64: shale.AddressPolicyPatchRequest.dns_sync:type_name -> shale.DnsSync
+	37, // 65: shale.AddressPolicyListRequest.filters:type_name -> shale.AddressPolicyFilter
+	33, // 66: shale.AddressPolicyListRequest.select:type_name -> shale.AddressPolicySelect
+	56, // 67: shale.AddressPolicyListResponse.items:type_name -> shale.AddressPolicy
+	32, // 68: shale.AddressPolicyFilter.ref:type_name -> shale.AddressPolicyRef
+	32, // 69: shale.AddressPolicyActivateRequest.ref:type_name -> shale.AddressPolicyRef
+	0,  // 70: shale.SigningKeyService.Add:input_type -> shale.SigningKeyAddRequest
+	1,  // 71: shale.SigningKeyService.Get:input_type -> shale.SigningKeyGetRequest
+	4,  // 72: shale.SigningKeyService.Patch:input_type -> shale.SigningKeyPatchRequest
+	5,  // 73: shale.SigningKeyService.List:input_type -> shale.SigningKeyListRequest
+	8,  // 74: shale.SigningKeyService.Watch:input_type -> shale.SigningKeyWatchRequest
+	11, // 75: shale.SigningKeyService.Rotate:input_type -> shale.SigningKeyRotateRequest
+	12, // 76: shale.PlacementPolicyService.Add:input_type -> shale.PlacementPolicyAddRequest
+	13, // 77: shale.PlacementPolicyService.Get:input_type -> shale.PlacementPolicyGetRequest
+	16, // 78: shale.PlacementPolicyService.Patch:input_type -> shale.PlacementPolicyPatchRequest
+	17, // 79: shale.PlacementPolicyService.List:input_type -> shale.PlacementPolicyListRequest
+	20, // 80: shale.PlacementPolicyService.Activate:input_type -> shale.PlacementPolicyActivateRequest
+	21, // 81: shale.UploadPolicyService.Add:input_type -> shale.UploadPolicyAddRequest
+	22, // 82: shale.UploadPolicyService.Get:input_type -> shale.UploadPolicyGetRequest
+	25, // 83: shale.UploadPolicyService.Patch:input_type -> shale.UploadPolicyPatchRequest
+	26, // 84: shale.UploadPolicyService.List:input_type -> shale.UploadPolicyListRequest
+	29, // 85: shale.UploadPolicyService.Activate:input_type -> shale.UploadPolicyActivateRequest
+	30, // 86: shale.AddressPolicyService.Add:input_type -> shale.AddressPolicyAddRequest
+	31, // 87: shale.AddressPolicyService.Get:input_type -> shale.AddressPolicyGetRequest
+	34, // 88: shale.AddressPolicyService.Patch:input_type -> shale.AddressPolicyPatchRequest
+	35, // 89: shale.AddressPolicyService.List:input_type -> shale.AddressPolicyListRequest
+	38, // 90: shale.AddressPolicyService.Activate:input_type -> shale.AddressPolicyActivateRequest
+	49, // 91: shale.SigningKeyService.Add:output_type -> shale.SigningKey
+	49, // 92: shale.SigningKeyService.Get:output_type -> shale.SigningKey
+	49, // 93: shale.SigningKeyService.Patch:output_type -> shale.SigningKey
+	6,  // 94: shale.SigningKeyService.List:output_type -> shale.SigningKeyListResponse
+	9,  // 95: shale.SigningKeyService.Watch:output_type -> shale.SigningKeyWatchResponse
+	49, // 96: shale.SigningKeyService.Rotate:output_type -> shale.SigningKey
+	51, // 97: shale.PlacementPolicyService.Add:output_type -> shale.PlacementPolicy
+	51, // 98: shale.PlacementPolicyService.Get:output_type -> shale.PlacementPolicy
+	51, // 99: shale.PlacementPolicyService.Patch:output_type -> shale.PlacementPolicy
+	18, // 100: shale.PlacementPolicyService.List:output_type -> shale.PlacementPolicyListResponse
+	51, // 101: shale.PlacementPolicyService.Activate:output_type -> shale.PlacementPolicy
+	53, // 102: shale.UploadPolicyService.Add:output_type -> shale.UploadPolicy
+	53, // 103: shale.UploadPolicyService.Get:output_type -> shale.UploadPolicy
+	53, // 104: shale.UploadPolicyService.Patch:output_type -> shale.UploadPolicy
+	27, // 105: shale.UploadPolicyService.List:output_type -> shale.UploadPolicyListResponse
+	53, // 106: shale.UploadPolicyService.Activate:output_type -> shale.UploadPolicy
+	56, // 107: shale.AddressPolicyService.Add:output_type -> shale.AddressPolicy
+	56, // 108: shale.AddressPolicyService.Get:output_type -> shale.AddressPolicy
+	56, // 109: shale.AddressPolicyService.Patch:output_type -> shale.AddressPolicy
+	36, // 110: shale.AddressPolicyService.List:output_type -> shale.AddressPolicyListResponse
+	56, // 111: shale.AddressPolicyService.Activate:output_type -> shale.AddressPolicy
+	91, // [91:112] is the sub-list for method output_type
+	70, // [70:91] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_shale_policy_svc_g_proto_init() }
@@ -8652,17 +8042,17 @@ func file_shale_policy_svc_g_proto_init() {
 		(*signingKeyRef_Id)(nil),
 		(*signingKeyRef_Alias)(nil),
 	}
-	file_shale_policy_svc_g_proto_msgTypes[16].OneofWrappers = []any{
+	file_shale_policy_svc_g_proto_msgTypes[14].OneofWrappers = []any{
 		(*placementPolicyRef_Id)(nil),
 		(*placementPolicyRef_Alias)(nil),
 		(*placementPolicyRef_Version)(nil),
 	}
-	file_shale_policy_svc_g_proto_msgTypes[27].OneofWrappers = []any{
+	file_shale_policy_svc_g_proto_msgTypes[23].OneofWrappers = []any{
 		(*uploadPolicyRef_Id)(nil),
 		(*uploadPolicyRef_Alias)(nil),
 		(*uploadPolicyRef_Version)(nil),
 	}
-	file_shale_policy_svc_g_proto_msgTypes[38].OneofWrappers = []any{
+	file_shale_policy_svc_g_proto_msgTypes[32].OneofWrappers = []any{
 		(*addressPolicyRef_Id)(nil),
 		(*addressPolicyRef_Alias)(nil),
 		(*addressPolicyRef_Version)(nil),
@@ -8673,7 +8063,7 @@ func file_shale_policy_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_policy_svc_g_proto_rawDesc), len(file_shale_policy_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   55,
+			NumMessages:   47,
 			NumExtensions: 0,
 			NumServices:   4,
 		},

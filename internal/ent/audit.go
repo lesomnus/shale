@@ -23,6 +23,12 @@ type Audit struct {
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// ActorId holds the value of the "actor_id" field.
 	ActorId uuid.UUID `json:"actor_id,omitempty"`
+	// CallerId holds the value of the "caller_id" field.
+	CallerId *uuid.UUID `json:"caller_id,omitempty"`
+	// CallerTenantId holds the value of the "caller_tenant_id" field.
+	CallerTenantId *uuid.UUID `json:"caller_tenant_id,omitempty"`
+	// Presence holds the value of the "presence" field.
+	Presence *string `json:"presence,omitempty"`
 	// TraceId holds the value of the "trace_id" field.
 	TraceId []byte `json:"trace_id,omitempty"`
 	// Action holds the value of the "action" field.
@@ -59,11 +65,11 @@ func (*Audit) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case audit.FieldDomain:
 			values[i] = new(sql.NullInt64)
-		case audit.FieldAction:
+		case audit.FieldPresence, audit.FieldAction:
 			values[i] = new(sql.NullString)
 		case audit.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case audit.FieldCounterpartTenantId:
+		case audit.FieldCallerId, audit.FieldCallerTenantId, audit.FieldCounterpartTenantId:
 			values[i] = new(sql.Null[uuid.UUID])
 		case audit.FieldId, audit.FieldTenantId, audit.FieldActorId, audit.FieldObjectId, audit.FieldActorTenantId:
 			values[i] = new(uuid.UUID)
@@ -99,6 +105,27 @@ func (_m *Audit) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field actor_id", values[i])
 			} else if value != nil {
 				_m.ActorId = *value
+			}
+		case audit.FieldCallerId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field caller_id", values[i])
+			} else if value.Valid {
+				_m.CallerId = new(uuid.UUID)
+				*_m.CallerId = value.V
+			}
+		case audit.FieldCallerTenantId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field caller_tenant_id", values[i])
+			} else if value.Valid {
+				_m.CallerTenantId = new(uuid.UUID)
+				*_m.CallerTenantId = value.V
+			}
+		case audit.FieldPresence:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field presence", values[i])
+			} else if value.Valid {
+				_m.Presence = new(string)
+				*_m.Presence = value.String
 			}
 		case audit.FieldTraceId:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -227,6 +254,21 @@ func (_m *Audit) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("actor_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ActorId))
+	builder.WriteString(", ")
+	if v := _m.CallerId; v != nil {
+		builder.WriteString("caller_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.CallerTenantId; v != nil {
+		builder.WriteString("caller_tenant_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.Presence; v != nil {
+		builder.WriteString("presence=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("trace_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TraceId))

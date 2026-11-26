@@ -527,7 +527,7 @@ policy's TSIG key. Setting it up is in
   never answered with: no `Get`, `List`, `Add`, `Patch` or `Activate`
   carries it, the trail keeps no value of it
   ([§26.5](08-sizing.md#265-the-control-planes-database)), and no log
-  line names it. `Apply` is closed on the entity, since a patch document
+  line names it. The entity has no `Apply`, since a patch document
   would store it unsealed, and `params.dns_tsig_secret`, where it was
   declared before, is refused. Rotating it is writing it again.
 - A policy that stops being `dns` removes nothing: its records stay until

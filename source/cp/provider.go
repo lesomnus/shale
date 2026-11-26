@@ -146,7 +146,9 @@ func rpcError(ctx context.Context, err error) error {
 	// contain endpoints or credentials supplied by an unexpected implementation.
 	safe := status.Error(code, "source catalog request failed")
 	switch code {
-	case codes.Unknown, codes.Unavailable, codes.DeadlineExceeded, codes.Canceled:
+	// Internal is what a CP answers a failure that carried no status, where
+	// it once answered Unknown: what it was then, it is now.
+	case codes.Unknown, codes.Internal, codes.Unavailable, codes.DeadlineExceeded, codes.Canceled:
 		return errors.Join(source.ErrUnavailable, safe)
 	default:
 		return safe

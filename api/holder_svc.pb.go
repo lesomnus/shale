@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1206,99 +1206,6 @@ func (b0 HolderPatchRequest_builder) Build() *HolderPatchRequest {
 	return m0
 }
 
-type HolderApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *HolderApplyRequest) Reset() {
-	*x = HolderApplyRequest{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HolderApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HolderApplyRequest) ProtoMessage() {}
-
-func (x *HolderApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *HolderApplyRequest) GetRef() *HolderRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *HolderApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *HolderApplyRequest) SetRef(v *HolderRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *HolderApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *HolderApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *HolderApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *HolderApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *HolderApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type HolderApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *HolderRef
-	Patch *patchpb.Patch
-}
-
-func (b0 HolderApplyRequest_builder) Build() *HolderApplyRequest {
-	m0 := &HolderApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type HolderEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1310,7 +1217,7 @@ type HolderEraseResponse struct {
 
 func (x *HolderEraseResponse) Reset() {
 	*x = HolderEraseResponse{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[7]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1322,7 +1229,7 @@ func (x *HolderEraseResponse) String() string {
 func (*HolderEraseResponse) ProtoMessage() {}
 
 func (x *HolderEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[7]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1385,13 +1292,14 @@ type HolderListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *HolderSelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *HolderListRequest) Reset() {
 	*x = HolderListRequest{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[8]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1403,7 +1311,7 @@ func (x *HolderListRequest) String() string {
 func (*HolderListRequest) ProtoMessage() {}
 
 func (x *HolderListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[8]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1444,6 +1352,13 @@ func (x *HolderListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *HolderListRequest) GetSelect() *HolderSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *HolderListRequest) SetFilters(v []*HolderFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1458,6 +1373,21 @@ func (x *HolderListRequest) SetAfter(v string) {
 
 func (x *HolderListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *HolderListRequest) SetSelect(v *HolderSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *HolderListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *HolderListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type HolderListRequest_builder struct {
@@ -1480,6 +1410,15 @@ type HolderListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *HolderSelect
 }
 
 func (b0 HolderListRequest_builder) Build() *HolderListRequest {
@@ -1490,6 +1429,7 @@ func (b0 HolderListRequest_builder) Build() *HolderListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1503,7 +1443,7 @@ type HolderListResponse struct {
 
 func (x *HolderListResponse) Reset() {
 	*x = HolderListResponse{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[9]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1515,7 +1455,7 @@ func (x *HolderListResponse) String() string {
 func (*HolderListResponse) ProtoMessage() {}
 
 func (x *HolderListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[9]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1584,7 +1524,7 @@ type HolderFilter struct {
 
 func (x *HolderFilter) Reset() {
 	*x = HolderFilter{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[10]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1596,7 +1536,7 @@ func (x *HolderFilter) String() string {
 func (*HolderFilter) ProtoMessage() {}
 
 func (x *HolderFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[10]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1690,7 +1630,7 @@ type HolderWatchRequest struct {
 
 func (x *HolderWatchRequest) Reset() {
 	*x = HolderWatchRequest{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[11]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1702,7 +1642,7 @@ func (x *HolderWatchRequest) String() string {
 func (*HolderWatchRequest) ProtoMessage() {}
 
 func (x *HolderWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[11]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1740,13 +1680,15 @@ func (x *HolderWatchRequest) SetSkipSnapshot(v bool) {
 type HolderWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*HolderFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -1774,7 +1716,7 @@ type HolderWatchResponse struct {
 
 func (x *HolderWatchResponse) Reset() {
 	*x = HolderWatchResponse{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[12]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1786,7 +1728,7 @@ func (x *HolderWatchResponse) String() string {
 func (*HolderWatchResponse) ProtoMessage() {}
 
 func (x *HolderWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[12]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1838,7 +1780,7 @@ type HolderWatchItem struct {
 
 func (x *HolderWatchItem) Reset() {
 	*x = HolderWatchItem{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[13]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1850,7 +1792,7 @@ func (x *HolderWatchItem) String() string {
 func (*HolderWatchItem) ProtoMessage() {}
 
 func (x *HolderWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[13]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1927,7 +1869,7 @@ type HolderWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -1935,7 +1877,8 @@ type HolderWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Holder
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -1968,7 +1911,7 @@ type HolderIssuePasswordRequest struct {
 
 func (x *HolderIssuePasswordRequest) Reset() {
 	*x = HolderIssuePasswordRequest{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[14]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1980,7 +1923,7 @@ func (x *HolderIssuePasswordRequest) String() string {
 func (*HolderIssuePasswordRequest) ProtoMessage() {}
 
 func (x *HolderIssuePasswordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[14]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2036,7 +1979,7 @@ type HolderIssuePasswordResponse struct {
 
 func (x *HolderIssuePasswordResponse) Reset() {
 	*x = HolderIssuePasswordResponse{}
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[15]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2048,7 +1991,7 @@ func (x *HolderIssuePasswordResponse) String() string {
 func (*HolderIssuePasswordResponse) ProtoMessage() {}
 
 func (x *HolderIssuePasswordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[15]
+	mi := &file_shale_payday_holder_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2088,9 +2031,9 @@ var File_shale_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/payday/holder_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19shale/payday/holder.proto\x1a\x1fshale/payday/tenant_svc.g.proto\"\xfa\x02\n" +
-	"\x10HolderAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x1fshale/payday/holder_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x19shale/payday/holder.proto\x1a\x1fshale/payday/tenant_svc.g.proto\"\x82\x03\n" +
+	"\x10HolderAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
@@ -2104,9 +2047,9 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"c\n" +
 	"\x10HolderGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.HolderRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.shale.HolderSelectR\x06select\"R\n" +
-	"\tHolderRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12,\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.shale.HolderSelectR\x06select\"Z\n" +
+	"\tHolderRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12,\n" +
 	"\x04slug\x18\x04 \x01(\v2\x16.shale.HolderRefBySlugH\x00R\x04slugB\x05\n" +
 	"\x03key\"Q\n" +
 	"\x0fHolderRefBySlug\x12\x14\n" +
@@ -2137,17 +2080,15 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\tall_sites\x18\x14 \x01(\bR\ballSites\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
-	"\x12HolderApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.HolderRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"-\n" +
 	"\x13HolderEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9b\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc8\x01\n" +
 	"\x11HolderListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.shale.HolderFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"T\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.shale.HolderSelectR\x06select\"T\n" +
 	"\x12HolderListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.shale.HolderR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xd0\x01\n" +
@@ -2170,18 +2111,17 @@ const file_shale_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x1aHolderIssuePasswordRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.HolderRefR\x03ref\"@\n" +
 	"\x1bHolderIssuePasswordResponse\x12!\n" +
-	"\bpassword\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\bpassword2\xe1\x03\n" +
+	"\bpassword\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\bpassword2\xae\x03\n" +
 	"\rHolderService\x12-\n" +
 	"\x03Add\x12\x17.shale.HolderAddRequest\x1a\r.shale.Holder\x12-\n" +
 	"\x03Get\x12\x17.shale.HolderGetRequest\x1a\r.shale.Holder\x121\n" +
-	"\x05Patch\x12\x19.shale.HolderPatchRequest\x1a\r.shale.Holder\x121\n" +
-	"\x05Apply\x12\x19.shale.HolderApplyRequest\x1a\r.shale.Holder\x125\n" +
+	"\x05Patch\x12\x19.shale.HolderPatchRequest\x1a\r.shale.Holder\x125\n" +
 	"\x05Erase\x12\x10.shale.HolderRef\x1a\x1a.shale.HolderEraseResponse\x12;\n" +
 	"\x04List\x12\x18.shale.HolderListRequest\x1a\x19.shale.HolderListResponse\x12@\n" +
 	"\x05Watch\x12\x19.shale.HolderWatchRequest\x1a\x1a.shale.HolderWatchResponse0\x01\x12V\n" +
 	"\rIssuePassword\x12!.shale.HolderIssuePasswordRequest\x1a\".shale.HolderIssuePasswordResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_shale_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_shale_payday_holder_svc_g_proto_goTypes = []any{
 	(*HolderAddRequest)(nil),            // 0: shale.HolderAddRequest
 	(*HolderGetRequest)(nil),            // 1: shale.HolderGetRequest
@@ -2189,69 +2129,64 @@ var file_shale_payday_holder_svc_g_proto_goTypes = []any{
 	(*HolderRefBySlug)(nil),             // 3: shale.HolderRefBySlug
 	(*HolderSelect)(nil),                // 4: shale.HolderSelect
 	(*HolderPatchRequest)(nil),          // 5: shale.HolderPatchRequest
-	(*HolderApplyRequest)(nil),          // 6: shale.HolderApplyRequest
-	(*HolderEraseResponse)(nil),         // 7: shale.HolderEraseResponse
-	(*HolderListRequest)(nil),           // 8: shale.HolderListRequest
-	(*HolderListResponse)(nil),          // 9: shale.HolderListResponse
-	(*HolderFilter)(nil),                // 10: shale.HolderFilter
-	(*HolderWatchRequest)(nil),          // 11: shale.HolderWatchRequest
-	(*HolderWatchResponse)(nil),         // 12: shale.HolderWatchResponse
-	(*HolderWatchItem)(nil),             // 13: shale.HolderWatchItem
-	(*HolderIssuePasswordRequest)(nil),  // 14: shale.HolderIssuePasswordRequest
-	(*HolderIssuePasswordResponse)(nil), // 15: shale.HolderIssuePasswordResponse
-	nil,                                 // 16: shale.HolderAddRequest.LabelsEntry
-	nil,                                 // 17: shale.HolderPatchRequest.LabelsEntry
-	nil,                                 // 18: shale.HolderFilter.LabelsEntry
-	(*TenantRef)(nil),                   // 19: shale.TenantRef
-	(*timestamppb.Timestamp)(nil),       // 20: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                // 21: shale.TenantSelect
-	(*patchpb.Patch)(nil),               // 22: patch.Patch
-	(*Holder)(nil),                      // 23: shale.Holder
+	(*HolderEraseResponse)(nil),         // 6: shale.HolderEraseResponse
+	(*HolderListRequest)(nil),           // 7: shale.HolderListRequest
+	(*HolderListResponse)(nil),          // 8: shale.HolderListResponse
+	(*HolderFilter)(nil),                // 9: shale.HolderFilter
+	(*HolderWatchRequest)(nil),          // 10: shale.HolderWatchRequest
+	(*HolderWatchResponse)(nil),         // 11: shale.HolderWatchResponse
+	(*HolderWatchItem)(nil),             // 12: shale.HolderWatchItem
+	(*HolderIssuePasswordRequest)(nil),  // 13: shale.HolderIssuePasswordRequest
+	(*HolderIssuePasswordResponse)(nil), // 14: shale.HolderIssuePasswordResponse
+	nil,                                 // 15: shale.HolderAddRequest.LabelsEntry
+	nil,                                 // 16: shale.HolderPatchRequest.LabelsEntry
+	nil,                                 // 17: shale.HolderFilter.LabelsEntry
+	(*TenantRef)(nil),                   // 18: shale.TenantRef
+	(*timestamppb.Timestamp)(nil),       // 19: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                // 20: shale.TenantSelect
+	(*Holder)(nil),                      // 21: shale.Holder
 }
 var file_shale_payday_holder_svc_g_proto_depIdxs = []int32{
-	19, // 0: shale.HolderAddRequest.tenant:type_name -> shale.TenantRef
-	16, // 1: shale.HolderAddRequest.labels:type_name -> shale.HolderAddRequest.LabelsEntry
-	20, // 2: shale.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	18, // 0: shale.HolderAddRequest.tenant:type_name -> shale.TenantRef
+	15, // 1: shale.HolderAddRequest.labels:type_name -> shale.HolderAddRequest.LabelsEntry
+	19, // 2: shale.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: shale.HolderGetRequest.ref:type_name -> shale.HolderRef
 	4,  // 4: shale.HolderGetRequest.select:type_name -> shale.HolderSelect
 	3,  // 5: shale.HolderRef.slug:type_name -> shale.HolderRefBySlug
-	19, // 6: shale.HolderRefBySlug.tenant:type_name -> shale.TenantRef
-	21, // 7: shale.HolderSelect.tenant:type_name -> shale.TenantSelect
+	18, // 6: shale.HolderRefBySlug.tenant:type_name -> shale.TenantRef
+	20, // 7: shale.HolderSelect.tenant:type_name -> shale.TenantSelect
 	2,  // 8: shale.HolderPatchRequest.ref:type_name -> shale.HolderRef
-	17, // 9: shale.HolderPatchRequest.labels:type_name -> shale.HolderPatchRequest.LabelsEntry
-	20, // 10: shale.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 11: shale.HolderApplyRequest.ref:type_name -> shale.HolderRef
-	22, // 12: shale.HolderApplyRequest.patch:type_name -> patch.Patch
-	10, // 13: shale.HolderListRequest.filters:type_name -> shale.HolderFilter
-	23, // 14: shale.HolderListResponse.items:type_name -> shale.Holder
-	2,  // 15: shale.HolderFilter.ref:type_name -> shale.HolderRef
-	19, // 16: shale.HolderFilter.tenant:type_name -> shale.TenantRef
-	18, // 17: shale.HolderFilter.labels:type_name -> shale.HolderFilter.LabelsEntry
-	10, // 18: shale.HolderWatchRequest.filters:type_name -> shale.HolderFilter
-	13, // 19: shale.HolderWatchResponse.items:type_name -> shale.HolderWatchItem
-	23, // 20: shale.HolderWatchItem.value:type_name -> shale.Holder
-	2,  // 21: shale.HolderIssuePasswordRequest.ref:type_name -> shale.HolderRef
-	0,  // 22: shale.HolderService.Add:input_type -> shale.HolderAddRequest
-	1,  // 23: shale.HolderService.Get:input_type -> shale.HolderGetRequest
-	5,  // 24: shale.HolderService.Patch:input_type -> shale.HolderPatchRequest
-	6,  // 25: shale.HolderService.Apply:input_type -> shale.HolderApplyRequest
-	2,  // 26: shale.HolderService.Erase:input_type -> shale.HolderRef
-	8,  // 27: shale.HolderService.List:input_type -> shale.HolderListRequest
-	11, // 28: shale.HolderService.Watch:input_type -> shale.HolderWatchRequest
-	14, // 29: shale.HolderService.IssuePassword:input_type -> shale.HolderIssuePasswordRequest
-	23, // 30: shale.HolderService.Add:output_type -> shale.Holder
-	23, // 31: shale.HolderService.Get:output_type -> shale.Holder
-	23, // 32: shale.HolderService.Patch:output_type -> shale.Holder
-	23, // 33: shale.HolderService.Apply:output_type -> shale.Holder
-	7,  // 34: shale.HolderService.Erase:output_type -> shale.HolderEraseResponse
-	9,  // 35: shale.HolderService.List:output_type -> shale.HolderListResponse
-	12, // 36: shale.HolderService.Watch:output_type -> shale.HolderWatchResponse
-	15, // 37: shale.HolderService.IssuePassword:output_type -> shale.HolderIssuePasswordResponse
-	30, // [30:38] is the sub-list for method output_type
-	22, // [22:30] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	16, // 9: shale.HolderPatchRequest.labels:type_name -> shale.HolderPatchRequest.LabelsEntry
+	19, // 10: shale.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 11: shale.HolderListRequest.filters:type_name -> shale.HolderFilter
+	4,  // 12: shale.HolderListRequest.select:type_name -> shale.HolderSelect
+	21, // 13: shale.HolderListResponse.items:type_name -> shale.Holder
+	2,  // 14: shale.HolderFilter.ref:type_name -> shale.HolderRef
+	18, // 15: shale.HolderFilter.tenant:type_name -> shale.TenantRef
+	17, // 16: shale.HolderFilter.labels:type_name -> shale.HolderFilter.LabelsEntry
+	9,  // 17: shale.HolderWatchRequest.filters:type_name -> shale.HolderFilter
+	12, // 18: shale.HolderWatchResponse.items:type_name -> shale.HolderWatchItem
+	21, // 19: shale.HolderWatchItem.value:type_name -> shale.Holder
+	2,  // 20: shale.HolderIssuePasswordRequest.ref:type_name -> shale.HolderRef
+	0,  // 21: shale.HolderService.Add:input_type -> shale.HolderAddRequest
+	1,  // 22: shale.HolderService.Get:input_type -> shale.HolderGetRequest
+	5,  // 23: shale.HolderService.Patch:input_type -> shale.HolderPatchRequest
+	2,  // 24: shale.HolderService.Erase:input_type -> shale.HolderRef
+	7,  // 25: shale.HolderService.List:input_type -> shale.HolderListRequest
+	10, // 26: shale.HolderService.Watch:input_type -> shale.HolderWatchRequest
+	13, // 27: shale.HolderService.IssuePassword:input_type -> shale.HolderIssuePasswordRequest
+	21, // 28: shale.HolderService.Add:output_type -> shale.Holder
+	21, // 29: shale.HolderService.Get:output_type -> shale.Holder
+	21, // 30: shale.HolderService.Patch:output_type -> shale.Holder
+	6,  // 31: shale.HolderService.Erase:output_type -> shale.HolderEraseResponse
+	8,  // 32: shale.HolderService.List:output_type -> shale.HolderListResponse
+	11, // 33: shale.HolderService.Watch:output_type -> shale.HolderWatchResponse
+	14, // 34: shale.HolderService.IssuePassword:output_type -> shale.HolderIssuePasswordResponse
+	28, // [28:35] is the sub-list for method output_type
+	21, // [21:28] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_shale_payday_holder_svc_g_proto_init() }
@@ -2271,7 +2206,7 @@ func file_shale_payday_holder_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_payday_holder_svc_g_proto_rawDesc), len(file_shale_payday_holder_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -679,236 +679,6 @@ func (b0 SiteMemberSelect_builder) Build() *SiteMemberSelect {
 	return m0
 }
 
-type SiteMemberPatchRequest struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref              *SiteMemberRef         `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
-}
-
-func (x *SiteMemberPatchRequest) Reset() {
-	*x = SiteMemberPatchRequest{}
-	mi := &file_shale_member_svc_g_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SiteMemberPatchRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SiteMemberPatchRequest) ProtoMessage() {}
-
-func (x *SiteMemberPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_member_svc_g_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SiteMemberPatchRequest) GetRef() *SiteMemberRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *SiteMemberPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateUpdated
-	}
-	return nil
-}
-
-func (x *SiteMemberPatchRequest) GetDateUpdatedForce() bool {
-	if x != nil {
-		return x.xxx_hidden_DateUpdatedForce
-	}
-	return false
-}
-
-func (x *SiteMemberPatchRequest) SetRef(v *SiteMemberRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *SiteMemberPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateUpdated = v
-}
-
-func (x *SiteMemberPatchRequest) SetDateUpdatedForce(v bool) {
-	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
-}
-
-func (x *SiteMemberPatchRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *SiteMemberPatchRequest) HasDateUpdated() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateUpdated != nil
-}
-
-func (x *SiteMemberPatchRequest) HasDateUpdatedForce() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *SiteMemberPatchRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *SiteMemberPatchRequest) ClearDateUpdated() {
-	x.xxx_hidden_DateUpdated = nil
-}
-
-func (x *SiteMemberPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_DateUpdatedForce = false
-}
-
-type SiteMemberPatchRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref *SiteMemberRef
-	// The version this update requires the stored date_updated to be.
-	// It is a precondition, not a write: the update applies only if the row
-	// still holds this value, and the server stamps the new version itself.
-	// Setting it together with date_updated_force is an error --
-	// the version is the token every client's compare-and-swap is measured
-	// against, so it is not the caller's to choose.
-	DateUpdated *timestamppb.Timestamp
-	// Update whatever the stored date_updated is, with no precondition.
-	// The server still stamps a new version, so other clients' tokens are
-	// invalidated as usual; this declines the check for THIS update only.
-	// One of date_updated or this must be set. An omitted version is
-	// refused rather than assumed, because an unset field cannot be told
-	// apart from a caller who never considered locking at all.
-	DateUpdatedForce *bool
-}
-
-func (b0 SiteMemberPatchRequest_builder) Build() *SiteMemberPatchRequest {
-	m0 := &SiteMemberPatchRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
-		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
-	}
-	return m0
-}
-
-type SiteMemberApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *SiteMemberRef         `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SiteMemberApplyRequest) Reset() {
-	*x = SiteMemberApplyRequest{}
-	mi := &file_shale_member_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SiteMemberApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SiteMemberApplyRequest) ProtoMessage() {}
-
-func (x *SiteMemberApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_member_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SiteMemberApplyRequest) GetRef() *SiteMemberRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *SiteMemberApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *SiteMemberApplyRequest) SetRef(v *SiteMemberRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *SiteMemberApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *SiteMemberApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *SiteMemberApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *SiteMemberApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *SiteMemberApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type SiteMemberApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *SiteMemberRef
-	Patch *patchpb.Patch
-}
-
-func (b0 SiteMemberApplyRequest_builder) Build() *SiteMemberApplyRequest {
-	m0 := &SiteMemberApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type SiteMemberEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -920,7 +690,7 @@ type SiteMemberEraseResponse struct {
 
 func (x *SiteMemberEraseResponse) Reset() {
 	*x = SiteMemberEraseResponse{}
-	mi := &file_shale_member_svc_g_proto_msgTypes[6]
+	mi := &file_shale_member_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -932,7 +702,7 @@ func (x *SiteMemberEraseResponse) String() string {
 func (*SiteMemberEraseResponse) ProtoMessage() {}
 
 func (x *SiteMemberEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_member_svc_g_proto_msgTypes[6]
+	mi := &file_shale_member_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -995,13 +765,14 @@ type SiteMemberListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *SiteMemberSelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SiteMemberListRequest) Reset() {
 	*x = SiteMemberListRequest{}
-	mi := &file_shale_member_svc_g_proto_msgTypes[7]
+	mi := &file_shale_member_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1013,7 +784,7 @@ func (x *SiteMemberListRequest) String() string {
 func (*SiteMemberListRequest) ProtoMessage() {}
 
 func (x *SiteMemberListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_member_svc_g_proto_msgTypes[7]
+	mi := &file_shale_member_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1054,6 +825,13 @@ func (x *SiteMemberListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *SiteMemberListRequest) GetSelect() *SiteMemberSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *SiteMemberListRequest) SetFilters(v []*SiteMemberFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1068,6 +846,21 @@ func (x *SiteMemberListRequest) SetAfter(v string) {
 
 func (x *SiteMemberListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *SiteMemberListRequest) SetSelect(v *SiteMemberSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SiteMemberListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SiteMemberListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type SiteMemberListRequest_builder struct {
@@ -1090,6 +883,15 @@ type SiteMemberListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *SiteMemberSelect
 }
 
 func (b0 SiteMemberListRequest_builder) Build() *SiteMemberListRequest {
@@ -1100,6 +902,7 @@ func (b0 SiteMemberListRequest_builder) Build() *SiteMemberListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1113,7 +916,7 @@ type SiteMemberListResponse struct {
 
 func (x *SiteMemberListResponse) Reset() {
 	*x = SiteMemberListResponse{}
-	mi := &file_shale_member_svc_g_proto_msgTypes[8]
+	mi := &file_shale_member_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1125,7 +928,7 @@ func (x *SiteMemberListResponse) String() string {
 func (*SiteMemberListResponse) ProtoMessage() {}
 
 func (x *SiteMemberListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_member_svc_g_proto_msgTypes[8]
+	mi := &file_shale_member_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1196,7 +999,7 @@ type SiteMemberFilter struct {
 
 func (x *SiteMemberFilter) Reset() {
 	*x = SiteMemberFilter{}
-	mi := &file_shale_member_svc_g_proto_msgTypes[9]
+	mi := &file_shale_member_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1208,7 +1011,7 @@ func (x *SiteMemberFilter) String() string {
 func (*SiteMemberFilter) ProtoMessage() {}
 
 func (x *SiteMemberFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_member_svc_g_proto_msgTypes[9]
+	mi := &file_shale_member_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1355,9 +1158,9 @@ var File_shale_member_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_member_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/member_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/member.proto\x1a\x1fshale/payday/holder_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\x87\x02\n" +
-	"\x14SiteMemberAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x18shale/member_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/member.proto\x1a\x1fshale/payday/holder_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\x8f\x02\n" +
+	"\x14SiteMemberAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12(\n" +
 	"\x06holder\x18\b \x01(\v2\x10.shale.HolderRefR\x06holder\x12(\n" +
@@ -1365,9 +1168,9 @@ const file_shale_member_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"o\n" +
 	"\x14SiteMemberGetRequest\x12&\n" +
 	"\x03ref\x18\x01 \x01(\v2\x14.shale.SiteMemberRefR\x03ref\x12/\n" +
-	"\x06select\x18\x02 \x01(\v2\x17.shale.SiteMemberSelectR\x06select\"(\n" +
-	"\rSiteMemberRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x17.shale.SiteMemberSelectR\x06select\"0\n" +
+	"\rSiteMemberRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02idB\x05\n" +
 	"\x03key\"\x98\x02\n" +
 	"\x10SiteMemberSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
@@ -1376,21 +1179,15 @@ const file_shale_member_svc_g_proto_rawDesc = "" +
 	"\x06holder\x18\b \x01(\v2\x13.shale.HolderSelectR\x06holder\x12+\n" +
 	"\x06reader\x18\t \x01(\v2\x13.shale.ReaderSelectR\x06reader\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xad\x01\n" +
-	"\x16SiteMemberPatchRequest\x12&\n" +
-	"\x03ref\x18\x01 \x01(\v2\x14.shale.SiteMemberRefR\x03ref\x12=\n" +
-	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"d\n" +
-	"\x16SiteMemberApplyRequest\x12&\n" +
-	"\x03ref\x18\x01 \x01(\v2\x14.shale.SiteMemberRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"1\n" +
 	"\x17SiteMemberEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa3\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd4\x01\n" +
 	"\x15SiteMemberListRequest\x121\n" +
 	"\afilters\x18\x01 \x03(\v2\x17.shale.SiteMemberFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"\\\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12/\n" +
+	"\x06select\x18\x06 \x01(\v2\x17.shale.SiteMemberSelectR\x06select\"\\\n" +
 	"\x16SiteMemberListResponse\x12'\n" +
 	"\x05items\x18\x01 \x03(\v2\x11.shale.SiteMemberR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xdc\x01\n" +
@@ -1399,79 +1196,67 @@ const file_shale_member_svc_g_proto_rawDesc = "" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12(\n" +
 	"\x06holder\x18\x04 \x01(\v2\x10.shale.HolderRefR\x06holder\x12(\n" +
-	"\x06reader\x18\x05 \x01(\v2\x10.shale.ReaderRefR\x06reader2\xfb\x02\n" +
+	"\x06reader\x18\x05 \x01(\v2\x10.shale.ReaderRefR\x06reader2\x85\x02\n" +
 	"\x11SiteMemberService\x125\n" +
 	"\x03Add\x12\x1b.shale.SiteMemberAddRequest\x1a\x11.shale.SiteMember\x125\n" +
-	"\x03Get\x12\x1b.shale.SiteMemberGetRequest\x1a\x11.shale.SiteMember\x129\n" +
-	"\x05Patch\x12\x1d.shale.SiteMemberPatchRequest\x1a\x11.shale.SiteMember\x129\n" +
-	"\x05Apply\x12\x1d.shale.SiteMemberApplyRequest\x1a\x11.shale.SiteMember\x12=\n" +
+	"\x03Get\x12\x1b.shale.SiteMemberGetRequest\x1a\x11.shale.SiteMember\x12=\n" +
 	"\x05Erase\x12\x14.shale.SiteMemberRef\x1a\x1e.shale.SiteMemberEraseResponse\x12C\n" +
 	"\x04List\x12\x1c.shale.SiteMemberListRequest\x1a\x1d.shale.SiteMemberListResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_member_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_shale_member_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_shale_member_svc_g_proto_goTypes = []any{
 	(*SiteMemberAddRequest)(nil),    // 0: shale.SiteMemberAddRequest
 	(*SiteMemberGetRequest)(nil),    // 1: shale.SiteMemberGetRequest
 	(*SiteMemberRef)(nil),           // 2: shale.SiteMemberRef
 	(*SiteMemberSelect)(nil),        // 3: shale.SiteMemberSelect
-	(*SiteMemberPatchRequest)(nil),  // 4: shale.SiteMemberPatchRequest
-	(*SiteMemberApplyRequest)(nil),  // 5: shale.SiteMemberApplyRequest
-	(*SiteMemberEraseResponse)(nil), // 6: shale.SiteMemberEraseResponse
-	(*SiteMemberListRequest)(nil),   // 7: shale.SiteMemberListRequest
-	(*SiteMemberListResponse)(nil),  // 8: shale.SiteMemberListResponse
-	(*SiteMemberFilter)(nil),        // 9: shale.SiteMemberFilter
-	(*TenantRef)(nil),               // 10: shale.TenantRef
-	(*SiteRef)(nil),                 // 11: shale.SiteRef
-	(*HolderRef)(nil),               // 12: shale.HolderRef
-	(*ReaderRef)(nil),               // 13: shale.ReaderRef
-	(*timestamppb.Timestamp)(nil),   // 14: google.protobuf.Timestamp
-	(*TenantSelect)(nil),            // 15: shale.TenantSelect
-	(*SiteSelect)(nil),              // 16: shale.SiteSelect
-	(*HolderSelect)(nil),            // 17: shale.HolderSelect
-	(*ReaderSelect)(nil),            // 18: shale.ReaderSelect
-	(*patchpb.Patch)(nil),           // 19: patch.Patch
-	(*SiteMember)(nil),              // 20: shale.SiteMember
+	(*SiteMemberEraseResponse)(nil), // 4: shale.SiteMemberEraseResponse
+	(*SiteMemberListRequest)(nil),   // 5: shale.SiteMemberListRequest
+	(*SiteMemberListResponse)(nil),  // 6: shale.SiteMemberListResponse
+	(*SiteMemberFilter)(nil),        // 7: shale.SiteMemberFilter
+	(*TenantRef)(nil),               // 8: shale.TenantRef
+	(*SiteRef)(nil),                 // 9: shale.SiteRef
+	(*HolderRef)(nil),               // 10: shale.HolderRef
+	(*ReaderRef)(nil),               // 11: shale.ReaderRef
+	(*timestamppb.Timestamp)(nil),   // 12: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 13: shale.TenantSelect
+	(*SiteSelect)(nil),              // 14: shale.SiteSelect
+	(*HolderSelect)(nil),            // 15: shale.HolderSelect
+	(*ReaderSelect)(nil),            // 16: shale.ReaderSelect
+	(*SiteMember)(nil),              // 17: shale.SiteMember
 }
 var file_shale_member_svc_g_proto_depIdxs = []int32{
-	10, // 0: shale.SiteMemberAddRequest.tenant:type_name -> shale.TenantRef
-	11, // 1: shale.SiteMemberAddRequest.site:type_name -> shale.SiteRef
-	12, // 2: shale.SiteMemberAddRequest.holder:type_name -> shale.HolderRef
-	13, // 3: shale.SiteMemberAddRequest.reader:type_name -> shale.ReaderRef
-	14, // 4: shale.SiteMemberAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	8,  // 0: shale.SiteMemberAddRequest.tenant:type_name -> shale.TenantRef
+	9,  // 1: shale.SiteMemberAddRequest.site:type_name -> shale.SiteRef
+	10, // 2: shale.SiteMemberAddRequest.holder:type_name -> shale.HolderRef
+	11, // 3: shale.SiteMemberAddRequest.reader:type_name -> shale.ReaderRef
+	12, // 4: shale.SiteMemberAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 5: shale.SiteMemberGetRequest.ref:type_name -> shale.SiteMemberRef
 	3,  // 6: shale.SiteMemberGetRequest.select:type_name -> shale.SiteMemberSelect
-	15, // 7: shale.SiteMemberSelect.tenant:type_name -> shale.TenantSelect
-	16, // 8: shale.SiteMemberSelect.site:type_name -> shale.SiteSelect
-	17, // 9: shale.SiteMemberSelect.holder:type_name -> shale.HolderSelect
-	18, // 10: shale.SiteMemberSelect.reader:type_name -> shale.ReaderSelect
-	2,  // 11: shale.SiteMemberPatchRequest.ref:type_name -> shale.SiteMemberRef
-	14, // 12: shale.SiteMemberPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 13: shale.SiteMemberApplyRequest.ref:type_name -> shale.SiteMemberRef
-	19, // 14: shale.SiteMemberApplyRequest.patch:type_name -> patch.Patch
-	9,  // 15: shale.SiteMemberListRequest.filters:type_name -> shale.SiteMemberFilter
-	20, // 16: shale.SiteMemberListResponse.items:type_name -> shale.SiteMember
-	2,  // 17: shale.SiteMemberFilter.ref:type_name -> shale.SiteMemberRef
-	10, // 18: shale.SiteMemberFilter.tenant:type_name -> shale.TenantRef
-	11, // 19: shale.SiteMemberFilter.site:type_name -> shale.SiteRef
-	12, // 20: shale.SiteMemberFilter.holder:type_name -> shale.HolderRef
-	13, // 21: shale.SiteMemberFilter.reader:type_name -> shale.ReaderRef
-	0,  // 22: shale.SiteMemberService.Add:input_type -> shale.SiteMemberAddRequest
-	1,  // 23: shale.SiteMemberService.Get:input_type -> shale.SiteMemberGetRequest
-	4,  // 24: shale.SiteMemberService.Patch:input_type -> shale.SiteMemberPatchRequest
-	5,  // 25: shale.SiteMemberService.Apply:input_type -> shale.SiteMemberApplyRequest
-	2,  // 26: shale.SiteMemberService.Erase:input_type -> shale.SiteMemberRef
-	7,  // 27: shale.SiteMemberService.List:input_type -> shale.SiteMemberListRequest
-	20, // 28: shale.SiteMemberService.Add:output_type -> shale.SiteMember
-	20, // 29: shale.SiteMemberService.Get:output_type -> shale.SiteMember
-	20, // 30: shale.SiteMemberService.Patch:output_type -> shale.SiteMember
-	20, // 31: shale.SiteMemberService.Apply:output_type -> shale.SiteMember
-	6,  // 32: shale.SiteMemberService.Erase:output_type -> shale.SiteMemberEraseResponse
-	8,  // 33: shale.SiteMemberService.List:output_type -> shale.SiteMemberListResponse
-	28, // [28:34] is the sub-list for method output_type
-	22, // [22:28] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	13, // 7: shale.SiteMemberSelect.tenant:type_name -> shale.TenantSelect
+	14, // 8: shale.SiteMemberSelect.site:type_name -> shale.SiteSelect
+	15, // 9: shale.SiteMemberSelect.holder:type_name -> shale.HolderSelect
+	16, // 10: shale.SiteMemberSelect.reader:type_name -> shale.ReaderSelect
+	7,  // 11: shale.SiteMemberListRequest.filters:type_name -> shale.SiteMemberFilter
+	3,  // 12: shale.SiteMemberListRequest.select:type_name -> shale.SiteMemberSelect
+	17, // 13: shale.SiteMemberListResponse.items:type_name -> shale.SiteMember
+	2,  // 14: shale.SiteMemberFilter.ref:type_name -> shale.SiteMemberRef
+	8,  // 15: shale.SiteMemberFilter.tenant:type_name -> shale.TenantRef
+	9,  // 16: shale.SiteMemberFilter.site:type_name -> shale.SiteRef
+	10, // 17: shale.SiteMemberFilter.holder:type_name -> shale.HolderRef
+	11, // 18: shale.SiteMemberFilter.reader:type_name -> shale.ReaderRef
+	0,  // 19: shale.SiteMemberService.Add:input_type -> shale.SiteMemberAddRequest
+	1,  // 20: shale.SiteMemberService.Get:input_type -> shale.SiteMemberGetRequest
+	2,  // 21: shale.SiteMemberService.Erase:input_type -> shale.SiteMemberRef
+	5,  // 22: shale.SiteMemberService.List:input_type -> shale.SiteMemberListRequest
+	17, // 23: shale.SiteMemberService.Add:output_type -> shale.SiteMember
+	17, // 24: shale.SiteMemberService.Get:output_type -> shale.SiteMember
+	4,  // 25: shale.SiteMemberService.Erase:output_type -> shale.SiteMemberEraseResponse
+	6,  // 26: shale.SiteMemberService.List:output_type -> shale.SiteMemberListResponse
+	23, // [23:27] is the sub-list for method output_type
+	19, // [19:23] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_shale_member_svc_g_proto_init() }
@@ -1493,7 +1278,7 @@ func file_shale_member_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_member_svc_g_proto_rawDesc), len(file_shale_member_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

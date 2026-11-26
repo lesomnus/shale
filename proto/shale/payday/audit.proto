@@ -75,6 +75,12 @@ message Audit {
   // anything.
   bytes actor_id = 8 [(orm.field) = {type: TYPE_UUID}];
 
+  // The credential holder on a represented call. NULL for a direct call.
+  // These facts do not widen who may read the trail.
+  bytes caller_id = 23 [(orm.field) = {type: TYPE_UUID nullable: true}];
+  bytes caller_tenant_id = 24 [(orm.field) = {type: TYPE_UUID nullable: true}];
+  string presence = 25 [(orm.field) = {nullable: true}];
+
   // The trace the request belonged to, empty if it was not traced. Sixteen
   // bytes as OpenTelemetry spells one, which is not a UUID however alike they
   // look, so it is stored as what it is.
@@ -328,7 +334,17 @@ message Audit {
   repeated uint32 digest_fields = 22;
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // What payday calls and what an app serves, and no more (lesomnus/roster#531).
+    // The recorder adds a row in process, through the server it was handed, and
+    // a caller reads the trail. Nothing of payday's patches, applies to or erases
+    // a row of it -- an archive pass and a purge write the database, for the
+    // reason `trail` gives -- so those are no RPCs: a trail somebody can edit is
+    // evidence of nothing, and a verb the layer in front refuses to everybody is
+    // one more in every client and on every port for nothing.
+    rpc: {
+      add: {}
+      get: {}
+    }
     indexes: [
       {
         name: "object"
@@ -474,8 +490,8 @@ message Audit {
 
     domain: 3
 
-    // Nothing erases a trail row -- the layer in front does not serve the RPC
-    // -- so what this says is that there is no column here pretending it might.
+    // Nothing erases a trail row -- there is no RPC for it -- so what this
+    // says is that there is no column here pretending it might.
     erase: {hard: {}}
 
     // The OR of the three: readable by the tenant whose row changed, by the

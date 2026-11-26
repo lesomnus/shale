@@ -52,7 +52,7 @@ func init() {
 	auditFields := schema.Audit{}.Fields()
 	_ = auditFields
 	// auditDescDomain is the schema descriptor for domain field.
-	auditDescDomain := auditFields[11].Descriptor()
+	auditDescDomain := auditFields[14].Descriptor()
 	// audit.DefaultDomain holds the default value on creation for the domain field.
 	audit.DefaultDomain = auditDescDomain.Default.(uint32)
 	camerabindingFields := schema.CameraBinding{}.Fields()

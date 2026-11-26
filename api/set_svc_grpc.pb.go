@@ -22,7 +22,6 @@ const (
 	SetService_Add_FullMethodName       = "/shale.SetService/Add"
 	SetService_Get_FullMethodName       = "/shale.SetService/Get"
 	SetService_Patch_FullMethodName     = "/shale.SetService/Patch"
-	SetService_Apply_FullMethodName     = "/shale.SetService/Apply"
 	SetService_Erase_FullMethodName     = "/shale.SetService/Erase"
 	SetService_List_FullMethodName      = "/shale.SetService/List"
 	SetService_Watch_FullMethodName     = "/shale.SetService/Watch"
@@ -41,23 +40,29 @@ type SetServiceClient interface {
 	Get(ctx context.Context, in *SetGetRequest, opts ...grpc.CallOption) (*Set, error)
 	// Patch updates an existing Set
 	Patch(ctx context.Context, in *SetPatchRequest, opts ...grpc.CallOption) (*Set, error)
-	// Apply applies a patch document to an existing Set
-	Apply(ctx context.Context, in *SetApplyRequest, opts ...grpc.CallOption) (*Set, error)
 	// Erase deletes a Set
 	Erase(ctx context.Context, in *SetRef, opts ...grpc.CallOption) (*SetEraseResponse, error)
 	// List reads Sets a page at a time.
 	List(ctx context.Context, in *SetListRequest, opts ...grpc.CallOption) (*SetListResponse, error)
 	// Watch the Sets this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *SetWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SetWatchResponse], error)
 	// Proposed upload profile in, agreed profile and adjustments out (§12.6).
 	// The answer also carries the producer's relay assignment (§39.2) and
@@ -102,16 +107,6 @@ func (c *setServiceClient) Patch(ctx context.Context, in *SetPatchRequest, opts 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Set)
 	err := c.cc.Invoke(ctx, SetService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *setServiceClient) Apply(ctx context.Context, in *SetApplyRequest, opts ...grpc.CallOption) (*Set, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Set)
-	err := c.cc.Invoke(ctx, SetService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -197,23 +192,29 @@ type SetServiceServer interface {
 	Get(context.Context, *SetGetRequest) (*Set, error)
 	// Patch updates an existing Set
 	Patch(context.Context, *SetPatchRequest) (*Set, error)
-	// Apply applies a patch document to an existing Set
-	Apply(context.Context, *SetApplyRequest) (*Set, error)
 	// Erase deletes a Set
 	Erase(context.Context, *SetRef) (*SetEraseResponse, error)
 	// List reads Sets a page at a time.
 	List(context.Context, *SetListRequest) (*SetListResponse, error)
 	// Watch the Sets this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*SetWatchRequest, grpc.ServerStreamingServer[SetWatchResponse]) error
 	// Proposed upload profile in, agreed profile and adjustments out (§12.6).
 	// The answer also carries the producer's relay assignment (§39.2) and
@@ -242,9 +243,6 @@ func (UnimplementedSetServiceServer) Get(context.Context, *SetGetRequest) (*Set,
 }
 func (UnimplementedSetServiceServer) Patch(context.Context, *SetPatchRequest) (*Set, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSetServiceServer) Apply(context.Context, *SetApplyRequest) (*Set, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedSetServiceServer) Erase(context.Context, *SetRef) (*SetEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -335,24 +333,6 @@ func _SetService_Patch_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SetServiceServer).Patch(ctx, req.(*SetPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SetService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SetServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SetService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SetServiceServer).Apply(ctx, req.(*SetApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -478,10 +458,6 @@ var SetService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SetService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _SetService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _SetService_Erase_Handler,
 		},
@@ -516,7 +492,6 @@ const (
 	SourceService_Add_FullMethodName   = "/shale.SourceService/Add"
 	SourceService_Get_FullMethodName   = "/shale.SourceService/Get"
 	SourceService_Patch_FullMethodName = "/shale.SourceService/Patch"
-	SourceService_Apply_FullMethodName = "/shale.SourceService/Apply"
 	SourceService_Erase_FullMethodName = "/shale.SourceService/Erase"
 	SourceService_List_FullMethodName  = "/shale.SourceService/List"
 	SourceService_Watch_FullMethodName = "/shale.SourceService/Watch"
@@ -533,23 +508,29 @@ type SourceServiceClient interface {
 	Get(ctx context.Context, in *SourceGetRequest, opts ...grpc.CallOption) (*Source, error)
 	// Patch updates an existing Source
 	Patch(ctx context.Context, in *SourcePatchRequest, opts ...grpc.CallOption) (*Source, error)
-	// Apply applies a patch document to an existing Source
-	Apply(ctx context.Context, in *SourceApplyRequest, opts ...grpc.CallOption) (*Source, error)
 	// Erase deletes a Source
 	Erase(ctx context.Context, in *SourceRef, opts ...grpc.CallOption) (*SourceEraseResponse, error)
 	// List reads Sources a page at a time.
 	List(ctx context.Context, in *SourceListRequest, opts ...grpc.CallOption) (*SourceListResponse, error)
 	// Watch the Sources this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *SourceWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SourceWatchResponse], error)
 	// Live viewing of one source (§39.4).
 	Live(ctx context.Context, in *SourceLiveRequest, opts ...grpc.CallOption) (*SourceLiveResponse, error)
@@ -587,16 +568,6 @@ func (c *sourceServiceClient) Patch(ctx context.Context, in *SourcePatchRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Source)
 	err := c.cc.Invoke(ctx, SourceService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sourceServiceClient) Apply(ctx context.Context, in *SourceApplyRequest, opts ...grpc.CallOption) (*Source, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Source)
-	err := c.cc.Invoke(ctx, SourceService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -662,23 +633,29 @@ type SourceServiceServer interface {
 	Get(context.Context, *SourceGetRequest) (*Source, error)
 	// Patch updates an existing Source
 	Patch(context.Context, *SourcePatchRequest) (*Source, error)
-	// Apply applies a patch document to an existing Source
-	Apply(context.Context, *SourceApplyRequest) (*Source, error)
 	// Erase deletes a Source
 	Erase(context.Context, *SourceRef) (*SourceEraseResponse, error)
 	// List reads Sources a page at a time.
 	List(context.Context, *SourceListRequest) (*SourceListResponse, error)
 	// Watch the Sources this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*SourceWatchRequest, grpc.ServerStreamingServer[SourceWatchResponse]) error
 	// Live viewing of one source (§39.4).
 	Live(context.Context, *SourceLiveRequest) (*SourceLiveResponse, error)
@@ -700,9 +677,6 @@ func (UnimplementedSourceServiceServer) Get(context.Context, *SourceGetRequest) 
 }
 func (UnimplementedSourceServiceServer) Patch(context.Context, *SourcePatchRequest) (*Source, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSourceServiceServer) Apply(context.Context, *SourceApplyRequest) (*Source, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedSourceServiceServer) Erase(context.Context, *SourceRef) (*SourceEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -791,24 +765,6 @@ func _SourceService_Patch_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SourceService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SourceApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SourceServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SourceService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SourceServiceServer).Apply(ctx, req.(*SourceApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SourceService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SourceRef)
 	if err := dec(in); err != nil {
@@ -892,10 +848,6 @@ var SourceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _SourceService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _SourceService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

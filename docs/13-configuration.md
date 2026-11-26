@@ -114,6 +114,7 @@ deployment runs well on them, and changes them only for a reason.
 | Health | `control.sink_auto_adopt_after` | 10 min | how long a sink whose node is down waits before the node reporting it takes it over | control | [§28.3](09-operations.md#283-node-failure-and-device-re-homing) |
 | Health | `reconcile_interval` | 24 h | — | cluster | [§34.9](11-deployment.md#349-events-and-directives) |
 | Health | `control.directives_every` | 5 s | — | control | [§34.9](11-deployment.md#349-events-and-directives) |
+| Listeners | `server.tls` / `cluster.tls` | none: the control plane's own certificate and the hosts' CA bundle | payday's TLS block in their place: `cert`, `key`, `client_ca`, each `${file:/path}`, `${env:NAME}` or the PEM itself; `cert_file`, `key_file` and `client_ca_file` are refused at start, as any key nothing reads | control | [§33.5](10-security.md#335-tls) |
 | Listeners | `server.http.addr` / `cluster.http.addr` | the API's port plus two (7402, 7403) | — | control | [§40.4](17-console.md#404-serving-it) |
 | Listeners | `server.http.allow_web` / `cluster.http.allow_web` | off; on in development mode | on: the listener answers Connect and gRPC-Web, for the console | control | [§40.1](17-console.md#401-two-surfaces-two-sign-ins) |
 | Listeners | `server.http.origins` / `cluster.http.origins` | none: the listener's own origin; loopback at the console's port and at vite's in development mode | the origins a page may call from; the console's, on the cluster listener | control | [§40.4](17-console.md#404-serving-it) |

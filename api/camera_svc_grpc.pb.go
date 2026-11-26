@@ -22,8 +22,6 @@ const (
 	CameraNetworkService_Add_FullMethodName       = "/shale.CameraNetworkService/Add"
 	CameraNetworkService_Get_FullMethodName       = "/shale.CameraNetworkService/Get"
 	CameraNetworkService_Patch_FullMethodName     = "/shale.CameraNetworkService/Patch"
-	CameraNetworkService_Apply_FullMethodName     = "/shale.CameraNetworkService/Apply"
-	CameraNetworkService_Erase_FullMethodName     = "/shale.CameraNetworkService/Erase"
 	CameraNetworkService_List_FullMethodName      = "/shale.CameraNetworkService/List"
 	CameraNetworkService_Watch_FullMethodName     = "/shale.CameraNetworkService/Watch"
 	CameraNetworkService_Configure_FullMethodName = "/shale.CameraNetworkService/Configure"
@@ -39,23 +37,27 @@ type CameraNetworkServiceClient interface {
 	Get(ctx context.Context, in *CameraNetworkGetRequest, opts ...grpc.CallOption) (*CameraNetwork, error)
 	// Patch updates an existing CameraNetwork
 	Patch(ctx context.Context, in *CameraNetworkPatchRequest, opts ...grpc.CallOption) (*CameraNetwork, error)
-	// Apply applies a patch document to an existing CameraNetwork
-	Apply(ctx context.Context, in *CameraNetworkApplyRequest, opts ...grpc.CallOption) (*CameraNetwork, error)
-	// Erase deletes a CameraNetwork
-	Erase(ctx context.Context, in *CameraNetworkRef, opts ...grpc.CallOption) (*CameraNetworkEraseResponse, error)
 	// List reads CameraNetworks a page at a time.
 	List(ctx context.Context, in *CameraNetworkListRequest, opts ...grpc.CallOption) (*CameraNetworkListResponse, error)
 	// Watch the CameraNetworks this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraNetworkWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraNetworkWatchResponse], error)
 	Configure(ctx context.Context, in *CameraNetworkConfigureRequest, opts ...grpc.CallOption) (*CameraNetwork, error)
 }
@@ -92,26 +94,6 @@ func (c *cameraNetworkServiceClient) Patch(ctx context.Context, in *CameraNetwor
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraNetwork)
 	err := c.cc.Invoke(ctx, CameraNetworkService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraNetworkServiceClient) Apply(ctx context.Context, in *CameraNetworkApplyRequest, opts ...grpc.CallOption) (*CameraNetwork, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraNetwork)
-	err := c.cc.Invoke(ctx, CameraNetworkService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraNetworkServiceClient) Erase(ctx context.Context, in *CameraNetworkRef, opts ...grpc.CallOption) (*CameraNetworkEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraNetworkEraseResponse)
-	err := c.cc.Invoke(ctx, CameraNetworkService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -167,23 +149,27 @@ type CameraNetworkServiceServer interface {
 	Get(context.Context, *CameraNetworkGetRequest) (*CameraNetwork, error)
 	// Patch updates an existing CameraNetwork
 	Patch(context.Context, *CameraNetworkPatchRequest) (*CameraNetwork, error)
-	// Apply applies a patch document to an existing CameraNetwork
-	Apply(context.Context, *CameraNetworkApplyRequest) (*CameraNetwork, error)
-	// Erase deletes a CameraNetwork
-	Erase(context.Context, *CameraNetworkRef) (*CameraNetworkEraseResponse, error)
 	// List reads CameraNetworks a page at a time.
 	List(context.Context, *CameraNetworkListRequest) (*CameraNetworkListResponse, error)
 	// Watch the CameraNetworks this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraNetworkWatchRequest, grpc.ServerStreamingServer[CameraNetworkWatchResponse]) error
 	Configure(context.Context, *CameraNetworkConfigureRequest) (*CameraNetwork, error)
 	mustEmbedUnimplementedCameraNetworkServiceServer()
@@ -204,12 +190,6 @@ func (UnimplementedCameraNetworkServiceServer) Get(context.Context, *CameraNetwo
 }
 func (UnimplementedCameraNetworkServiceServer) Patch(context.Context, *CameraNetworkPatchRequest) (*CameraNetwork, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraNetworkServiceServer) Apply(context.Context, *CameraNetworkApplyRequest) (*CameraNetwork, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraNetworkServiceServer) Erase(context.Context, *CameraNetworkRef) (*CameraNetworkEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraNetworkServiceServer) List(context.Context, *CameraNetworkListRequest) (*CameraNetworkListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -295,42 +275,6 @@ func _CameraNetworkService_Patch_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CameraNetworkService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraNetworkApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraNetworkServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraNetworkService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraNetworkServiceServer).Apply(ctx, req.(*CameraNetworkApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraNetworkService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraNetworkRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraNetworkServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraNetworkService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraNetworkServiceServer).Erase(ctx, req.(*CameraNetworkRef))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _CameraNetworkService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CameraNetworkListRequest)
 	if err := dec(in); err != nil {
@@ -398,14 +342,6 @@ var CameraNetworkService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CameraNetworkService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _CameraNetworkService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraNetworkService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _CameraNetworkService_List_Handler,
 		},
@@ -428,8 +364,6 @@ const (
 	CameraDeviceService_Add_FullMethodName     = "/shale.CameraDeviceService/Add"
 	CameraDeviceService_Get_FullMethodName     = "/shale.CameraDeviceService/Get"
 	CameraDeviceService_Patch_FullMethodName   = "/shale.CameraDeviceService/Patch"
-	CameraDeviceService_Apply_FullMethodName   = "/shale.CameraDeviceService/Apply"
-	CameraDeviceService_Erase_FullMethodName   = "/shale.CameraDeviceService/Erase"
 	CameraDeviceService_List_FullMethodName    = "/shale.CameraDeviceService/List"
 	CameraDeviceService_Watch_FullMethodName   = "/shale.CameraDeviceService/Watch"
 	CameraDeviceService_Claim_FullMethodName   = "/shale.CameraDeviceService/Claim"
@@ -446,23 +380,27 @@ type CameraDeviceServiceClient interface {
 	Get(ctx context.Context, in *CameraDeviceGetRequest, opts ...grpc.CallOption) (*CameraDevice, error)
 	// Patch updates an existing CameraDevice
 	Patch(ctx context.Context, in *CameraDevicePatchRequest, opts ...grpc.CallOption) (*CameraDevice, error)
-	// Apply applies a patch document to an existing CameraDevice
-	Apply(ctx context.Context, in *CameraDeviceApplyRequest, opts ...grpc.CallOption) (*CameraDevice, error)
-	// Erase deletes a CameraDevice
-	Erase(ctx context.Context, in *CameraDeviceRef, opts ...grpc.CallOption) (*CameraDeviceEraseResponse, error)
 	// List reads CameraDevices a page at a time.
 	List(ctx context.Context, in *CameraDeviceListRequest, opts ...grpc.CallOption) (*CameraDeviceListResponse, error)
 	// Watch the CameraDevices this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraDeviceWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraDeviceWatchResponse], error)
 	Claim(ctx context.Context, in *CameraDeviceClaimRequest, opts ...grpc.CallOption) (*CameraDevice, error)
 	Observe(ctx context.Context, in *CameraDeviceObserveRequest, opts ...grpc.CallOption) (*CameraDevice, error)
@@ -500,26 +438,6 @@ func (c *cameraDeviceServiceClient) Patch(ctx context.Context, in *CameraDeviceP
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraDevice)
 	err := c.cc.Invoke(ctx, CameraDeviceService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraDeviceServiceClient) Apply(ctx context.Context, in *CameraDeviceApplyRequest, opts ...grpc.CallOption) (*CameraDevice, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraDevice)
-	err := c.cc.Invoke(ctx, CameraDeviceService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraDeviceServiceClient) Erase(ctx context.Context, in *CameraDeviceRef, opts ...grpc.CallOption) (*CameraDeviceEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraDeviceEraseResponse)
-	err := c.cc.Invoke(ctx, CameraDeviceService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -585,23 +503,27 @@ type CameraDeviceServiceServer interface {
 	Get(context.Context, *CameraDeviceGetRequest) (*CameraDevice, error)
 	// Patch updates an existing CameraDevice
 	Patch(context.Context, *CameraDevicePatchRequest) (*CameraDevice, error)
-	// Apply applies a patch document to an existing CameraDevice
-	Apply(context.Context, *CameraDeviceApplyRequest) (*CameraDevice, error)
-	// Erase deletes a CameraDevice
-	Erase(context.Context, *CameraDeviceRef) (*CameraDeviceEraseResponse, error)
 	// List reads CameraDevices a page at a time.
 	List(context.Context, *CameraDeviceListRequest) (*CameraDeviceListResponse, error)
 	// Watch the CameraDevices this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraDeviceWatchRequest, grpc.ServerStreamingServer[CameraDeviceWatchResponse]) error
 	Claim(context.Context, *CameraDeviceClaimRequest) (*CameraDevice, error)
 	Observe(context.Context, *CameraDeviceObserveRequest) (*CameraDevice, error)
@@ -623,12 +545,6 @@ func (UnimplementedCameraDeviceServiceServer) Get(context.Context, *CameraDevice
 }
 func (UnimplementedCameraDeviceServiceServer) Patch(context.Context, *CameraDevicePatchRequest) (*CameraDevice, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraDeviceServiceServer) Apply(context.Context, *CameraDeviceApplyRequest) (*CameraDevice, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraDeviceServiceServer) Erase(context.Context, *CameraDeviceRef) (*CameraDeviceEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraDeviceServiceServer) List(context.Context, *CameraDeviceListRequest) (*CameraDeviceListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -713,42 +629,6 @@ func _CameraDeviceService_Patch_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraDeviceServiceServer).Patch(ctx, req.(*CameraDevicePatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraDeviceService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraDeviceApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraDeviceServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraDeviceService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraDeviceServiceServer).Apply(ctx, req.(*CameraDeviceApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraDeviceService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraDeviceRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraDeviceServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraDeviceService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraDeviceServiceServer).Erase(ctx, req.(*CameraDeviceRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -838,14 +718,6 @@ var CameraDeviceService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CameraDeviceService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _CameraDeviceService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraDeviceService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _CameraDeviceService_List_Handler,
 		},
@@ -872,8 +744,6 @@ const (
 	CameraAssignmentService_Add_FullMethodName         = "/shale.CameraAssignmentService/Add"
 	CameraAssignmentService_Get_FullMethodName         = "/shale.CameraAssignmentService/Get"
 	CameraAssignmentService_Patch_FullMethodName       = "/shale.CameraAssignmentService/Patch"
-	CameraAssignmentService_Apply_FullMethodName       = "/shale.CameraAssignmentService/Apply"
-	CameraAssignmentService_Erase_FullMethodName       = "/shale.CameraAssignmentService/Erase"
 	CameraAssignmentService_List_FullMethodName        = "/shale.CameraAssignmentService/List"
 	CameraAssignmentService_Watch_FullMethodName       = "/shale.CameraAssignmentService/Watch"
 	CameraAssignmentService_Assign_FullMethodName      = "/shale.CameraAssignmentService/Assign"
@@ -894,23 +764,27 @@ type CameraAssignmentServiceClient interface {
 	Get(ctx context.Context, in *CameraAssignmentGetRequest, opts ...grpc.CallOption) (*CameraAssignment, error)
 	// Patch updates an existing CameraAssignment
 	Patch(ctx context.Context, in *CameraAssignmentPatchRequest, opts ...grpc.CallOption) (*CameraAssignment, error)
-	// Apply applies a patch document to an existing CameraAssignment
-	Apply(ctx context.Context, in *CameraAssignmentApplyRequest, opts ...grpc.CallOption) (*CameraAssignment, error)
-	// Erase deletes a CameraAssignment
-	Erase(ctx context.Context, in *CameraAssignmentRef, opts ...grpc.CallOption) (*CameraAssignmentEraseResponse, error)
 	// List reads CameraAssignments a page at a time.
 	List(ctx context.Context, in *CameraAssignmentListRequest, opts ...grpc.CallOption) (*CameraAssignmentListResponse, error)
 	// Watch the CameraAssignments this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraAssignmentWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraAssignmentWatchResponse], error)
 	Assign(ctx context.Context, in *CameraAssignmentAssignRequest, opts ...grpc.CallOption) (*CameraAssignment, error)
 	Snapshot(ctx context.Context, in *CameraAssignmentSnapshotRequest, opts ...grpc.CallOption) (*CameraCatalogSnapshot, error)
@@ -953,26 +827,6 @@ func (c *cameraAssignmentServiceClient) Patch(ctx context.Context, in *CameraAss
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraAssignment)
 	err := c.cc.Invoke(ctx, CameraAssignmentService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraAssignmentServiceClient) Apply(ctx context.Context, in *CameraAssignmentApplyRequest, opts ...grpc.CallOption) (*CameraAssignment, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraAssignment)
-	err := c.cc.Invoke(ctx, CameraAssignmentService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraAssignmentServiceClient) Erase(ctx context.Context, in *CameraAssignmentRef, opts ...grpc.CallOption) (*CameraAssignmentEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraAssignmentEraseResponse)
-	err := c.cc.Invoke(ctx, CameraAssignmentService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1078,23 +932,27 @@ type CameraAssignmentServiceServer interface {
 	Get(context.Context, *CameraAssignmentGetRequest) (*CameraAssignment, error)
 	// Patch updates an existing CameraAssignment
 	Patch(context.Context, *CameraAssignmentPatchRequest) (*CameraAssignment, error)
-	// Apply applies a patch document to an existing CameraAssignment
-	Apply(context.Context, *CameraAssignmentApplyRequest) (*CameraAssignment, error)
-	// Erase deletes a CameraAssignment
-	Erase(context.Context, *CameraAssignmentRef) (*CameraAssignmentEraseResponse, error)
 	// List reads CameraAssignments a page at a time.
 	List(context.Context, *CameraAssignmentListRequest) (*CameraAssignmentListResponse, error)
 	// Watch the CameraAssignments this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraAssignmentWatchRequest, grpc.ServerStreamingServer[CameraAssignmentWatchResponse]) error
 	Assign(context.Context, *CameraAssignmentAssignRequest) (*CameraAssignment, error)
 	Snapshot(context.Context, *CameraAssignmentSnapshotRequest) (*CameraCatalogSnapshot, error)
@@ -1121,12 +979,6 @@ func (UnimplementedCameraAssignmentServiceServer) Get(context.Context, *CameraAs
 }
 func (UnimplementedCameraAssignmentServiceServer) Patch(context.Context, *CameraAssignmentPatchRequest) (*CameraAssignment, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraAssignmentServiceServer) Apply(context.Context, *CameraAssignmentApplyRequest) (*CameraAssignment, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraAssignmentServiceServer) Erase(context.Context, *CameraAssignmentRef) (*CameraAssignmentEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraAssignmentServiceServer) List(context.Context, *CameraAssignmentListRequest) (*CameraAssignmentListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -1224,42 +1076,6 @@ func _CameraAssignmentService_Patch_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraAssignmentServiceServer).Patch(ctx, req.(*CameraAssignmentPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraAssignmentService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraAssignmentApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraAssignmentServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraAssignmentService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraAssignmentServiceServer).Apply(ctx, req.(*CameraAssignmentApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraAssignmentService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraAssignmentRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraAssignmentServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraAssignmentService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraAssignmentServiceServer).Erase(ctx, req.(*CameraAssignmentRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1421,14 +1237,6 @@ var CameraAssignmentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CameraAssignmentService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _CameraAssignmentService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraAssignmentService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _CameraAssignmentService_List_Handler,
 		},
@@ -1471,8 +1279,6 @@ const (
 	CameraBindingService_Add_FullMethodName        = "/shale.CameraBindingService/Add"
 	CameraBindingService_Get_FullMethodName        = "/shale.CameraBindingService/Get"
 	CameraBindingService_Patch_FullMethodName      = "/shale.CameraBindingService/Patch"
-	CameraBindingService_Apply_FullMethodName      = "/shale.CameraBindingService/Apply"
-	CameraBindingService_Erase_FullMethodName      = "/shale.CameraBindingService/Erase"
 	CameraBindingService_List_FullMethodName       = "/shale.CameraBindingService/List"
 	CameraBindingService_Watch_FullMethodName      = "/shale.CameraBindingService/Watch"
 	CameraBindingService_Bind_FullMethodName       = "/shale.CameraBindingService/Bind"
@@ -1489,23 +1295,27 @@ type CameraBindingServiceClient interface {
 	Get(ctx context.Context, in *CameraBindingGetRequest, opts ...grpc.CallOption) (*CameraBinding, error)
 	// Patch updates an existing CameraBinding
 	Patch(ctx context.Context, in *CameraBindingPatchRequest, opts ...grpc.CallOption) (*CameraBinding, error)
-	// Apply applies a patch document to an existing CameraBinding
-	Apply(ctx context.Context, in *CameraBindingApplyRequest, opts ...grpc.CallOption) (*CameraBinding, error)
-	// Erase deletes a CameraBinding
-	Erase(ctx context.Context, in *CameraBindingRef, opts ...grpc.CallOption) (*CameraBindingEraseResponse, error)
 	// List reads CameraBindings a page at a time.
 	List(ctx context.Context, in *CameraBindingListRequest, opts ...grpc.CallOption) (*CameraBindingListResponse, error)
 	// Watch the CameraBindings this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraBindingWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraBindingWatchResponse], error)
 	Bind(ctx context.Context, in *CameraBindingBindRequest, opts ...grpc.CallOption) (*CameraBinding, error)
 	SetCollect(ctx context.Context, in *CameraBindingSetCollectRequest, opts ...grpc.CallOption) (*CameraBinding, error)
@@ -1543,26 +1353,6 @@ func (c *cameraBindingServiceClient) Patch(ctx context.Context, in *CameraBindin
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraBinding)
 	err := c.cc.Invoke(ctx, CameraBindingService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraBindingServiceClient) Apply(ctx context.Context, in *CameraBindingApplyRequest, opts ...grpc.CallOption) (*CameraBinding, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraBinding)
-	err := c.cc.Invoke(ctx, CameraBindingService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraBindingServiceClient) Erase(ctx context.Context, in *CameraBindingRef, opts ...grpc.CallOption) (*CameraBindingEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraBindingEraseResponse)
-	err := c.cc.Invoke(ctx, CameraBindingService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1628,23 +1418,27 @@ type CameraBindingServiceServer interface {
 	Get(context.Context, *CameraBindingGetRequest) (*CameraBinding, error)
 	// Patch updates an existing CameraBinding
 	Patch(context.Context, *CameraBindingPatchRequest) (*CameraBinding, error)
-	// Apply applies a patch document to an existing CameraBinding
-	Apply(context.Context, *CameraBindingApplyRequest) (*CameraBinding, error)
-	// Erase deletes a CameraBinding
-	Erase(context.Context, *CameraBindingRef) (*CameraBindingEraseResponse, error)
 	// List reads CameraBindings a page at a time.
 	List(context.Context, *CameraBindingListRequest) (*CameraBindingListResponse, error)
 	// Watch the CameraBindings this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraBindingWatchRequest, grpc.ServerStreamingServer[CameraBindingWatchResponse]) error
 	Bind(context.Context, *CameraBindingBindRequest) (*CameraBinding, error)
 	SetCollect(context.Context, *CameraBindingSetCollectRequest) (*CameraBinding, error)
@@ -1666,12 +1460,6 @@ func (UnimplementedCameraBindingServiceServer) Get(context.Context, *CameraBindi
 }
 func (UnimplementedCameraBindingServiceServer) Patch(context.Context, *CameraBindingPatchRequest) (*CameraBinding, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraBindingServiceServer) Apply(context.Context, *CameraBindingApplyRequest) (*CameraBinding, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraBindingServiceServer) Erase(context.Context, *CameraBindingRef) (*CameraBindingEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraBindingServiceServer) List(context.Context, *CameraBindingListRequest) (*CameraBindingListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -1756,42 +1544,6 @@ func _CameraBindingService_Patch_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraBindingServiceServer).Patch(ctx, req.(*CameraBindingPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraBindingService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraBindingApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraBindingServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraBindingService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraBindingServiceServer).Apply(ctx, req.(*CameraBindingApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraBindingService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraBindingRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraBindingServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraBindingService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraBindingServiceServer).Erase(ctx, req.(*CameraBindingRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1881,14 +1633,6 @@ var CameraBindingService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CameraBindingService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _CameraBindingService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraBindingService_Erase_Handler,
-		},
-		{
 			MethodName: "List",
 			Handler:    _CameraBindingService_List_Handler,
 		},
@@ -1915,8 +1659,6 @@ const (
 	CameraJobService_Add_FullMethodName     = "/shale.CameraJobService/Add"
 	CameraJobService_Get_FullMethodName     = "/shale.CameraJobService/Get"
 	CameraJobService_Patch_FullMethodName   = "/shale.CameraJobService/Patch"
-	CameraJobService_Apply_FullMethodName   = "/shale.CameraJobService/Apply"
-	CameraJobService_Erase_FullMethodName   = "/shale.CameraJobService/Erase"
 	CameraJobService_List_FullMethodName    = "/shale.CameraJobService/List"
 	CameraJobService_Watch_FullMethodName   = "/shale.CameraJobService/Watch"
 	CameraJobService_Create_FullMethodName  = "/shale.CameraJobService/Create"
@@ -1935,23 +1677,27 @@ type CameraJobServiceClient interface {
 	Get(ctx context.Context, in *CameraJobGetRequest, opts ...grpc.CallOption) (*CameraJob, error)
 	// Patch updates an existing CameraJob
 	Patch(ctx context.Context, in *CameraJobPatchRequest, opts ...grpc.CallOption) (*CameraJob, error)
-	// Apply applies a patch document to an existing CameraJob
-	Apply(ctx context.Context, in *CameraJobApplyRequest, opts ...grpc.CallOption) (*CameraJob, error)
-	// Erase deletes a CameraJob
-	Erase(ctx context.Context, in *CameraJobRef, opts ...grpc.CallOption) (*CameraJobEraseResponse, error)
 	// List reads CameraJobs a page at a time.
 	List(ctx context.Context, in *CameraJobListRequest, opts ...grpc.CallOption) (*CameraJobListResponse, error)
 	// Watch the CameraJobs this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraJobWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraJobWatchResponse], error)
 	Create(ctx context.Context, in *CameraJobCreateRequest, opts ...grpc.CallOption) (*CameraJob, error)
 	Claim(ctx context.Context, in *CameraJobClaimRequest, opts ...grpc.CallOption) (*CameraJob, error)
@@ -1991,26 +1737,6 @@ func (c *cameraJobServiceClient) Patch(ctx context.Context, in *CameraJobPatchRe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraJob)
 	err := c.cc.Invoke(ctx, CameraJobService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraJobServiceClient) Apply(ctx context.Context, in *CameraJobApplyRequest, opts ...grpc.CallOption) (*CameraJob, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraJob)
-	err := c.cc.Invoke(ctx, CameraJobService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraJobServiceClient) Erase(ctx context.Context, in *CameraJobRef, opts ...grpc.CallOption) (*CameraJobEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraJobEraseResponse)
-	err := c.cc.Invoke(ctx, CameraJobService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2096,23 +1822,27 @@ type CameraJobServiceServer interface {
 	Get(context.Context, *CameraJobGetRequest) (*CameraJob, error)
 	// Patch updates an existing CameraJob
 	Patch(context.Context, *CameraJobPatchRequest) (*CameraJob, error)
-	// Apply applies a patch document to an existing CameraJob
-	Apply(context.Context, *CameraJobApplyRequest) (*CameraJob, error)
-	// Erase deletes a CameraJob
-	Erase(context.Context, *CameraJobRef) (*CameraJobEraseResponse, error)
 	// List reads CameraJobs a page at a time.
 	List(context.Context, *CameraJobListRequest) (*CameraJobListResponse, error)
 	// Watch the CameraJobs this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraJobWatchRequest, grpc.ServerStreamingServer[CameraJobWatchResponse]) error
 	Create(context.Context, *CameraJobCreateRequest) (*CameraJob, error)
 	Claim(context.Context, *CameraJobClaimRequest) (*CameraJob, error)
@@ -2136,12 +1866,6 @@ func (UnimplementedCameraJobServiceServer) Get(context.Context, *CameraJobGetReq
 }
 func (UnimplementedCameraJobServiceServer) Patch(context.Context, *CameraJobPatchRequest) (*CameraJob, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraJobServiceServer) Apply(context.Context, *CameraJobApplyRequest) (*CameraJob, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedCameraJobServiceServer) Erase(context.Context, *CameraJobRef) (*CameraJobEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCameraJobServiceServer) List(context.Context, *CameraJobListRequest) (*CameraJobListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -2232,42 +1956,6 @@ func _CameraJobService_Patch_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraJobServiceServer).Patch(ctx, req.(*CameraJobPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraJobService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraJobApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraJobServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraJobService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraJobServiceServer).Apply(ctx, req.(*CameraJobApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraJobService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraJobRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraJobServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraJobService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraJobServiceServer).Erase(ctx, req.(*CameraJobRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2391,14 +2079,6 @@ var CameraJobService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _CameraJobService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _CameraJobService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _CameraJobService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

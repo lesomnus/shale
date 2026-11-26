@@ -11,7 +11,6 @@ import (
 	ent "github.com/lesomnus/shale/internal/ent"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	tenant "github.com/lesomnus/shale/internal/ent/tenant"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -34,11 +33,14 @@ type TenantServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewTenantServiceServer(db *ent.Client, opts ...Option) api.TenantServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return TenantServiceServer{Store: s.Store}
 }
@@ -133,7 +135,10 @@ func (st TenantServiceServer) create(ctx context.Context, req *api.TenantAddRequ
 }
 
 func (s TenantServiceServer) Add(ctx context.Context, req *api.TenantAddRequest) (*api.Tenant, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +153,7 @@ func (s TenantServiceServer) Add(ctx context.Context, req *api.TenantAddRequest)
 	}
 
 	var stored *ent.Tenant
-	if snapshotOptions(s.Rec, api.TenantService_Add_FullMethodName).Value {
+	if s.images(api.TenantService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -174,10 +179,11 @@ func (s TenantServiceServer) Add(ctx context.Context, req *api.TenantAddRequest)
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.TenantService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Tenant",
+		By:     api.TenantService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -231,7 +237,9 @@ func (s TenantServiceServer) Get(ctx context.Context, req *api.TenantGetRequest)
 	}
 
 	q := s.Db.Tenant.Query().Where(p)
-	TenantSelectInit(q, req.GetSelect())
+	if err := TenantSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -284,20 +292,31 @@ func TenantSelectedFields(m *api.TenantSelect) []string {
 	return vs
 }
 
-func TenantSelect(q *ent.TenantQuery, m *api.TenantSelect) {
+// TenantSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func TenantSelect(ctx context.Context, scope Scope, q *ent.TenantQuery, m *api.TenantSelect) error {
 	if !m.GetAll() {
 		fields := TenantSelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func TenantSelectInit(q *ent.TenantQuery, m *api.TenantSelect) {
+// TenantSelectInit is [TenantSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func TenantSelectInit(ctx context.Context, scope Scope, q *ent.TenantQuery, m *api.TenantSelect) error {
 	if m != nil {
-		TenantSelect(q, m)
+		return TenantSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s TenantServiceServer) Patch(ctx context.Context, req *api.TenantPatchRequest) (*api.Tenant, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(tenantOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -346,13 +365,6 @@ var tenantOrmEntity = ormpatch.MustEntityOf(api.File_shale_payday_tenant_proto, 
 var tenantPatchColumns = entpatch.Columns{
 	1: tenant.FieldId, 4: tenant.FieldAlias, 5: tenant.FieldName, 6: tenant.FieldDesc, 7: tenant.FieldLabels, 13: tenant.FieldDateUpdated, 15: tenant.FieldDateCreated, 8: tenant.FieldCapacityShare, 9: tenant.FieldStoredBytes}
 
-func (s TenantServiceServer) Apply(ctx context.Context, req *api.TenantApplyRequest) (*api.Tenant, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.TenantService_Apply_FullMethodName)
-}
-
 func (s TenantServiceServer) apply(ctx context.Context, ref *api.TenantRef, doc *patchpb.Patch, by string) (*api.Tenant, error) {
 	plan := &ormpatch.Plan{Entity: tenantOrmEntity}
 	if doc != nil {
@@ -374,7 +386,7 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *api.TenantRef, doc 
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +407,7 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *api.TenantRef, doc 
 	}
 
 	var previous *api.Tenant
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -464,7 +476,8 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *api.TenantRef, doc 
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Tenant",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -481,6 +494,9 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *api.TenantRef, doc 
 }
 
 func (s TenantServiceServer) Erase(ctx context.Context, req *api.TenantRef) (*api.TenantEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := TenantPick(req)
 	if err != nil {
 		return nil, err
@@ -490,7 +506,7 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *api.TenantRef) (*ap
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -501,8 +517,8 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *api.TenantRef) (*ap
 
 	var k any
 	var previous *api.Tenant
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.TenantService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.TenantService_Erase_FullMethodName)
 		var v *ent.Tenant
 		var err error
 		if images.Previous {
@@ -527,10 +543,14 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *api.TenantRef) (*ap
 	tx.Writing()
 	n, err := st.Db.Tenant.Delete().Where(p).Exec(ctx)
 	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok && sqlgraph.IsForeignKeyConstraintError(err) {
+			return nil, status.Error(codes.FailedPrecondition, "Tenant is still named by another row and cannot be erased")
+		}
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Tenant",
 			By:       api.TenantService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

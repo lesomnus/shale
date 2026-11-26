@@ -11,14 +11,7 @@ import (
 	ent "github.com/lesomnus/shale/internal/ent"
 	attempt "github.com/lesomnus/shale/internal/ent/attempt"
 	lamina "github.com/lesomnus/shale/internal/ent/lamina"
-	node "github.com/lesomnus/shale/internal/ent/node"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
-	satellite "github.com/lesomnus/shale/internal/ent/satellite"
-	set "github.com/lesomnus/shale/internal/ent/set"
-	sink "github.com/lesomnus/shale/internal/ent/sink"
-	site "github.com/lesomnus/shale/internal/ent/site"
-	source "github.com/lesomnus/shale/internal/ent/source"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -43,11 +36,14 @@ type LaminaServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewLaminaServiceServer(db *ent.Client, opts ...Option) api.LaminaServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return LaminaServiceServer{Store: s.Store}
 }
@@ -318,7 +314,10 @@ func (st LaminaServiceServer) create(ctx context.Context, req *api.LaminaAddRequ
 }
 
 func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest) (*api.Lamina, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +332,7 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 	}
 
 	var stored *ent.Lamina
-	if snapshotOptions(s.Rec, api.LaminaService_Add_FullMethodName).Value {
+	if s.images(api.LaminaService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -359,10 +358,11 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.LaminaService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Lamina",
+		By:     api.LaminaService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -416,7 +416,9 @@ func (s LaminaServiceServer) Get(ctx context.Context, req *api.LaminaGetRequest)
 	}
 
 	q := s.Db.Lamina.Query().Where(p)
-	LaminaSelectInit(q, req.GetSelect())
+	if err := LaminaSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -502,55 +504,121 @@ func LaminaSelectedFields(m *api.LaminaSelect) []string {
 	return vs
 }
 
-func LaminaSelect(q *ent.LaminaQuery, m *api.LaminaSelect) {
+// LaminaSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func LaminaSelect(ctx context.Context, scope Scope, q *ent.LaminaQuery, m *api.LaminaSelect) error {
 	if !m.GetAll() {
 		fields := LaminaSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSet() {
+		p, err := SetNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSet(func(q *ent.SetQuery) {
-			q.Where(set.DateErasedIsNil())
-			SetSelect(q, m.GetSet())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SetSelect(ctx, scope, q, m.GetSet())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSource() {
+		p, err := SourceNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSource(func(q *ent.SourceQuery) {
-			q.Where(source.DateErasedIsNil())
-			SourceSelect(q, m.GetSource())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SourceSelect(ctx, scope, q, m.GetSource())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSink() {
+		p, err := SinkNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSink(func(q *ent.SinkQuery) {
-			q.Where(sink.DateErasedIsNil())
-			SinkSelect(q, m.GetSink())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SinkSelect(ctx, scope, q, m.GetSink())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSatellite() {
+		p, err := SatelliteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSatellite(func(q *ent.SatelliteQuery) {
-			q.Where(satellite.DateErasedIsNil())
-			SatelliteSelect(q, m.GetSatellite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SatelliteSelect(ctx, scope, q, m.GetSatellite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func LaminaSelectInit(q *ent.LaminaQuery, m *api.LaminaSelect) {
+// LaminaSelectInit is [LaminaSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func LaminaSelectInit(ctx context.Context, scope Scope, q *ent.LaminaQuery, m *api.LaminaSelect) error {
 	if m != nil {
-		LaminaSelect(q, m)
+		return LaminaSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s LaminaServiceServer) Patch(ctx context.Context, req *api.LaminaPatchRequest) (*api.Lamina, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(laminaOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 10:
@@ -615,13 +683,6 @@ var laminaOrmEntity = ormpatch.MustEntityOf(api.File_shale_lamina_proto, "Lamina
 var laminaPatchColumns = entpatch.Columns{
 	1: lamina.FieldId, 2: lamina.TenantColumn, 3: lamina.SiteColumn, 8: lamina.SetColumn, 9: lamina.SourceColumn, 10: lamina.SinkColumn, 11: lamina.FieldLaminaKey, 12: lamina.FieldState, 13: lamina.FieldDateUpdated, 15: lamina.FieldDateCreated, 16: lamina.FieldDateStarted, 17: lamina.FieldDateEnded, 18: lamina.FieldEndedEstimated, 19: lamina.FieldSize, 20: lamina.FieldIncomplete, 21: lamina.FieldDateExpired, 22: lamina.FieldDateDeleted, 23: lamina.FieldDatesSynced, 24: lamina.FieldPlacementVersion, 25: lamina.FieldDateCommitted, 26: lamina.FieldDateFinished, 27: lamina.FieldChecksum, 28: lamina.FieldEpoch, 29: lamina.FieldSkipReason, 30: lamina.FieldCaptureEpoch, 31: lamina.SatelliteColumn}
 
-func (s LaminaServiceServer) Apply(ctx context.Context, req *api.LaminaApplyRequest) (*api.Lamina, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.LaminaService_Apply_FullMethodName)
-}
-
 func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc *patchpb.Patch, by string) (*api.Lamina, error) {
 	plan := &ormpatch.Plan{Entity: laminaOrmEntity}
 	if doc != nil {
@@ -643,7 +704,7 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -664,7 +725,7 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 	}
 
 	var previous *api.Lamina
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -733,7 +794,8 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Lamina",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -750,6 +812,9 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 }
 
 func (s LaminaServiceServer) Erase(ctx context.Context, req *api.LaminaRef) (*api.LaminaEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := LaminaPick(req)
 	if err != nil {
 		return nil, err
@@ -759,7 +824,7 @@ func (s LaminaServiceServer) Erase(ctx context.Context, req *api.LaminaRef) (*ap
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -770,8 +835,8 @@ func (s LaminaServiceServer) Erase(ctx context.Context, req *api.LaminaRef) (*ap
 
 	var k any
 	var previous *api.Lamina
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.LaminaService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.LaminaService_Erase_FullMethodName)
 		var v *ent.Lamina
 		var err error
 		if images.Previous {
@@ -796,10 +861,14 @@ func (s LaminaServiceServer) Erase(ctx context.Context, req *api.LaminaRef) (*ap
 	tx.Writing()
 	n, err := st.Db.Lamina.Delete().Where(p).Exec(ctx)
 	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok && sqlgraph.IsForeignKeyConstraintError(err) {
+			return nil, status.Error(codes.FailedPrecondition, "Lamina is still named by another row and cannot be erased")
+		}
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Lamina",
 			By:       api.LaminaService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -841,11 +910,14 @@ type AttemptServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewAttemptServiceServer(db *ent.Client, opts ...Option) api.AttemptServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return AttemptServiceServer{Store: s.Store}
 }
@@ -1056,7 +1128,10 @@ func (st AttemptServiceServer) create(ctx context.Context, req *api.AttemptAddRe
 }
 
 func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.Attempt, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1071,7 +1146,7 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 	}
 
 	var stored *ent.Attempt
-	if snapshotOptions(s.Rec, api.AttemptService_Add_FullMethodName).Value {
+	if s.images(api.AttemptService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1097,10 +1172,11 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    api.AttemptService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "shale.Attempt",
+		By:     api.AttemptService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1154,7 +1230,9 @@ func (s AttemptServiceServer) Get(ctx context.Context, req *api.AttemptGetReques
 	}
 
 	q := s.Db.Attempt.Query().Where(p)
-	AttemptSelectInit(q, req.GetSelect())
+	if err := AttemptSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1204,48 +1282,106 @@ func AttemptSelectedFields(m *api.AttemptSelect) []string {
 	return vs
 }
 
-func AttemptSelect(q *ent.AttemptQuery, m *api.AttemptSelect) {
+// AttemptSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func AttemptSelect(ctx context.Context, scope Scope, q *ent.AttemptQuery, m *api.AttemptSelect) error {
 	if !m.GetAll() {
 		fields := AttemptSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasLamina() {
+		p, err := LaminaNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithLamina(func(q *ent.LaminaQuery) {
-			LaminaSelect(q, m.GetLamina())
+			if p != nil {
+				q.Where(p)
+			}
+			err = LaminaSelect(ctx, scope, q, m.GetLamina())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSink() {
+		p, err := SinkNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSink(func(q *ent.SinkQuery) {
-			q.Where(sink.DateErasedIsNil())
-			SinkSelect(q, m.GetSink())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SinkSelect(ctx, scope, q, m.GetSink())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasNode() {
+		p, err := NodeNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithNode(func(q *ent.NodeQuery) {
-			q.Where(node.DateErasedIsNil())
-			NodeSelect(q, m.GetNode())
+			if p != nil {
+				q.Where(p)
+			}
+			err = NodeSelect(ctx, scope, q, m.GetNode())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func AttemptSelectInit(q *ent.AttemptQuery, m *api.AttemptSelect) {
+// AttemptSelectInit is [AttemptSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func AttemptSelectInit(ctx context.Context, scope Scope, q *ent.AttemptQuery, m *api.AttemptSelect) error {
 	if m != nil {
-		AttemptSelect(q, m)
+		return AttemptSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s AttemptServiceServer) Patch(ctx context.Context, req *api.AttemptPatchRequest) (*api.Attempt, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(attemptOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1294,13 +1430,6 @@ var attemptOrmEntity = ormpatch.MustEntityOf(api.File_shale_lamina_proto, "Attem
 var attemptPatchColumns = entpatch.Columns{
 	1: attempt.FieldId, 2: attempt.TenantColumn, 3: attempt.SiteColumn, 8: attempt.LaminaColumn, 9: attempt.SinkColumn, 10: attempt.NodeColumn, 11: attempt.FieldState, 12: attempt.FieldFailureReason, 13: attempt.FieldDateUpdated, 15: attempt.FieldDateCreated, 16: attempt.FieldDateExpires, 17: attempt.FieldDateFinished, 18: attempt.FieldRank}
 
-func (s AttemptServiceServer) Apply(ctx context.Context, req *api.AttemptApplyRequest) (*api.Attempt, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.AttemptService_Apply_FullMethodName)
-}
-
 func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, doc *patchpb.Patch, by string) (*api.Attempt, error) {
 	plan := &ormpatch.Plan{Entity: attemptOrmEntity}
 	if doc != nil {
@@ -1322,7 +1451,7 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1343,7 +1472,7 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 	}
 
 	var previous *api.Attempt
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1412,7 +1541,8 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Attempt",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1429,6 +1559,9 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 }
 
 func (s AttemptServiceServer) Erase(ctx context.Context, req *api.AttemptRef) (*api.AttemptEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := AttemptPick(req)
 	if err != nil {
 		return nil, err
@@ -1438,7 +1571,7 @@ func (s AttemptServiceServer) Erase(ctx context.Context, req *api.AttemptRef) (*
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1449,8 +1582,8 @@ func (s AttemptServiceServer) Erase(ctx context.Context, req *api.AttemptRef) (*
 
 	var k any
 	var previous *api.Attempt
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, api.AttemptService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(api.AttemptService_Erase_FullMethodName)
 		var v *ent.Attempt
 		var err error
 		if images.Previous {
@@ -1475,10 +1608,14 @@ func (s AttemptServiceServer) Erase(ctx context.Context, req *api.AttemptRef) (*
 	tx.Writing()
 	n, err := st.Db.Attempt.Delete().Where(p).Exec(ctx)
 	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok && sqlgraph.IsForeignKeyConstraintError(err) {
+			return nil, status.Error(codes.FailedPrecondition, "Attempt is still named by another row and cannot be erased")
+		}
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "shale.Attempt",
 			By:       api.AttemptService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

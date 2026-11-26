@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1715,99 +1715,6 @@ func (b0 CertificateAuthorityPatchRequest_builder) Build() *CertificateAuthority
 	return m0
 }
 
-type CertificateAuthorityApplyRequest struct {
-	state            protoimpl.MessageState   `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CertificateAuthorityRef `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch           `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CertificateAuthorityApplyRequest) Reset() {
-	*x = CertificateAuthorityApplyRequest{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CertificateAuthorityApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CertificateAuthorityApplyRequest) ProtoMessage() {}
-
-func (x *CertificateAuthorityApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CertificateAuthorityApplyRequest) GetRef() *CertificateAuthorityRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CertificateAuthorityApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CertificateAuthorityApplyRequest) SetRef(v *CertificateAuthorityRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CertificateAuthorityApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CertificateAuthorityApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CertificateAuthorityApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CertificateAuthorityApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CertificateAuthorityApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CertificateAuthorityApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CertificateAuthorityRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CertificateAuthorityApplyRequest_builder) Build() *CertificateAuthorityApplyRequest {
-	m0 := &CertificateAuthorityApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type CertificateAuthorityEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1819,7 +1726,7 @@ type CertificateAuthorityEraseResponse struct {
 
 func (x *CertificateAuthorityEraseResponse) Reset() {
 	*x = CertificateAuthorityEraseResponse{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[6]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1831,7 +1738,7 @@ func (x *CertificateAuthorityEraseResponse) String() string {
 func (*CertificateAuthorityEraseResponse) ProtoMessage() {}
 
 func (x *CertificateAuthorityEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[6]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1894,13 +1801,14 @@ type CertificateAuthorityListRequest struct {
 	xxx_hidden_Size    int32                          `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                         `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                           `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CertificateAuthoritySelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CertificateAuthorityListRequest) Reset() {
 	*x = CertificateAuthorityListRequest{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[7]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1912,7 +1820,7 @@ func (x *CertificateAuthorityListRequest) String() string {
 func (*CertificateAuthorityListRequest) ProtoMessage() {}
 
 func (x *CertificateAuthorityListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[7]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1953,6 +1861,13 @@ func (x *CertificateAuthorityListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CertificateAuthorityListRequest) GetSelect() *CertificateAuthoritySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CertificateAuthorityListRequest) SetFilters(v []*CertificateAuthorityFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1967,6 +1882,21 @@ func (x *CertificateAuthorityListRequest) SetAfter(v string) {
 
 func (x *CertificateAuthorityListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CertificateAuthorityListRequest) SetSelect(v *CertificateAuthoritySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CertificateAuthorityListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CertificateAuthorityListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CertificateAuthorityListRequest_builder struct {
@@ -1989,6 +1919,15 @@ type CertificateAuthorityListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CertificateAuthoritySelect
 }
 
 func (b0 CertificateAuthorityListRequest_builder) Build() *CertificateAuthorityListRequest {
@@ -1999,6 +1938,7 @@ func (b0 CertificateAuthorityListRequest_builder) Build() *CertificateAuthorityL
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2012,7 +1952,7 @@ type CertificateAuthorityListResponse struct {
 
 func (x *CertificateAuthorityListResponse) Reset() {
 	*x = CertificateAuthorityListResponse{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[8]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2024,7 +1964,7 @@ func (x *CertificateAuthorityListResponse) String() string {
 func (*CertificateAuthorityListResponse) ProtoMessage() {}
 
 func (x *CertificateAuthorityListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[8]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2031,7 @@ type CertificateAuthorityFilter struct {
 
 func (x *CertificateAuthorityFilter) Reset() {
 	*x = CertificateAuthorityFilter{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[9]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2103,7 +2043,7 @@ func (x *CertificateAuthorityFilter) String() string {
 func (*CertificateAuthorityFilter) ProtoMessage() {}
 
 func (x *CertificateAuthorityFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[9]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2160,7 +2100,7 @@ type CertificateAuthorityWatchRequest struct {
 
 func (x *CertificateAuthorityWatchRequest) Reset() {
 	*x = CertificateAuthorityWatchRequest{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[10]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2172,7 +2112,7 @@ func (x *CertificateAuthorityWatchRequest) String() string {
 func (*CertificateAuthorityWatchRequest) ProtoMessage() {}
 
 func (x *CertificateAuthorityWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[10]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2210,13 +2150,15 @@ func (x *CertificateAuthorityWatchRequest) SetSkipSnapshot(v bool) {
 type CertificateAuthorityWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CertificateAuthorityFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2244,7 +2186,7 @@ type CertificateAuthorityWatchResponse struct {
 
 func (x *CertificateAuthorityWatchResponse) Reset() {
 	*x = CertificateAuthorityWatchResponse{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[11]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2256,7 +2198,7 @@ func (x *CertificateAuthorityWatchResponse) String() string {
 func (*CertificateAuthorityWatchResponse) ProtoMessage() {}
 
 func (x *CertificateAuthorityWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[11]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2308,7 +2250,7 @@ type CertificateAuthorityWatchItem struct {
 
 func (x *CertificateAuthorityWatchItem) Reset() {
 	*x = CertificateAuthorityWatchItem{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[12]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2320,7 +2262,7 @@ func (x *CertificateAuthorityWatchItem) String() string {
 func (*CertificateAuthorityWatchItem) ProtoMessage() {}
 
 func (x *CertificateAuthorityWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[12]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2397,7 +2339,7 @@ type CertificateAuthorityWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2405,7 +2347,8 @@ type CertificateAuthorityWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CertificateAuthority
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2437,7 +2380,7 @@ type CertificateAuthorityRotateRequest struct {
 
 func (x *CertificateAuthorityRotateRequest) Reset() {
 	*x = CertificateAuthorityRotateRequest{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[13]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2449,7 +2392,7 @@ func (x *CertificateAuthorityRotateRequest) String() string {
 func (*CertificateAuthorityRotateRequest) ProtoMessage() {}
 
 func (x *CertificateAuthorityRotateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[13]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2480,7 +2423,7 @@ type CertificateAuthorityStatusRequest struct {
 
 func (x *CertificateAuthorityStatusRequest) Reset() {
 	*x = CertificateAuthorityStatusRequest{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[14]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2492,7 +2435,7 @@ func (x *CertificateAuthorityStatusRequest) String() string {
 func (*CertificateAuthorityStatusRequest) ProtoMessage() {}
 
 func (x *CertificateAuthorityStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[14]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2530,7 +2473,7 @@ type CertificateAuthorityStatusResponse struct {
 
 func (x *CertificateAuthorityStatusResponse) Reset() {
 	*x = CertificateAuthorityStatusResponse{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[15]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2542,7 +2485,7 @@ func (x *CertificateAuthorityStatusResponse) String() string {
 func (*CertificateAuthorityStatusResponse) ProtoMessage() {}
 
 func (x *CertificateAuthorityStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[15]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2698,7 +2641,7 @@ type CertificateAuthorityWaiting struct {
 
 func (x *CertificateAuthorityWaiting) Reset() {
 	*x = CertificateAuthorityWaiting{}
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[16]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2710,7 +2653,7 @@ func (x *CertificateAuthorityWaiting) String() string {
 func (*CertificateAuthorityWaiting) ProtoMessage() {}
 
 func (x *CertificateAuthorityWaiting) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[16]
+	mi := &file_shale_certificate_authority_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2873,9 +2816,9 @@ var File_shale_certificate_authority_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_certificate_authority_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"'shale/certificate_authority_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a!shale/certificate_authority.proto\"\xae\x05\n" +
-	"\x1eCertificateAuthorityAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"'shale/certificate_authority_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a!shale/certificate_authority.proto\"\xb6\x05\n" +
+	"\x1eCertificateAuthorityAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12I\n" +
@@ -2896,9 +2839,9 @@ const file_shale_certificate_authority_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x01\n" +
 	"\x1eCertificateAuthorityGetRequest\x120\n" +
 	"\x03ref\x18\x01 \x01(\v2\x1e.shale.CertificateAuthorityRefR\x03ref\x129\n" +
-	"\x06select\x18\x02 \x01(\v2!.shale.CertificateAuthoritySelectR\x06select\"J\n" +
-	"\x17CertificateAuthorityRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x06select\x18\x02 \x01(\v2!.shale.CertificateAuthoritySelectR\x06select\"R\n" +
+	"\x17CertificateAuthorityRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
 	"\x03key\"\xcd\x03\n" +
 	"\x1aCertificateAuthoritySelect\x12\x10\n" +
@@ -2944,17 +2887,15 @@ const file_shale_certificate_authority_svc_g_proto_rawDesc = "" +
 	"\x11date_retired_null\x18# \x01(\bR\x0fdateRetiredNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"x\n" +
-	" CertificateAuthorityApplyRequest\x120\n" +
-	"\x03ref\x18\x01 \x01(\v2\x1e.shale.CertificateAuthorityRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\";\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\";\n" +
 	"!CertificateAuthorityEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xb7\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xf2\x01\n" +
 	"\x1fCertificateAuthorityListRequest\x12;\n" +
 	"\afilters\x18\x01 \x03(\v2!.shale.CertificateAuthorityFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"p\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x129\n" +
+	"\x06select\x18\x06 \x01(\v2!.shale.CertificateAuthoritySelectR\x06select\"p\n" +
 	" CertificateAuthorityListResponse\x121\n" +
 	"\x05items\x18\x01 \x03(\v2\x1b.shale.CertificateAuthorityR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"N\n" +
@@ -2993,12 +2934,11 @@ const file_shale_certificate_authority_svc_g_proto_rawDesc = "" +
 	"'CERTIFICATE_AUTHORITY_PHASE_UNSPECIFIED\x10\x00\x12$\n" +
 	" CERTIFICATE_AUTHORITY_PHASE_IDLE\x10\x01\x12,\n" +
 	"(CERTIFICATE_AUTHORITY_PHASE_DISTRIBUTING\x10\x02\x12)\n" +
-	"%CERTIFICATE_AUTHORITY_PHASE_REPLACING\x10\x032\x8b\x06\n" +
+	"%CERTIFICATE_AUTHORITY_PHASE_REPLACING\x10\x032\xbc\x05\n" +
 	"\x1bCertificateAuthorityService\x12I\n" +
 	"\x03Add\x12%.shale.CertificateAuthorityAddRequest\x1a\x1b.shale.CertificateAuthority\x12I\n" +
 	"\x03Get\x12%.shale.CertificateAuthorityGetRequest\x1a\x1b.shale.CertificateAuthority\x12M\n" +
-	"\x05Patch\x12'.shale.CertificateAuthorityPatchRequest\x1a\x1b.shale.CertificateAuthority\x12M\n" +
-	"\x05Apply\x12'.shale.CertificateAuthorityApplyRequest\x1a\x1b.shale.CertificateAuthority\x12Q\n" +
+	"\x05Patch\x12'.shale.CertificateAuthorityPatchRequest\x1a\x1b.shale.CertificateAuthority\x12Q\n" +
 	"\x05Erase\x12\x1e.shale.CertificateAuthorityRef\x1a(.shale.CertificateAuthorityEraseResponse\x12W\n" +
 	"\x04List\x12&.shale.CertificateAuthorityListRequest\x1a'.shale.CertificateAuthorityListResponse\x12\\\n" +
 	"\x05Watch\x12'.shale.CertificateAuthorityWatchRequest\x1a(.shale.CertificateAuthorityWatchResponse0\x01\x12O\n" +
@@ -3006,7 +2946,7 @@ const file_shale_certificate_authority_svc_g_proto_rawDesc = "" +
 	"\x06Status\x12(.shale.CertificateAuthorityStatusRequest\x1a).shale.CertificateAuthorityStatusResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
 var file_shale_certificate_authority_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_shale_certificate_authority_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_shale_certificate_authority_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_shale_certificate_authority_svc_g_proto_goTypes = []any{
 	(CertificateAuthorityPhase)(0),             // 0: shale.CertificateAuthorityPhase
 	(*CertificateAuthorityAddRequest)(nil),     // 1: shale.CertificateAuthorityAddRequest
@@ -3014,78 +2954,73 @@ var file_shale_certificate_authority_svc_g_proto_goTypes = []any{
 	(*CertificateAuthorityRef)(nil),            // 3: shale.CertificateAuthorityRef
 	(*CertificateAuthoritySelect)(nil),         // 4: shale.CertificateAuthoritySelect
 	(*CertificateAuthorityPatchRequest)(nil),   // 5: shale.CertificateAuthorityPatchRequest
-	(*CertificateAuthorityApplyRequest)(nil),   // 6: shale.CertificateAuthorityApplyRequest
-	(*CertificateAuthorityEraseResponse)(nil),  // 7: shale.CertificateAuthorityEraseResponse
-	(*CertificateAuthorityListRequest)(nil),    // 8: shale.CertificateAuthorityListRequest
-	(*CertificateAuthorityListResponse)(nil),   // 9: shale.CertificateAuthorityListResponse
-	(*CertificateAuthorityFilter)(nil),         // 10: shale.CertificateAuthorityFilter
-	(*CertificateAuthorityWatchRequest)(nil),   // 11: shale.CertificateAuthorityWatchRequest
-	(*CertificateAuthorityWatchResponse)(nil),  // 12: shale.CertificateAuthorityWatchResponse
-	(*CertificateAuthorityWatchItem)(nil),      // 13: shale.CertificateAuthorityWatchItem
-	(*CertificateAuthorityRotateRequest)(nil),  // 14: shale.CertificateAuthorityRotateRequest
-	(*CertificateAuthorityStatusRequest)(nil),  // 15: shale.CertificateAuthorityStatusRequest
-	(*CertificateAuthorityStatusResponse)(nil), // 16: shale.CertificateAuthorityStatusResponse
-	(*CertificateAuthorityWaiting)(nil),        // 17: shale.CertificateAuthorityWaiting
-	nil,                                        // 18: shale.CertificateAuthorityAddRequest.LabelsEntry
-	nil,                                        // 19: shale.CertificateAuthorityPatchRequest.LabelsEntry
-	(CertificateAuthorityState)(0),             // 20: shale.CertificateAuthorityState
-	(*timestamppb.Timestamp)(nil),              // 21: google.protobuf.Timestamp
-	(*patchpb.Patch)(nil),                      // 22: patch.Patch
-	(*CertificateAuthority)(nil),               // 23: shale.CertificateAuthority
+	(*CertificateAuthorityEraseResponse)(nil),  // 6: shale.CertificateAuthorityEraseResponse
+	(*CertificateAuthorityListRequest)(nil),    // 7: shale.CertificateAuthorityListRequest
+	(*CertificateAuthorityListResponse)(nil),   // 8: shale.CertificateAuthorityListResponse
+	(*CertificateAuthorityFilter)(nil),         // 9: shale.CertificateAuthorityFilter
+	(*CertificateAuthorityWatchRequest)(nil),   // 10: shale.CertificateAuthorityWatchRequest
+	(*CertificateAuthorityWatchResponse)(nil),  // 11: shale.CertificateAuthorityWatchResponse
+	(*CertificateAuthorityWatchItem)(nil),      // 12: shale.CertificateAuthorityWatchItem
+	(*CertificateAuthorityRotateRequest)(nil),  // 13: shale.CertificateAuthorityRotateRequest
+	(*CertificateAuthorityStatusRequest)(nil),  // 14: shale.CertificateAuthorityStatusRequest
+	(*CertificateAuthorityStatusResponse)(nil), // 15: shale.CertificateAuthorityStatusResponse
+	(*CertificateAuthorityWaiting)(nil),        // 16: shale.CertificateAuthorityWaiting
+	nil,                                        // 17: shale.CertificateAuthorityAddRequest.LabelsEntry
+	nil,                                        // 18: shale.CertificateAuthorityPatchRequest.LabelsEntry
+	(CertificateAuthorityState)(0),             // 19: shale.CertificateAuthorityState
+	(*timestamppb.Timestamp)(nil),              // 20: google.protobuf.Timestamp
+	(*CertificateAuthority)(nil),               // 21: shale.CertificateAuthority
 }
 var file_shale_certificate_authority_svc_g_proto_depIdxs = []int32{
-	18, // 0: shale.CertificateAuthorityAddRequest.labels:type_name -> shale.CertificateAuthorityAddRequest.LabelsEntry
-	20, // 1: shale.CertificateAuthorityAddRequest.state:type_name -> shale.CertificateAuthorityState
-	21, // 2: shale.CertificateAuthorityAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	21, // 3: shale.CertificateAuthorityAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	21, // 4: shale.CertificateAuthorityAddRequest.date_active:type_name -> google.protobuf.Timestamp
-	21, // 5: shale.CertificateAuthorityAddRequest.date_retired:type_name -> google.protobuf.Timestamp
+	17, // 0: shale.CertificateAuthorityAddRequest.labels:type_name -> shale.CertificateAuthorityAddRequest.LabelsEntry
+	19, // 1: shale.CertificateAuthorityAddRequest.state:type_name -> shale.CertificateAuthorityState
+	20, // 2: shale.CertificateAuthorityAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	20, // 3: shale.CertificateAuthorityAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	20, // 4: shale.CertificateAuthorityAddRequest.date_active:type_name -> google.protobuf.Timestamp
+	20, // 5: shale.CertificateAuthorityAddRequest.date_retired:type_name -> google.protobuf.Timestamp
 	3,  // 6: shale.CertificateAuthorityGetRequest.ref:type_name -> shale.CertificateAuthorityRef
 	4,  // 7: shale.CertificateAuthorityGetRequest.select:type_name -> shale.CertificateAuthoritySelect
 	3,  // 8: shale.CertificateAuthorityPatchRequest.ref:type_name -> shale.CertificateAuthorityRef
-	19, // 9: shale.CertificateAuthorityPatchRequest.labels:type_name -> shale.CertificateAuthorityPatchRequest.LabelsEntry
-	20, // 10: shale.CertificateAuthorityPatchRequest.state:type_name -> shale.CertificateAuthorityState
-	21, // 11: shale.CertificateAuthorityPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
-	21, // 12: shale.CertificateAuthorityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	21, // 13: shale.CertificateAuthorityPatchRequest.date_active:type_name -> google.protobuf.Timestamp
-	21, // 14: shale.CertificateAuthorityPatchRequest.date_retired:type_name -> google.protobuf.Timestamp
-	3,  // 15: shale.CertificateAuthorityApplyRequest.ref:type_name -> shale.CertificateAuthorityRef
-	22, // 16: shale.CertificateAuthorityApplyRequest.patch:type_name -> patch.Patch
-	10, // 17: shale.CertificateAuthorityListRequest.filters:type_name -> shale.CertificateAuthorityFilter
-	23, // 18: shale.CertificateAuthorityListResponse.items:type_name -> shale.CertificateAuthority
-	3,  // 19: shale.CertificateAuthorityFilter.ref:type_name -> shale.CertificateAuthorityRef
-	10, // 20: shale.CertificateAuthorityWatchRequest.filters:type_name -> shale.CertificateAuthorityFilter
-	13, // 21: shale.CertificateAuthorityWatchResponse.items:type_name -> shale.CertificateAuthorityWatchItem
-	23, // 22: shale.CertificateAuthorityWatchItem.value:type_name -> shale.CertificateAuthority
-	0,  // 23: shale.CertificateAuthorityStatusResponse.phase:type_name -> shale.CertificateAuthorityPhase
-	23, // 24: shale.CertificateAuthorityStatusResponse.authorities:type_name -> shale.CertificateAuthority
-	21, // 25: shale.CertificateAuthorityStatusResponse.date_rollover:type_name -> google.protobuf.Timestamp
-	17, // 26: shale.CertificateAuthorityStatusResponse.waiting:type_name -> shale.CertificateAuthorityWaiting
-	21, // 27: shale.CertificateAuthorityWaiting.date_seen:type_name -> google.protobuf.Timestamp
-	21, // 28: shale.CertificateAuthorityWaiting.date_cert_expires:type_name -> google.protobuf.Timestamp
-	1,  // 29: shale.CertificateAuthorityService.Add:input_type -> shale.CertificateAuthorityAddRequest
-	2,  // 30: shale.CertificateAuthorityService.Get:input_type -> shale.CertificateAuthorityGetRequest
-	5,  // 31: shale.CertificateAuthorityService.Patch:input_type -> shale.CertificateAuthorityPatchRequest
-	6,  // 32: shale.CertificateAuthorityService.Apply:input_type -> shale.CertificateAuthorityApplyRequest
-	3,  // 33: shale.CertificateAuthorityService.Erase:input_type -> shale.CertificateAuthorityRef
-	8,  // 34: shale.CertificateAuthorityService.List:input_type -> shale.CertificateAuthorityListRequest
-	11, // 35: shale.CertificateAuthorityService.Watch:input_type -> shale.CertificateAuthorityWatchRequest
-	14, // 36: shale.CertificateAuthorityService.Rotate:input_type -> shale.CertificateAuthorityRotateRequest
-	15, // 37: shale.CertificateAuthorityService.Status:input_type -> shale.CertificateAuthorityStatusRequest
-	23, // 38: shale.CertificateAuthorityService.Add:output_type -> shale.CertificateAuthority
-	23, // 39: shale.CertificateAuthorityService.Get:output_type -> shale.CertificateAuthority
-	23, // 40: shale.CertificateAuthorityService.Patch:output_type -> shale.CertificateAuthority
-	23, // 41: shale.CertificateAuthorityService.Apply:output_type -> shale.CertificateAuthority
-	7,  // 42: shale.CertificateAuthorityService.Erase:output_type -> shale.CertificateAuthorityEraseResponse
-	9,  // 43: shale.CertificateAuthorityService.List:output_type -> shale.CertificateAuthorityListResponse
-	12, // 44: shale.CertificateAuthorityService.Watch:output_type -> shale.CertificateAuthorityWatchResponse
-	23, // 45: shale.CertificateAuthorityService.Rotate:output_type -> shale.CertificateAuthority
-	16, // 46: shale.CertificateAuthorityService.Status:output_type -> shale.CertificateAuthorityStatusResponse
-	38, // [38:47] is the sub-list for method output_type
-	29, // [29:38] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	18, // 9: shale.CertificateAuthorityPatchRequest.labels:type_name -> shale.CertificateAuthorityPatchRequest.LabelsEntry
+	19, // 10: shale.CertificateAuthorityPatchRequest.state:type_name -> shale.CertificateAuthorityState
+	20, // 11: shale.CertificateAuthorityPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	20, // 12: shale.CertificateAuthorityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	20, // 13: shale.CertificateAuthorityPatchRequest.date_active:type_name -> google.protobuf.Timestamp
+	20, // 14: shale.CertificateAuthorityPatchRequest.date_retired:type_name -> google.protobuf.Timestamp
+	9,  // 15: shale.CertificateAuthorityListRequest.filters:type_name -> shale.CertificateAuthorityFilter
+	4,  // 16: shale.CertificateAuthorityListRequest.select:type_name -> shale.CertificateAuthoritySelect
+	21, // 17: shale.CertificateAuthorityListResponse.items:type_name -> shale.CertificateAuthority
+	3,  // 18: shale.CertificateAuthorityFilter.ref:type_name -> shale.CertificateAuthorityRef
+	9,  // 19: shale.CertificateAuthorityWatchRequest.filters:type_name -> shale.CertificateAuthorityFilter
+	12, // 20: shale.CertificateAuthorityWatchResponse.items:type_name -> shale.CertificateAuthorityWatchItem
+	21, // 21: shale.CertificateAuthorityWatchItem.value:type_name -> shale.CertificateAuthority
+	0,  // 22: shale.CertificateAuthorityStatusResponse.phase:type_name -> shale.CertificateAuthorityPhase
+	21, // 23: shale.CertificateAuthorityStatusResponse.authorities:type_name -> shale.CertificateAuthority
+	20, // 24: shale.CertificateAuthorityStatusResponse.date_rollover:type_name -> google.protobuf.Timestamp
+	16, // 25: shale.CertificateAuthorityStatusResponse.waiting:type_name -> shale.CertificateAuthorityWaiting
+	20, // 26: shale.CertificateAuthorityWaiting.date_seen:type_name -> google.protobuf.Timestamp
+	20, // 27: shale.CertificateAuthorityWaiting.date_cert_expires:type_name -> google.protobuf.Timestamp
+	1,  // 28: shale.CertificateAuthorityService.Add:input_type -> shale.CertificateAuthorityAddRequest
+	2,  // 29: shale.CertificateAuthorityService.Get:input_type -> shale.CertificateAuthorityGetRequest
+	5,  // 30: shale.CertificateAuthorityService.Patch:input_type -> shale.CertificateAuthorityPatchRequest
+	3,  // 31: shale.CertificateAuthorityService.Erase:input_type -> shale.CertificateAuthorityRef
+	7,  // 32: shale.CertificateAuthorityService.List:input_type -> shale.CertificateAuthorityListRequest
+	10, // 33: shale.CertificateAuthorityService.Watch:input_type -> shale.CertificateAuthorityWatchRequest
+	13, // 34: shale.CertificateAuthorityService.Rotate:input_type -> shale.CertificateAuthorityRotateRequest
+	14, // 35: shale.CertificateAuthorityService.Status:input_type -> shale.CertificateAuthorityStatusRequest
+	21, // 36: shale.CertificateAuthorityService.Add:output_type -> shale.CertificateAuthority
+	21, // 37: shale.CertificateAuthorityService.Get:output_type -> shale.CertificateAuthority
+	21, // 38: shale.CertificateAuthorityService.Patch:output_type -> shale.CertificateAuthority
+	6,  // 39: shale.CertificateAuthorityService.Erase:output_type -> shale.CertificateAuthorityEraseResponse
+	8,  // 40: shale.CertificateAuthorityService.List:output_type -> shale.CertificateAuthorityListResponse
+	11, // 41: shale.CertificateAuthorityService.Watch:output_type -> shale.CertificateAuthorityWatchResponse
+	21, // 42: shale.CertificateAuthorityService.Rotate:output_type -> shale.CertificateAuthority
+	15, // 43: shale.CertificateAuthorityService.Status:output_type -> shale.CertificateAuthorityStatusResponse
+	36, // [36:44] is the sub-list for method output_type
+	28, // [28:36] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_shale_certificate_authority_svc_g_proto_init() }
@@ -3104,7 +3039,7 @@ func file_shale_certificate_authority_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_certificate_authority_svc_g_proto_rawDesc), len(file_shale_certificate_authority_svc_g_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   19,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

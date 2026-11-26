@@ -434,3 +434,39 @@ shale lamina reschedule ... --delete-now --reason <text>   # both dates to now (
 shale lamina timeline '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","size":n,"after":"<cursor>"}'
 shale live [--for d] <set>               # a WebRTC viewer per source, for a look (§39.4)
 ```
+
+### 32.2 Upgrading past roster's v0.2.0 freeze, with roster in this process
+
+roster keeps nothing for an earlier roster until it is released, and the
+roster this build links reads no database an earlier one made. A
+deployment whose roster runs in the control plane's process (no
+`auth.roster.addr`) cannot carry its `roster.db` across: this build
+refuses to start on it, with roster's own words about its columns and
+then Shale's, naming this section. Shale's own database is read as it
+was. What it takes:
+
+```sh
+mv /var/lib/shale/control/roster.db /var/lib/shale/control/roster.db.before   # and its -wal and -shm
+shale identity migrate      # every tenant and person of Shale's, under their identifiers; a password each, printed once
+shale serve …
+```
+
+`identity migrate` makes again, from Shale's own rows, each tenant (its
+identifier, alias and name) and each person (identifier, alias, name),
+binds whoever sees every site to the role that administers the tenant at
+roster, and issues every person a new password. Nothing else of the old
+file comes across:
+
+- **the passwords**: every person signs in with the one printed;
+- **what roster bound** besides that one role: the operators' role
+  (`auth.operators`) and any role or binding a tenant administrator wrote
+  there, which are written again;
+- **people roster had and Shale had not met** (nobody who never signed in
+  has a row here), who are made again at roster;
+- whatever else that roster kept of anybody: addresses, second factors,
+  keys, and its own trail and access record.
+
+Shale's holder in each tenant, its role and the binding are written again
+on their own the first time Shale asks roster anything there. Where
+`auth.roster.db` names a database of its own, it is that database which is
+moved aside or emptied.

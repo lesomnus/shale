@@ -33,7 +33,11 @@ type Outbox struct {
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// Event holds the value of the "event" field.
-	Event        *[]byte `json:"event,omitempty"`
+	Event *[]byte `json:"event,omitempty"`
+	// Routes holds the value of the "routes" field.
+	Routes *[]byte `json:"routes,omitempty"`
+	// Signal holds the value of the "signal" field.
+	Signal       *[]byte `json:"signal,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -42,7 +46,7 @@ func (*Outbox) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case outbox.FieldPatch, outbox.FieldEvent:
+		case outbox.FieldPatch, outbox.FieldEvent, outbox.FieldRoutes, outbox.FieldSignal:
 			values[i] = new([]byte)
 		case outbox.FieldMethod, outbox.FieldBy:
 			values[i] = new(sql.NullString)
@@ -122,6 +126,18 @@ func (_m *Outbox) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.Event = value
 			}
+		case outbox.FieldRoutes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field routes", values[i])
+			} else if value != nil {
+				_m.Routes = value
+			}
+		case outbox.FieldSignal:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field signal", values[i])
+			} else if value != nil {
+				_m.Signal = value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -181,6 +197,16 @@ func (_m *Outbox) String() string {
 	builder.WriteString(", ")
 	if v := _m.Event; v != nil {
 		builder.WriteString("event=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.Routes; v != nil {
+		builder.WriteString("routes=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.Signal; v != nil {
+		builder.WriteString("signal=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteByte(')')

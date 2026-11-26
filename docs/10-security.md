@@ -686,7 +686,7 @@ person*), and Shale is the receiving app.
 ```text
 portal ─ authorize, audience = Shale's API ─▶ issuer          (the person's browser)
        ◀─ JWT {sub: person, aud: Shale's API, client_id: portal}   minutes old
-portal ─ DelegationService/Exchange {audience: @<tenant>/shale} ─▶ roster
+portal ─ DelegationService/Exchange {app: @<tenant>/shale} ─▶ roster
        ◀─ rd_…   (about the portal, issued to Shale, 15 min)
 portal ─ DelegationService.Start {access_token, live, recordings, sets,
          sources, recordings_from/to}   authorization: Bearer rd_… ─▶ Shale

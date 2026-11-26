@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1453,179 +1453,6 @@ func (b0 DelegationPatchRequest_builder) Build() *DelegationPatchRequest {
 	return m0
 }
 
-type DelegationApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *DelegationRef         `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *DelegationApplyRequest) Reset() {
-	*x = DelegationApplyRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DelegationApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DelegationApplyRequest) ProtoMessage() {}
-
-func (x *DelegationApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *DelegationApplyRequest) GetRef() *DelegationRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *DelegationApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *DelegationApplyRequest) SetRef(v *DelegationRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *DelegationApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *DelegationApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *DelegationApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *DelegationApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *DelegationApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type DelegationApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *DelegationRef
-	Patch *patchpb.Patch
-}
-
-func (b0 DelegationApplyRequest_builder) Build() *DelegationApplyRequest {
-	m0 := &DelegationApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type DelegationEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *DelegationEraseResponse) Reset() {
-	*x = DelegationEraseResponse{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DelegationEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DelegationEraseResponse) ProtoMessage() {}
-
-func (x *DelegationEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *DelegationEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *DelegationEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *DelegationEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *DelegationEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type DelegationEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 DelegationEraseResponse_builder) Build() *DelegationEraseResponse {
-	m0 := &DelegationEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type DelegationStartRequest struct {
 	state                     protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_AccessToken    string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken"`
@@ -1642,7 +1469,7 @@ type DelegationStartRequest struct {
 
 func (x *DelegationStartRequest) Reset() {
 	*x = DelegationStartRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[7]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1654,7 +1481,7 @@ func (x *DelegationStartRequest) String() string {
 func (*DelegationStartRequest) ProtoMessage() {}
 
 func (x *DelegationStartRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[7]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1835,7 +1662,7 @@ type DelegationStartResponse struct {
 
 func (x *DelegationStartResponse) Reset() {
 	*x = DelegationStartResponse{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[8]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1847,7 +1674,7 @@ func (x *DelegationStartResponse) String() string {
 func (*DelegationStartResponse) ProtoMessage() {}
 
 func (x *DelegationStartResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[8]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1919,7 +1746,7 @@ type DelegationLiveRequest struct {
 
 func (x *DelegationLiveRequest) Reset() {
 	*x = DelegationLiveRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[9]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1931,7 +1758,7 @@ func (x *DelegationLiveRequest) String() string {
 func (*DelegationLiveRequest) ProtoMessage() {}
 
 func (x *DelegationLiveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[9]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2026,7 +1853,7 @@ type DelegationTimelineRequest struct {
 
 func (x *DelegationTimelineRequest) Reset() {
 	*x = DelegationTimelineRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2038,7 +1865,7 @@ func (x *DelegationTimelineRequest) String() string {
 func (*DelegationTimelineRequest) ProtoMessage() {}
 
 func (x *DelegationTimelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2108,7 +1935,7 @@ type DelegationExportRequest struct {
 
 func (x *DelegationExportRequest) Reset() {
 	*x = DelegationExportRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2120,7 +1947,7 @@ func (x *DelegationExportRequest) String() string {
 func (*DelegationExportRequest) ProtoMessage() {}
 
 func (x *DelegationExportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2189,7 +2016,7 @@ type DelegationRevokeRequest struct {
 
 func (x *DelegationRevokeRequest) Reset() {
 	*x = DelegationRevokeRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2201,7 +2028,7 @@ func (x *DelegationRevokeRequest) String() string {
 func (*DelegationRevokeRequest) ProtoMessage() {}
 
 func (x *DelegationRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2245,7 +2072,7 @@ type DelegationRevokeResponse struct {
 
 func (x *DelegationRevokeResponse) Reset() {
 	*x = DelegationRevokeResponse{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[13]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2257,7 +2084,7 @@ func (x *DelegationRevokeResponse) String() string {
 func (*DelegationRevokeResponse) ProtoMessage() {}
 
 func (x *DelegationRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[13]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2284,9 +2111,9 @@ var File_shale_delegation_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1cshale/delegation_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x16shale/delegation.proto\x1a\x18shale/lamina_svc.g.proto\x1a\x1fshale/payday/holder_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x0fshale/set.proto\x1a\x15shale/set_svc.g.proto\"\xc5\x05\n" +
-	"\x14DelegationAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x1cshale/delegation_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x16shale/delegation.proto\x1a\x18shale/lamina_svc.g.proto\x1a\x1fshale/payday/holder_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x0fshale/set.proto\x1a\x15shale/set_svc.g.proto\"\xcd\x05\n" +
+	"\x14DelegationAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12(\n" +
 	"\x06holder\x18\b \x01(\v2\x10.shale.HolderRefR\x06holder\x12\x17\n" +
 	"\x03app\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x03app\x12\"\n" +
@@ -2308,9 +2135,9 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"o\n" +
 	"\x14DelegationGetRequest\x12&\n" +
 	"\x03ref\x18\x01 \x01(\v2\x14.shale.DelegationRefR\x03ref\x12/\n" +
-	"\x06select\x18\x02 \x01(\v2\x17.shale.DelegationSelectR\x06select\"(\n" +
-	"\rDelegationRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x17.shale.DelegationSelectR\x06select\"0\n" +
+	"\rDelegationRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02idB\x05\n" +
 	"\x03key\"\xc2\x04\n" +
 	"\x10DelegationSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
@@ -2343,12 +2170,7 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\tdate_used\x18. \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\x12$\n" +
 	"\x0edate_used_null\x18/ \x01(\bR\fdateUsedNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"d\n" +
-	"\x16DelegationApplyRequest\x12&\n" +
-	"\x03ref\x18\x01 \x01(\v2\x14.shale.DelegationRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
-	"\x17DelegationEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x92\x03\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"\x92\x03\n" +
 	"\x16DelegationStartRequest\x12(\n" +
 	"\faccess_token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\vaccessToken\x12\x19\n" +
 	"\x04live\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\x04live\x12%\n" +
@@ -2377,104 +2199,93 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\x06export\x18\x02 \x01(\v2\x1a.shale.LaminaExportRequestR\x06export\"8\n" +
 	"\x17DelegationRevokeRequest\x12\x1d\n" +
 	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\x1a\n" +
-	"\x18DelegationRevokeResponse2\x9b\x05\n" +
+	"\x18DelegationRevokeResponse2\xa1\x04\n" +
 	"\x11DelegationService\x125\n" +
 	"\x03Add\x12\x1b.shale.DelegationAddRequest\x1a\x11.shale.Delegation\x125\n" +
 	"\x03Get\x12\x1b.shale.DelegationGetRequest\x1a\x11.shale.Delegation\x129\n" +
-	"\x05Patch\x12\x1d.shale.DelegationPatchRequest\x1a\x11.shale.Delegation\x129\n" +
-	"\x05Apply\x12\x1d.shale.DelegationApplyRequest\x1a\x11.shale.Delegation\x12=\n" +
-	"\x05Erase\x12\x14.shale.DelegationRef\x1a\x1e.shale.DelegationEraseResponse\x12F\n" +
+	"\x05Patch\x12\x1d.shale.DelegationPatchRequest\x1a\x11.shale.Delegation\x12F\n" +
 	"\x05Start\x12\x1d.shale.DelegationStartRequest\x1a\x1e.shale.DelegationStartResponse\x12<\n" +
 	"\x04Live\x12\x1c.shale.DelegationLiveRequest\x1a\x16.shale.SetLiveResponse\x12K\n" +
 	"\bTimeline\x12 .shale.DelegationTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse\x12E\n" +
 	"\x06Export\x12\x1e.shale.DelegationExportRequest\x1a\x1b.shale.LaminaExportResponse\x12I\n" +
 	"\x06Revoke\x12\x1e.shale.DelegationRevokeRequest\x1a\x1f.shale.DelegationRevokeResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_shale_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_shale_delegation_svc_g_proto_goTypes = []any{
 	(*DelegationAddRequest)(nil),      // 0: shale.DelegationAddRequest
 	(*DelegationGetRequest)(nil),      // 1: shale.DelegationGetRequest
 	(*DelegationRef)(nil),             // 2: shale.DelegationRef
 	(*DelegationSelect)(nil),          // 3: shale.DelegationSelect
 	(*DelegationPatchRequest)(nil),    // 4: shale.DelegationPatchRequest
-	(*DelegationApplyRequest)(nil),    // 5: shale.DelegationApplyRequest
-	(*DelegationEraseResponse)(nil),   // 6: shale.DelegationEraseResponse
-	(*DelegationStartRequest)(nil),    // 7: shale.DelegationStartRequest
-	(*DelegationStartResponse)(nil),   // 8: shale.DelegationStartResponse
-	(*DelegationLiveRequest)(nil),     // 9: shale.DelegationLiveRequest
-	(*DelegationTimelineRequest)(nil), // 10: shale.DelegationTimelineRequest
-	(*DelegationExportRequest)(nil),   // 11: shale.DelegationExportRequest
-	(*DelegationRevokeRequest)(nil),   // 12: shale.DelegationRevokeRequest
-	(*DelegationRevokeResponse)(nil),  // 13: shale.DelegationRevokeResponse
-	(*TenantRef)(nil),                 // 14: shale.TenantRef
-	(*HolderRef)(nil),                 // 15: shale.HolderRef
-	(*timestamppb.Timestamp)(nil),     // 16: google.protobuf.Timestamp
-	(*TenantSelect)(nil),              // 17: shale.TenantSelect
-	(*HolderSelect)(nil),              // 18: shale.HolderSelect
-	(*patchpb.Patch)(nil),             // 19: patch.Patch
-	(*SetRef)(nil),                    // 20: shale.SetRef
-	(*SourceRef)(nil),                 // 21: shale.SourceRef
-	(*Delegation)(nil),                // 22: shale.Delegation
-	(*LaminaTimelineRequest)(nil),     // 23: shale.LaminaTimelineRequest
-	(*LaminaExportRequest)(nil),       // 24: shale.LaminaExportRequest
-	(*SetLiveResponse)(nil),           // 25: shale.SetLiveResponse
-	(*LaminaTimelineResponse)(nil),    // 26: shale.LaminaTimelineResponse
-	(*LaminaExportResponse)(nil),      // 27: shale.LaminaExportResponse
+	(*DelegationStartRequest)(nil),    // 5: shale.DelegationStartRequest
+	(*DelegationStartResponse)(nil),   // 6: shale.DelegationStartResponse
+	(*DelegationLiveRequest)(nil),     // 7: shale.DelegationLiveRequest
+	(*DelegationTimelineRequest)(nil), // 8: shale.DelegationTimelineRequest
+	(*DelegationExportRequest)(nil),   // 9: shale.DelegationExportRequest
+	(*DelegationRevokeRequest)(nil),   // 10: shale.DelegationRevokeRequest
+	(*DelegationRevokeResponse)(nil),  // 11: shale.DelegationRevokeResponse
+	(*TenantRef)(nil),                 // 12: shale.TenantRef
+	(*HolderRef)(nil),                 // 13: shale.HolderRef
+	(*timestamppb.Timestamp)(nil),     // 14: google.protobuf.Timestamp
+	(*TenantSelect)(nil),              // 15: shale.TenantSelect
+	(*HolderSelect)(nil),              // 16: shale.HolderSelect
+	(*SetRef)(nil),                    // 17: shale.SetRef
+	(*SourceRef)(nil),                 // 18: shale.SourceRef
+	(*Delegation)(nil),                // 19: shale.Delegation
+	(*LaminaTimelineRequest)(nil),     // 20: shale.LaminaTimelineRequest
+	(*LaminaExportRequest)(nil),       // 21: shale.LaminaExportRequest
+	(*SetLiveResponse)(nil),           // 22: shale.SetLiveResponse
+	(*LaminaTimelineResponse)(nil),    // 23: shale.LaminaTimelineResponse
+	(*LaminaExportResponse)(nil),      // 24: shale.LaminaExportResponse
 }
 var file_shale_delegation_svc_g_proto_depIdxs = []int32{
-	14, // 0: shale.DelegationAddRequest.tenant:type_name -> shale.TenantRef
-	15, // 1: shale.DelegationAddRequest.holder:type_name -> shale.HolderRef
-	16, // 2: shale.DelegationAddRequest.recordings_from:type_name -> google.protobuf.Timestamp
-	16, // 3: shale.DelegationAddRequest.recordings_to:type_name -> google.protobuf.Timestamp
-	16, // 4: shale.DelegationAddRequest.date_ends:type_name -> google.protobuf.Timestamp
-	16, // 5: shale.DelegationAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	16, // 6: shale.DelegationAddRequest.date_used:type_name -> google.protobuf.Timestamp
-	16, // 7: shale.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	12, // 0: shale.DelegationAddRequest.tenant:type_name -> shale.TenantRef
+	13, // 1: shale.DelegationAddRequest.holder:type_name -> shale.HolderRef
+	14, // 2: shale.DelegationAddRequest.recordings_from:type_name -> google.protobuf.Timestamp
+	14, // 3: shale.DelegationAddRequest.recordings_to:type_name -> google.protobuf.Timestamp
+	14, // 4: shale.DelegationAddRequest.date_ends:type_name -> google.protobuf.Timestamp
+	14, // 5: shale.DelegationAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	14, // 6: shale.DelegationAddRequest.date_used:type_name -> google.protobuf.Timestamp
+	14, // 7: shale.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 8: shale.DelegationGetRequest.ref:type_name -> shale.DelegationRef
 	3,  // 9: shale.DelegationGetRequest.select:type_name -> shale.DelegationSelect
-	17, // 10: shale.DelegationSelect.tenant:type_name -> shale.TenantSelect
-	18, // 11: shale.DelegationSelect.holder:type_name -> shale.HolderSelect
+	15, // 10: shale.DelegationSelect.tenant:type_name -> shale.TenantSelect
+	16, // 11: shale.DelegationSelect.holder:type_name -> shale.HolderSelect
 	2,  // 12: shale.DelegationPatchRequest.ref:type_name -> shale.DelegationRef
-	16, // 13: shale.DelegationPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	16, // 14: shale.DelegationPatchRequest.date_used:type_name -> google.protobuf.Timestamp
-	16, // 15: shale.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 16: shale.DelegationApplyRequest.ref:type_name -> shale.DelegationRef
-	19, // 17: shale.DelegationApplyRequest.patch:type_name -> patch.Patch
-	20, // 18: shale.DelegationStartRequest.sets:type_name -> shale.SetRef
-	21, // 19: shale.DelegationStartRequest.sources:type_name -> shale.SourceRef
-	16, // 20: shale.DelegationStartRequest.recordings_from:type_name -> google.protobuf.Timestamp
-	16, // 21: shale.DelegationStartRequest.recordings_to:type_name -> google.protobuf.Timestamp
-	16, // 22: shale.DelegationStartRequest.date_ends:type_name -> google.protobuf.Timestamp
-	22, // 23: shale.DelegationStartResponse.delegation:type_name -> shale.Delegation
-	20, // 24: shale.DelegationLiveRequest.set:type_name -> shale.SetRef
-	21, // 25: shale.DelegationLiveRequest.source:type_name -> shale.SourceRef
-	23, // 26: shale.DelegationTimelineRequest.timeline:type_name -> shale.LaminaTimelineRequest
-	24, // 27: shale.DelegationExportRequest.export:type_name -> shale.LaminaExportRequest
-	0,  // 28: shale.DelegationService.Add:input_type -> shale.DelegationAddRequest
-	1,  // 29: shale.DelegationService.Get:input_type -> shale.DelegationGetRequest
-	4,  // 30: shale.DelegationService.Patch:input_type -> shale.DelegationPatchRequest
-	5,  // 31: shale.DelegationService.Apply:input_type -> shale.DelegationApplyRequest
-	2,  // 32: shale.DelegationService.Erase:input_type -> shale.DelegationRef
-	7,  // 33: shale.DelegationService.Start:input_type -> shale.DelegationStartRequest
-	9,  // 34: shale.DelegationService.Live:input_type -> shale.DelegationLiveRequest
-	10, // 35: shale.DelegationService.Timeline:input_type -> shale.DelegationTimelineRequest
-	11, // 36: shale.DelegationService.Export:input_type -> shale.DelegationExportRequest
-	12, // 37: shale.DelegationService.Revoke:input_type -> shale.DelegationRevokeRequest
-	22, // 38: shale.DelegationService.Add:output_type -> shale.Delegation
-	22, // 39: shale.DelegationService.Get:output_type -> shale.Delegation
-	22, // 40: shale.DelegationService.Patch:output_type -> shale.Delegation
-	22, // 41: shale.DelegationService.Apply:output_type -> shale.Delegation
-	6,  // 42: shale.DelegationService.Erase:output_type -> shale.DelegationEraseResponse
-	8,  // 43: shale.DelegationService.Start:output_type -> shale.DelegationStartResponse
-	25, // 44: shale.DelegationService.Live:output_type -> shale.SetLiveResponse
-	26, // 45: shale.DelegationService.Timeline:output_type -> shale.LaminaTimelineResponse
-	27, // 46: shale.DelegationService.Export:output_type -> shale.LaminaExportResponse
-	13, // 47: shale.DelegationService.Revoke:output_type -> shale.DelegationRevokeResponse
-	38, // [38:48] is the sub-list for method output_type
-	28, // [28:38] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	14, // 13: shale.DelegationPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	14, // 14: shale.DelegationPatchRequest.date_used:type_name -> google.protobuf.Timestamp
+	14, // 15: shale.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	17, // 16: shale.DelegationStartRequest.sets:type_name -> shale.SetRef
+	18, // 17: shale.DelegationStartRequest.sources:type_name -> shale.SourceRef
+	14, // 18: shale.DelegationStartRequest.recordings_from:type_name -> google.protobuf.Timestamp
+	14, // 19: shale.DelegationStartRequest.recordings_to:type_name -> google.protobuf.Timestamp
+	14, // 20: shale.DelegationStartRequest.date_ends:type_name -> google.protobuf.Timestamp
+	19, // 21: shale.DelegationStartResponse.delegation:type_name -> shale.Delegation
+	17, // 22: shale.DelegationLiveRequest.set:type_name -> shale.SetRef
+	18, // 23: shale.DelegationLiveRequest.source:type_name -> shale.SourceRef
+	20, // 24: shale.DelegationTimelineRequest.timeline:type_name -> shale.LaminaTimelineRequest
+	21, // 25: shale.DelegationExportRequest.export:type_name -> shale.LaminaExportRequest
+	0,  // 26: shale.DelegationService.Add:input_type -> shale.DelegationAddRequest
+	1,  // 27: shale.DelegationService.Get:input_type -> shale.DelegationGetRequest
+	4,  // 28: shale.DelegationService.Patch:input_type -> shale.DelegationPatchRequest
+	5,  // 29: shale.DelegationService.Start:input_type -> shale.DelegationStartRequest
+	7,  // 30: shale.DelegationService.Live:input_type -> shale.DelegationLiveRequest
+	8,  // 31: shale.DelegationService.Timeline:input_type -> shale.DelegationTimelineRequest
+	9,  // 32: shale.DelegationService.Export:input_type -> shale.DelegationExportRequest
+	10, // 33: shale.DelegationService.Revoke:input_type -> shale.DelegationRevokeRequest
+	19, // 34: shale.DelegationService.Add:output_type -> shale.Delegation
+	19, // 35: shale.DelegationService.Get:output_type -> shale.Delegation
+	19, // 36: shale.DelegationService.Patch:output_type -> shale.Delegation
+	6,  // 37: shale.DelegationService.Start:output_type -> shale.DelegationStartResponse
+	22, // 38: shale.DelegationService.Live:output_type -> shale.SetLiveResponse
+	23, // 39: shale.DelegationService.Timeline:output_type -> shale.LaminaTimelineResponse
+	24, // 40: shale.DelegationService.Export:output_type -> shale.LaminaExportResponse
+	11, // 41: shale.DelegationService.Revoke:output_type -> shale.DelegationRevokeResponse
+	34, // [34:42] is the sub-list for method output_type
+	26, // [26:34] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_shale_delegation_svc_g_proto_init() }
@@ -2497,7 +2308,7 @@ func file_shale_delegation_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_delegation_svc_g_proto_rawDesc), len(file_shale_delegation_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

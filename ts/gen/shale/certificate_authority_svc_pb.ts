@@ -6,8 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
+import { file_orm } from "../orm_pb.js";
 import type { CertificateAuthority, CertificateAuthoritySchema, CertificateAuthorityState } from "./certificate_authority_pb.js";
 import { file_shale_certificate_authority } from "./certificate_authority_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -16,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/certificate_authority_svc.g.proto.
  */
 export const file_shale_certificate_authority_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CidzaGFsZS9jZXJ0aWZpY2F0ZV9hdXRob3JpdHlfc3ZjLmcucHJvdG8SBXNoYWxlIqMECh5DZXJ0aWZpY2F0ZUF1dGhvcml0eUFkZFJlcXVlc3QSCgoCaWQYASABKAwSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEkEKBmxhYmVscxgHIAMoCzIxLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRITCgtjZXJ0aWZpY2F0ZRgIIAEoDBITCgtwcml2YXRlX2tleRgJIAEoDBI2CgVzdGF0ZRgKIAEoDjIgLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5U3RhdGVCBaoBAggCEhoKC2ZpbmdlcnByaW50GAsgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZXMYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9hY3RpdmUYECABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfcmV0aXJlZBgRIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASKAAQoeQ2VydGlmaWNhdGVBdXRob3JpdHlHZXRSZXF1ZXN0EisKA3JlZhgBIAEoCzIeLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UmVmEjEKBnNlbGVjdBgCIAEoCzIhLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5U2VsZWN0Ij8KF0NlcnRpZmljYXRlQXV0aG9yaXR5UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkitAIKGkNlcnRpZmljYXRlQXV0aG9yaXR5U2VsZWN0EgsKA2FsbBgBIAEoCBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhMKC2NlcnRpZmljYXRlGAggASgIEhMKC3ByaXZhdGVfa2V5GAkgASgIEg0KBXN0YXRlGAogASgIEhMKC2ZpbmdlcnByaW50GAsgASgIEhQKDGRhdGVfZXhwaXJlcxgMIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhMKC2RhdGVfYWN0aXZlGBAgASgIEhQKDGRhdGVfcmV0aXJlZBgRIAEoCCKRBQogQ2VydGlmaWNhdGVBdXRob3JpdHlQYXRjaFJlcXVlc3QSKwoDcmVmGAEgASgLMh4uc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEkMKBmxhYmVscxgOIAMoCzIzLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EhMKC2NlcnRpZmljYXRlGBAgASgMEhMKC3ByaXZhdGVfa2V5GBIgASgMEi8KBXN0YXRlGBQgASgOMiAuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlTdGF0ZRITCgtmaW5nZXJwcmludBgWIAEoCRIwCgxkYXRlX2V4cGlyZXMYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfZXhwaXJlc19udWxsGBkgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEi8KC2RhdGVfYWN0aXZlGCAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYChBkYXRlX2FjdGl2ZV9udWxsGCEgASgIEjAKDGRhdGVfcmV0aXJlZBgiIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9yZXRpcmVkX251bGwYIyABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJsCiBDZXJ0aWZpY2F0ZUF1dGhvcml0eUFwcGx5UmVxdWVzdBIrCgNyZWYYASABKAsyHi5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIjMKIUNlcnRpZmljYXRlQXV0aG9yaXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgimAEKH0NlcnRpZmljYXRlQXV0aG9yaXR5TGlzdFJlcXVlc3QSMgoHZmlsdGVycxgBIAMoCzIhLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJjCiBDZXJ0aWZpY2F0ZUF1dGhvcml0eUxpc3RSZXNwb25zZRIqCgVpdGVtcxgBIAMoCzIbLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5EhMKBG5leHQYAiABKAlCBaoBAggCIkkKGkNlcnRpZmljYXRlQXV0aG9yaXR5RmlsdGVyEisKA3JlZhgBIAEoCzIeLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UmVmInQKIENlcnRpZmljYXRlQXV0aG9yaXR5V2F0Y2hSZXF1ZXN0EjIKB2ZpbHRlcnMYASADKAsyIS5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJYCiFDZXJ0aWZpY2F0ZUF1dGhvcml0eVdhdGNoUmVzcG9uc2USMwoFaXRlbXMYASADKAsyJC5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eVdhdGNoSXRlbSJuCh1DZXJ0aWZpY2F0ZUF1dGhvcml0eVdhdGNoSXRlbRIKCgJpZBgBIAEoDBIqCgV2YWx1ZRgCIAEoCzIbLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiIwohQ2VydGlmaWNhdGVBdXRob3JpdHlSb3RhdGVSZXF1ZXN0IiMKIUNlcnRpZmljYXRlQXV0aG9yaXR5U3RhdHVzUmVxdWVzdCK+AgoiQ2VydGlmaWNhdGVBdXRob3JpdHlTdGF0dXNSZXNwb25zZRI2CgVwaGFzZRgBIAEoDjIgLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UGhhc2VCBaoBAggCEjAKC2F1dGhvcml0aWVzGAIgAygLMhsuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHkSFQoGYnVuZGxlGAMgASgJQgWqAQIIAhIaCgtidW5kbGVfaGFzaBgEIAEoCUIFqgECCAISMQoNZGF0ZV9yb2xsb3ZlchgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoEbGl2ZRgGIAEoBUIFqgECCAISMwoHd2FpdGluZxgHIAMoCzIiLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5V2FpdGluZyKRAgobQ2VydGlmaWNhdGVBdXRob3JpdHlXYWl0aW5nEhEKAmlkGAEgASgMQgWqAQIIAhITCgRraW5kGAIgASgJQgWqAQIIAhIUCgVhbGlhcxgDIAEoCUIFqgECCAISFgoHY2FfaGFzaBgEIAEoCUIFqgECCAISHgoPb2xkX2NlcnRpZmljYXRlGAUgASgIQgWqAQIIAhIWCgd2ZXJzaW9uGAYgASgJQgWqAQIIAhItCglkYXRlX3NlZW4YByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjUKEWRhdGVfY2VydF9leHBpcmVzGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCrHAQoZQ2VydGlmaWNhdGVBdXRob3JpdHlQaGFzZRIrCidDRVJUSUZJQ0FURV9BVVRIT1JJVFlfUEhBU0VfVU5TUEVDSUZJRUQQABIkCiBDRVJUSUZJQ0FURV9BVVRIT1JJVFlfUEhBU0VfSURMRRABEiwKKENFUlRJRklDQVRFX0FVVEhPUklUWV9QSEFTRV9ESVNUUklCVVRJTkcQAhIpCiVDRVJUSUZJQ0FURV9BVVRIT1JJVFlfUEhBU0VfUkVQTEFDSU5HEAMyiwYKG0NlcnRpZmljYXRlQXV0aG9yaXR5U2VydmljZRJJCgNBZGQSJS5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUFkZFJlcXVlc3QaGy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eRJJCgNHZXQSJS5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUdldFJlcXVlc3QaGy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eRJNCgVQYXRjaBInLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UGF0Y2hSZXF1ZXN0Ghsuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHkSTQoFQXBwbHkSJy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUFwcGx5UmVxdWVzdBobLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5ElEKBUVyYXNlEh4uc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlSZWYaKC5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUVyYXNlUmVzcG9uc2USVwoETGlzdBImLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5TGlzdFJlcXVlc3QaJy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUxpc3RSZXNwb25zZRJcCgVXYXRjaBInLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5V2F0Y2hSZXF1ZXN0Giguc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlXYXRjaFJlc3BvbnNlMAESTwoGUm90YXRlEiguc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlSb3RhdGVSZXF1ZXN0Ghsuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHkSXQoGU3RhdHVzEiguc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlTdGF0dXNSZXF1ZXN0Gikuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlTdGF0dXNSZXNwb25zZUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_shale_certificate_authority]);
+  fileDesc("CidzaGFsZS9jZXJ0aWZpY2F0ZV9hdXRob3JpdHlfc3ZjLmcucHJvdG8SBXNoYWxlIqsECh5DZXJ0aWZpY2F0ZUF1dGhvcml0eUFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISQQoGbGFiZWxzGAcgAygLMjEuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EhMKC2NlcnRpZmljYXRlGAggASgMEhMKC3ByaXZhdGVfa2V5GAkgASgMEjYKBXN0YXRlGAogASgOMiAuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlTdGF0ZUIFqgECCAISGgoLZmluZ2VycHJpbnQYCyABKAlCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2FjdGl2ZRgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9yZXRpcmVkGBEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIoABCh5DZXJ0aWZpY2F0ZUF1dGhvcml0eUdldFJlcXVlc3QSKwoDcmVmGAEgASgLMh4uc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlSZWYSMQoGc2VsZWN0GAIgASgLMiEuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlTZWxlY3QiRwoXQ2VydGlmaWNhdGVBdXRob3JpdHlSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEg8KBWFsaWFzGAQgASgJSABCBQoDa2V5IrQCChpDZXJ0aWZpY2F0ZUF1dGhvcml0eVNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBITCgtjZXJ0aWZpY2F0ZRgIIAEoCBITCgtwcml2YXRlX2tleRgJIAEoCBINCgVzdGF0ZRgKIAEoCBITCgtmaW5nZXJwcmludBgLIAEoCBIUCgxkYXRlX2V4cGlyZXMYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBITCgtkYXRlX2FjdGl2ZRgQIAEoCBIUCgxkYXRlX3JldGlyZWQYESABKAgikQUKIENlcnRpZmljYXRlQXV0aG9yaXR5UGF0Y2hSZXF1ZXN0EisKA3JlZhgBIAEoCzIeLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRJDCgZsYWJlbHMYDiADKAsyMy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eVBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRITCgtjZXJ0aWZpY2F0ZRgQIAEoDBITCgtwcml2YXRlX2tleRgSIAEoDBIvCgVzdGF0ZRgUIAEoDjIgLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5U3RhdGUSEwoLZmluZ2VycHJpbnQYFiABKAkSMAoMZGF0ZV9leHBpcmVzGBggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX2V4cGlyZXNfbnVsbBgZIAEoCBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIvCgtkYXRlX2FjdGl2ZRggIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9hY3RpdmVfbnVsbBghIAEoCBIwCgxkYXRlX3JldGlyZWQYIiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcmV0aXJlZF9udWxsGCMgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiMwohQ2VydGlmaWNhdGVBdXRob3JpdHlFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCLLAQofQ2VydGlmaWNhdGVBdXRob3JpdHlMaXN0UmVxdWVzdBIyCgdmaWx0ZXJzGAEgAygLMiEuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEjEKBnNlbGVjdBgGIAEoCzIhLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5U2VsZWN0ImMKIENlcnRpZmljYXRlQXV0aG9yaXR5TGlzdFJlc3BvbnNlEioKBWl0ZW1zGAEgAygLMhsuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHkSEwoEbmV4dBgCIAEoCUIFqgECCAIiSQoaQ2VydGlmaWNhdGVBdXRob3JpdHlGaWx0ZXISKwoDcmVmGAEgASgLMh4uc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlSZWYidAogQ2VydGlmaWNhdGVBdXRob3JpdHlXYXRjaFJlcXVlc3QSMgoHZmlsdGVycxgBIAMoCzIhLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIlgKIUNlcnRpZmljYXRlQXV0aG9yaXR5V2F0Y2hSZXNwb25zZRIzCgVpdGVtcxgBIAMoCzIkLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5V2F0Y2hJdGVtIm4KHUNlcnRpZmljYXRlQXV0aG9yaXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEioKBXZhbHVlGAIgASgLMhsuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHkSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiIjCiFDZXJ0aWZpY2F0ZUF1dGhvcml0eVJvdGF0ZVJlcXVlc3QiIwohQ2VydGlmaWNhdGVBdXRob3JpdHlTdGF0dXNSZXF1ZXN0Ir4CCiJDZXJ0aWZpY2F0ZUF1dGhvcml0eVN0YXR1c1Jlc3BvbnNlEjYKBXBoYXNlGAEgASgOMiAuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlQaGFzZUIFqgECCAISMAoLYXV0aG9yaXRpZXMYAiADKAsyGy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eRIVCgZidW5kbGUYAyABKAlCBaoBAggCEhoKC2J1bmRsZV9oYXNoGAQgASgJQgWqAQIIAhIxCg1kYXRlX3JvbGxvdmVyGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgRsaXZlGAYgASgFQgWqAQIIAhIzCgd3YWl0aW5nGAcgAygLMiIuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlXYWl0aW5nIpECChtDZXJ0aWZpY2F0ZUF1dGhvcml0eVdhaXRpbmcSEQoCaWQYASABKAxCBaoBAggCEhMKBGtpbmQYAiABKAlCBaoBAggCEhQKBWFsaWFzGAMgASgJQgWqAQIIAhIWCgdjYV9oYXNoGAQgASgJQgWqAQIIAhIeCg9vbGRfY2VydGlmaWNhdGUYBSABKAhCBaoBAggCEhYKB3ZlcnNpb24YBiABKAlCBaoBAggCEi0KCWRhdGVfc2VlbhgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNQoRZGF0ZV9jZXJ0X2V4cGlyZXMYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wKscBChlDZXJ0aWZpY2F0ZUF1dGhvcml0eVBoYXNlEisKJ0NFUlRJRklDQVRFX0FVVEhPUklUWV9QSEFTRV9VTlNQRUNJRklFRBAAEiQKIENFUlRJRklDQVRFX0FVVEhPUklUWV9QSEFTRV9JRExFEAESLAooQ0VSVElGSUNBVEVfQVVUSE9SSVRZX1BIQVNFX0RJU1RSSUJVVElORxACEikKJUNFUlRJRklDQVRFX0FVVEhPUklUWV9QSEFTRV9SRVBMQUNJTkcQAzK8BQobQ2VydGlmaWNhdGVBdXRob3JpdHlTZXJ2aWNlEkkKA0FkZBIlLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5QWRkUmVxdWVzdBobLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5EkkKA0dldBIlLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5R2V0UmVxdWVzdBobLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5Ek0KBVBhdGNoEicuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlQYXRjaFJlcXVlc3QaGy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eRJRCgVFcmFzZRIeLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5UmVmGiguc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlFcmFzZVJlc3BvbnNlElcKBExpc3QSJi5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eUxpc3RSZXF1ZXN0Gicuc2hhbGUuQ2VydGlmaWNhdGVBdXRob3JpdHlMaXN0UmVzcG9uc2USXAoFV2F0Y2gSJy5zaGFsZS5DZXJ0aWZpY2F0ZUF1dGhvcml0eVdhdGNoUmVxdWVzdBooLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5V2F0Y2hSZXNwb25zZTABEk8KBlJvdGF0ZRIoLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5Um90YXRlUmVxdWVzdBobLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5El0KBlN0YXR1cxIoLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5U3RhdHVzUmVxdWVzdBopLnNoYWxlLkNlcnRpZmljYXRlQXV0aG9yaXR5U3RhdHVzUmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_shale_certificate_authority]);
 
 /**
  * @generated from message shale.CertificateAuthorityAddRequest
@@ -360,28 +359,6 @@ export const CertificateAuthorityPatchRequestSchema: GenMessage<CertificateAutho
   messageDesc(file_shale_certificate_authority_svc_g, 4);
 
 /**
- * @generated from message shale.CertificateAuthorityApplyRequest
- */
-export type CertificateAuthorityApplyRequest = Message<"shale.CertificateAuthorityApplyRequest"> & {
-  /**
-   * @generated from field: shale.CertificateAuthorityRef ref = 1;
-   */
-  ref?: CertificateAuthorityRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.CertificateAuthorityApplyRequest.
- * Use `create(CertificateAuthorityApplyRequestSchema)` to create a new message.
- */
-export const CertificateAuthorityApplyRequestSchema: GenMessage<CertificateAuthorityApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 5);
-
-/**
  * @generated from message shale.CertificateAuthorityEraseResponse
  */
 export type CertificateAuthorityEraseResponse = Message<"shale.CertificateAuthorityEraseResponse"> & {
@@ -402,7 +379,7 @@ export type CertificateAuthorityEraseResponse = Message<"shale.CertificateAuthor
  * Use `create(CertificateAuthorityEraseResponseSchema)` to create a new message.
  */
 export const CertificateAuthorityEraseResponseSchema: GenMessage<CertificateAuthorityEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 6);
+  messageDesc(file_shale_certificate_authority_svc_g, 5);
 
 /**
  * @generated from message shale.CertificateAuthorityListRequest
@@ -444,6 +421,20 @@ export type CertificateAuthorityListRequest = Message<"shale.CertificateAuthorit
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.CertificateAuthoritySelect select = 6;
+   */
+  select?: CertificateAuthoritySelect | undefined;
 };
 
 /**
@@ -451,7 +442,7 @@ export type CertificateAuthorityListRequest = Message<"shale.CertificateAuthorit
  * Use `create(CertificateAuthorityListRequestSchema)` to create a new message.
  */
 export const CertificateAuthorityListRequestSchema: GenMessage<CertificateAuthorityListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 7);
+  messageDesc(file_shale_certificate_authority_svc_g, 6);
 
 /**
  * @generated from message shale.CertificateAuthorityListResponse
@@ -481,7 +472,7 @@ export type CertificateAuthorityListResponse = Message<"shale.CertificateAuthori
  * Use `create(CertificateAuthorityListResponseSchema)` to create a new message.
  */
 export const CertificateAuthorityListResponseSchema: GenMessage<CertificateAuthorityListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 8);
+  messageDesc(file_shale_certificate_authority_svc_g, 7);
 
 /**
  * @generated from message shale.CertificateAuthorityFilter
@@ -498,20 +489,22 @@ export type CertificateAuthorityFilter = Message<"shale.CertificateAuthorityFilt
  * Use `create(CertificateAuthorityFilterSchema)` to create a new message.
  */
 export const CertificateAuthorityFilterSchema: GenMessage<CertificateAuthorityFilter> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 9);
+  messageDesc(file_shale_certificate_authority_svc_g, 8);
 
 /**
  * @generated from message shale.CertificateAuthorityWatchRequest
  */
 export type CertificateAuthorityWatchRequest = Message<"shale.CertificateAuthorityWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated shale.CertificateAuthorityFilter filters = 1;
    */
@@ -534,7 +527,7 @@ export type CertificateAuthorityWatchRequest = Message<"shale.CertificateAuthori
  * Use `create(CertificateAuthorityWatchRequestSchema)` to create a new message.
  */
 export const CertificateAuthorityWatchRequestSchema: GenMessage<CertificateAuthorityWatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 10);
+  messageDesc(file_shale_certificate_authority_svc_g, 9);
 
 /**
  * @generated from message shale.CertificateAuthorityWatchResponse
@@ -553,7 +546,7 @@ export type CertificateAuthorityWatchResponse = Message<"shale.CertificateAuthor
  * Use `create(CertificateAuthorityWatchResponseSchema)` to create a new message.
  */
 export const CertificateAuthorityWatchResponseSchema: GenMessage<CertificateAuthorityWatchResponse> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 11);
+  messageDesc(file_shale_certificate_authority_svc_g, 10);
 
 /**
  * @generated from message shale.CertificateAuthorityWatchItem
@@ -568,7 +561,7 @@ export type CertificateAuthorityWatchItem = Message<"shale.CertificateAuthorityW
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -576,7 +569,8 @@ export type CertificateAuthorityWatchItem = Message<"shale.CertificateAuthorityW
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: shale.CertificateAuthority value = 2;
    */
@@ -600,7 +594,7 @@ export type CertificateAuthorityWatchItem = Message<"shale.CertificateAuthorityW
  * Use `create(CertificateAuthorityWatchItemSchema)` to create a new message.
  */
 export const CertificateAuthorityWatchItemSchema: GenMessage<CertificateAuthorityWatchItem> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 12);
+  messageDesc(file_shale_certificate_authority_svc_g, 11);
 
 /**
  * @generated from message shale.CertificateAuthorityRotateRequest
@@ -613,7 +607,7 @@ export type CertificateAuthorityRotateRequest = Message<"shale.CertificateAuthor
  * Use `create(CertificateAuthorityRotateRequestSchema)` to create a new message.
  */
 export const CertificateAuthorityRotateRequestSchema: GenMessage<CertificateAuthorityRotateRequest> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 13);
+  messageDesc(file_shale_certificate_authority_svc_g, 12);
 
 /**
  * @generated from message shale.CertificateAuthorityStatusRequest
@@ -626,7 +620,7 @@ export type CertificateAuthorityStatusRequest = Message<"shale.CertificateAuthor
  * Use `create(CertificateAuthorityStatusRequestSchema)` to create a new message.
  */
 export const CertificateAuthorityStatusRequestSchema: GenMessage<CertificateAuthorityStatusRequest> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 14);
+  messageDesc(file_shale_certificate_authority_svc_g, 13);
 
 /**
  * @generated from message shale.CertificateAuthorityStatusResponse
@@ -685,7 +679,7 @@ export type CertificateAuthorityStatusResponse = Message<"shale.CertificateAutho
  * Use `create(CertificateAuthorityStatusResponseSchema)` to create a new message.
  */
 export const CertificateAuthorityStatusResponseSchema: GenMessage<CertificateAuthorityStatusResponse> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 15);
+  messageDesc(file_shale_certificate_authority_svc_g, 14);
 
 /**
  * CertificateAuthorityWaiting is a live host the next step of a rollover
@@ -753,7 +747,7 @@ export type CertificateAuthorityWaiting = Message<"shale.CertificateAuthorityWai
  * Use `create(CertificateAuthorityWaitingSchema)` to create a new message.
  */
 export const CertificateAuthorityWaitingSchema: GenMessage<CertificateAuthorityWaiting> = /*@__PURE__*/
-  messageDesc(file_shale_certificate_authority_svc_g, 16);
+  messageDesc(file_shale_certificate_authority_svc_g, 15);
 
 /**
  * CertificateAuthorityPhase is where a rollover is (§33.5).
@@ -831,16 +825,6 @@ export const CertificateAuthorityService: GenService<{
     output: typeof CertificateAuthoritySchema;
   },
   /**
-   * Apply applies a patch document to an existing CertificateAuthority
-   *
-   * @generated from rpc shale.CertificateAuthorityService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof CertificateAuthorityApplyRequestSchema;
-    output: typeof CertificateAuthoritySchema;
-  },
-  /**
    * Erase deletes a CertificateAuthority
    *
    * @generated from rpc shale.CertificateAuthorityService.Erase
@@ -863,15 +847,23 @@ export const CertificateAuthorityService: GenService<{
   /**
    * Watch the CertificateAuthoritys this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc shale.CertificateAuthorityService.Watch
    */

@@ -6,8 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
+import { file_orm } from "../orm_pb.js";
 import type { Delegation, DelegationSchema } from "./delegation_pb.js";
 import { file_shale_delegation } from "./delegation_pb.js";
 import type { LaminaExportRequest, LaminaExportResponseSchema, LaminaTimelineRequest, LaminaTimelineResponseSchema } from "./lamina_svc_pb.js";
@@ -25,7 +24,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/delegation_svc.g.proto.
  */
 export const file_shale_delegation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChxzaGFsZS9kZWxlZ2F0aW9uX3N2Yy5nLnByb3RvEgVzaGFsZSKpBAoURGVsZWdhdGlvbkFkZFJlcXVlc3QSCgoCaWQYASABKAwSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEiAKBmhvbGRlchgIIAEoCzIQLnNoYWxlLkhvbGRlclJlZhISCgNhcHAYCSABKAxCBaoBAggCEhgKCWNsaWVudF9pZBgKIAEoCUIFqgECCAISGgoLc2VjcmV0X2hhc2gYCyABKAxCBaoBAggCEhMKBGxpdmUYDCABKAhCBaoBAggCEhkKCnJlY29yZGluZ3MYECABKAhCBaoBAggCEgwKBHNldHMYESADKAwSDwoHc291cmNlcxgSIAMoDBIzCg9yZWNvcmRpbmdzX2Zyb20YEyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDXJlY29yZGluZ3NfdG8YFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KCWRhdGVfZW5kcxgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9yZXZva2VkGBYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYFyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYgoURGVsZWdhdGlvbkdldFJlcXVlc3QSIQoDcmVmGAEgASgLMhQuc2hhbGUuRGVsZWdhdGlvblJlZhInCgZzZWxlY3QYAiABKAsyFy5zaGFsZS5EZWxlZ2F0aW9uU2VsZWN0IiQKDURlbGVnYXRpb25SZWYSDAoCaWQYASABKAxIAEIFCgNrZXkijAMKEERlbGVnYXRpb25TZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIjCgZob2xkZXIYCCABKAsyEy5zaGFsZS5Ib2xkZXJTZWxlY3QSCwoDYXBwGAkgASgIEhEKCWNsaWVudF9pZBgKIAEoCBITCgtzZWNyZXRfaGFzaBgLIAEoCBIMCgRsaXZlGAwgASgIEhIKCnJlY29yZGluZ3MYECABKAgSDAoEc2V0cxgRIAEoCBIPCgdzb3VyY2VzGBIgASgIEhcKD3JlY29yZGluZ3NfZnJvbRgTIAEoCBIVCg1yZWNvcmRpbmdzX3RvGBQgASgIEhEKCWRhdGVfZW5kcxgVIAEoCBIUCgxkYXRlX3Jldm9rZWQYFiABKAgSEQoJZGF0ZV91c2VkGBcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAginQIKFkRlbGVnYXRpb25QYXRjaFJlcXVlc3QSIQoDcmVmGAEgASgLMhQuc2hhbGUuRGVsZWdhdGlvblJlZhIwCgxkYXRlX3Jldm9rZWQYLCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcmV2b2tlZF9udWxsGC0gASgIEi0KCWRhdGVfdXNlZBguIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFgoOZGF0ZV91c2VkX251bGwYLyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWAoWRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBIhCgNyZWYYASABKAsyFC5zaGFsZS5EZWxlZ2F0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIrwCChZEZWxlZ2F0aW9uU3RhcnRSZXF1ZXN0EhsKDGFjY2Vzc190b2tlbhgBIAEoCUIFqgECCAISEwoEbGl2ZRgCIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgDIAEoCEIFqgECCAISGwoEc2V0cxgEIAMoCzINLnNoYWxlLlNldFJlZhIhCgdzb3VyY2VzGAUgAygLMhAuc2hhbGUuU291cmNlUmVmEjMKD3JlY29yZGluZ3NfZnJvbRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJXChdEZWxlZ2F0aW9uU3RhcnRSZXNwb25zZRIVCgZoYW5kbGUYASABKAlCBaoBAggCEiUKCmRlbGVnYXRpb24YAiABKAsyES5zaGFsZS5EZWxlZ2F0aW9uImwKFURlbGVnYXRpb25MaXZlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEhoKA3NldBgCIAEoCzINLnNoYWxlLlNldFJlZhIgCgZzb3VyY2UYAyABKAsyEC5zaGFsZS5Tb3VyY2VSZWYiYgoZRGVsZWdhdGlvblRpbWVsaW5lUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEi4KCHRpbWVsaW5lGAIgASgLMhwuc2hhbGUuTGFtaW5hVGltZWxpbmVSZXF1ZXN0IlwKF0RlbGVnYXRpb25FeHBvcnRSZXF1ZXN0EhUKBmhhbmRsZRgBIAEoCUIFqgECCAISKgoGZXhwb3J0GAIgASgLMhouc2hhbGUuTGFtaW5hRXhwb3J0UmVxdWVzdCIwChdEZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCIhoKGERlbGVnYXRpb25SZXZva2VSZXNwb25zZTKbBQoRRGVsZWdhdGlvblNlcnZpY2USNQoDQWRkEhsuc2hhbGUuRGVsZWdhdGlvbkFkZFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEjUKA0dldBIbLnNoYWxlLkRlbGVnYXRpb25HZXRSZXF1ZXN0GhEuc2hhbGUuRGVsZWdhdGlvbhI5CgVQYXRjaBIdLnNoYWxlLkRlbGVnYXRpb25QYXRjaFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEjkKBUFwcGx5Eh0uc2hhbGUuRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBoRLnNoYWxlLkRlbGVnYXRpb24SPQoFRXJhc2USFC5zaGFsZS5EZWxlZ2F0aW9uUmVmGh4uc2hhbGUuRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USRgoFU3RhcnQSHS5zaGFsZS5EZWxlZ2F0aW9uU3RhcnRSZXF1ZXN0Gh4uc2hhbGUuRGVsZWdhdGlvblN0YXJ0UmVzcG9uc2USPAoETGl2ZRIcLnNoYWxlLkRlbGVnYXRpb25MaXZlUmVxdWVzdBoWLnNoYWxlLlNldExpdmVSZXNwb25zZRJLCghUaW1lbGluZRIgLnNoYWxlLkRlbGVnYXRpb25UaW1lbGluZVJlcXVlc3QaHS5zaGFsZS5MYW1pbmFUaW1lbGluZVJlc3BvbnNlEkUKBkV4cG9ydBIeLnNoYWxlLkRlbGVnYXRpb25FeHBvcnRSZXF1ZXN0Ghsuc2hhbGUuTGFtaW5hRXhwb3J0UmVzcG9uc2USSQoGUmV2b2tlEh4uc2hhbGUuRGVsZWdhdGlvblJldm9rZVJlcXVlc3QaHy5zaGFsZS5EZWxlZ2F0aW9uUmV2b2tlUmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_delegation, file_shale_lamina_svc_g, file_shale_payday_holder_svc_g, file_shale_payday_tenant_svc_g, file_shale_set, file_shale_set_svc_g]);
+  fileDesc("ChxzaGFsZS9kZWxlZ2F0aW9uX3N2Yy5nLnByb3RvEgVzaGFsZSKxBAoURGVsZWdhdGlvbkFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSIAoGaG9sZGVyGAggASgLMhAuc2hhbGUuSG9sZGVyUmVmEhIKA2FwcBgJIAEoDEIFqgECCAISGAoJY2xpZW50X2lkGAogASgJQgWqAQIIAhIaCgtzZWNyZXRfaGFzaBgLIAEoDEIFqgECCAISEwoEbGl2ZRgMIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgQIAEoCEIFqgECCAISDAoEc2V0cxgRIAMoDBIPCgdzb3VyY2VzGBIgAygMEjMKD3JlY29yZGluZ3NfZnJvbRgTIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3Jldm9rZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KCWRhdGVfdXNlZBgXIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJiChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIhCgNyZWYYASABKAsyFC5zaGFsZS5EZWxlZ2F0aW9uUmVmEicKBnNlbGVjdBgCIAEoCzIXLnNoYWxlLkRlbGVnYXRpb25TZWxlY3QiLAoNRGVsZWdhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASABCBQoDa2V5IowDChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSIwoGaG9sZGVyGAggASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0EgsKA2FwcBgJIAEoCBIRCgljbGllbnRfaWQYCiABKAgSEwoLc2VjcmV0X2hhc2gYCyABKAgSDAoEbGl2ZRgMIAEoCBISCgpyZWNvcmRpbmdzGBAgASgIEgwKBHNldHMYESABKAgSDwoHc291cmNlcxgSIAEoCBIXCg9yZWNvcmRpbmdzX2Zyb20YEyABKAgSFQoNcmVjb3JkaW5nc190bxgUIAEoCBIRCglkYXRlX2VuZHMYFSABKAgSFAoMZGF0ZV9yZXZva2VkGBYgASgIEhEKCWRhdGVfdXNlZBgXIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIp0CChZEZWxlZ2F0aW9uUGF0Y2hSZXF1ZXN0EiEKA3JlZhgBIAEoCzIULnNoYWxlLkRlbGVnYXRpb25SZWYSMAoMZGF0ZV9yZXZva2VkGCwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX3Jldm9rZWRfbnVsbBgtIAEoCBItCglkYXRlX3VzZWQYLiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfdXNlZF9udWxsGC8gASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIrwCChZEZWxlZ2F0aW9uU3RhcnRSZXF1ZXN0EhsKDGFjY2Vzc190b2tlbhgBIAEoCUIFqgECCAISEwoEbGl2ZRgCIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgDIAEoCEIFqgECCAISGwoEc2V0cxgEIAMoCzINLnNoYWxlLlNldFJlZhIhCgdzb3VyY2VzGAUgAygLMhAuc2hhbGUuU291cmNlUmVmEjMKD3JlY29yZGluZ3NfZnJvbRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJXChdEZWxlZ2F0aW9uU3RhcnRSZXNwb25zZRIVCgZoYW5kbGUYASABKAlCBaoBAggCEiUKCmRlbGVnYXRpb24YAiABKAsyES5zaGFsZS5EZWxlZ2F0aW9uImwKFURlbGVnYXRpb25MaXZlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEhoKA3NldBgCIAEoCzINLnNoYWxlLlNldFJlZhIgCgZzb3VyY2UYAyABKAsyEC5zaGFsZS5Tb3VyY2VSZWYiYgoZRGVsZWdhdGlvblRpbWVsaW5lUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEi4KCHRpbWVsaW5lGAIgASgLMhwuc2hhbGUuTGFtaW5hVGltZWxpbmVSZXF1ZXN0IlwKF0RlbGVnYXRpb25FeHBvcnRSZXF1ZXN0EhUKBmhhbmRsZRgBIAEoCUIFqgECCAISKgoGZXhwb3J0GAIgASgLMhouc2hhbGUuTGFtaW5hRXhwb3J0UmVxdWVzdCIwChdEZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCIhoKGERlbGVnYXRpb25SZXZva2VSZXNwb25zZTKhBAoRRGVsZWdhdGlvblNlcnZpY2USNQoDQWRkEhsuc2hhbGUuRGVsZWdhdGlvbkFkZFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEjUKA0dldBIbLnNoYWxlLkRlbGVnYXRpb25HZXRSZXF1ZXN0GhEuc2hhbGUuRGVsZWdhdGlvbhI5CgVQYXRjaBIdLnNoYWxlLkRlbGVnYXRpb25QYXRjaFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEkYKBVN0YXJ0Eh0uc2hhbGUuRGVsZWdhdGlvblN0YXJ0UmVxdWVzdBoeLnNoYWxlLkRlbGVnYXRpb25TdGFydFJlc3BvbnNlEjwKBExpdmUSHC5zaGFsZS5EZWxlZ2F0aW9uTGl2ZVJlcXVlc3QaFi5zaGFsZS5TZXRMaXZlUmVzcG9uc2USSwoIVGltZWxpbmUSIC5zaGFsZS5EZWxlZ2F0aW9uVGltZWxpbmVSZXF1ZXN0Gh0uc2hhbGUuTGFtaW5hVGltZWxpbmVSZXNwb25zZRJFCgZFeHBvcnQSHi5zaGFsZS5EZWxlZ2F0aW9uRXhwb3J0UmVxdWVzdBobLnNoYWxlLkxhbWluYUV4cG9ydFJlc3BvbnNlEkkKBlJldm9rZRIeLnNoYWxlLkRlbGVnYXRpb25SZXZva2VSZXF1ZXN0Gh8uc2hhbGUuRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_shale_delegation, file_shale_lamina_svc_g, file_shale_payday_holder_svc_g, file_shale_payday_tenant_svc_g, file_shale_set, file_shale_set_svc_g]);
 
 /**
  * @generated from message shale.DelegationAddRequest
@@ -338,51 +337,6 @@ export const DelegationPatchRequestSchema: GenMessage<DelegationPatchRequest> = 
   messageDesc(file_shale_delegation_svc_g, 4);
 
 /**
- * @generated from message shale.DelegationApplyRequest
- */
-export type DelegationApplyRequest = Message<"shale.DelegationApplyRequest"> & {
-  /**
-   * @generated from field: shale.DelegationRef ref = 1;
-   */
-  ref?: DelegationRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.DelegationApplyRequest.
- * Use `create(DelegationApplyRequestSchema)` to create a new message.
- */
-export const DelegationApplyRequestSchema: GenMessage<DelegationApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 5);
-
-/**
- * @generated from message shale.DelegationEraseResponse
- */
-export type DelegationEraseResponse = Message<"shale.DelegationEraseResponse"> & {
-  /**
-   * Erased is whether this call is the one that erased the row.
-   *
-   * False for a row that was already gone, was never there, or is out
-   * of this caller's reach -- which are one answer on purpose, and the
-   * reason the RPC does not fail instead.
-   *
-   * @generated from field: bool erased = 1;
-   */
-  erased: boolean;
-};
-
-/**
- * Describes the message shale.DelegationEraseResponse.
- * Use `create(DelegationEraseResponseSchema)` to create a new message.
- */
-export const DelegationEraseResponseSchema: GenMessage<DelegationEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 6);
-
-/**
  * @generated from message shale.DelegationStartRequest
  */
 export type DelegationStartRequest = Message<"shale.DelegationStartRequest"> & {
@@ -444,7 +398,7 @@ export type DelegationStartRequest = Message<"shale.DelegationStartRequest"> & {
  * Use `create(DelegationStartRequestSchema)` to create a new message.
  */
 export const DelegationStartRequestSchema: GenMessage<DelegationStartRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 7);
+  messageDesc(file_shale_delegation_svc_g, 5);
 
 /**
  * @generated from message shale.DelegationStartResponse
@@ -468,7 +422,7 @@ export type DelegationStartResponse = Message<"shale.DelegationStartResponse"> &
  * Use `create(DelegationStartResponseSchema)` to create a new message.
  */
 export const DelegationStartResponseSchema: GenMessage<DelegationStartResponse> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 8);
+  messageDesc(file_shale_delegation_svc_g, 6);
 
 /**
  * @generated from message shale.DelegationLiveRequest
@@ -497,7 +451,7 @@ export type DelegationLiveRequest = Message<"shale.DelegationLiveRequest"> & {
  * Use `create(DelegationLiveRequestSchema)` to create a new message.
  */
 export const DelegationLiveRequestSchema: GenMessage<DelegationLiveRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 9);
+  messageDesc(file_shale_delegation_svc_g, 7);
 
 /**
  * @generated from message shale.DelegationTimelineRequest
@@ -519,7 +473,7 @@ export type DelegationTimelineRequest = Message<"shale.DelegationTimelineRequest
  * Use `create(DelegationTimelineRequestSchema)` to create a new message.
  */
 export const DelegationTimelineRequestSchema: GenMessage<DelegationTimelineRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 10);
+  messageDesc(file_shale_delegation_svc_g, 8);
 
 /**
  * @generated from message shale.DelegationExportRequest
@@ -541,7 +495,7 @@ export type DelegationExportRequest = Message<"shale.DelegationExportRequest"> &
  * Use `create(DelegationExportRequestSchema)` to create a new message.
  */
 export const DelegationExportRequestSchema: GenMessage<DelegationExportRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 11);
+  messageDesc(file_shale_delegation_svc_g, 9);
 
 /**
  * @generated from message shale.DelegationRevokeRequest
@@ -558,7 +512,7 @@ export type DelegationRevokeRequest = Message<"shale.DelegationRevokeRequest"> &
  * Use `create(DelegationRevokeRequestSchema)` to create a new message.
  */
 export const DelegationRevokeRequestSchema: GenMessage<DelegationRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 12);
+  messageDesc(file_shale_delegation_svc_g, 10);
 
 /**
  * @generated from message shale.DelegationRevokeResponse
@@ -571,7 +525,7 @@ export type DelegationRevokeResponse = Message<"shale.DelegationRevokeResponse">
  * Use `create(DelegationRevokeResponseSchema)` to create a new message.
  */
 export const DelegationRevokeResponseSchema: GenMessage<DelegationRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 13);
+  messageDesc(file_shale_delegation_svc_g, 11);
 
 /**
  * @generated from service shale.DelegationService
@@ -606,26 +560,6 @@ export const DelegationService: GenService<{
     methodKind: "unary";
     input: typeof DelegationPatchRequestSchema;
     output: typeof DelegationSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Delegation
-   *
-   * @generated from rpc shale.DelegationService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof DelegationApplyRequestSchema;
-    output: typeof DelegationSchema;
-  },
-  /**
-   * Erase deletes a Delegation
-   *
-   * @generated from rpc shale.DelegationService.Erase
-   */
-  erase: {
-    methodKind: "unary";
-    input: typeof DelegationRefSchema;
-    output: typeof DelegationEraseResponseSchema;
   },
   /**
    * Start proves the person and the app together and answers a handle:

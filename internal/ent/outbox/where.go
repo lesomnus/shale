@@ -95,6 +95,16 @@ func Event(v []byte) predicate.Outbox {
 	return predicate.Outbox(sql.FieldEQ(FieldEvent, v))
 }
 
+// Routes applies equality check predicate on the "routes" field. It's identical to RoutesEQ.
+func Routes(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldEQ(FieldRoutes, v))
+}
+
+// Signal applies equality check predicate on the "signal" field. It's identical to SignalEQ.
+func Signal(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldEQ(FieldSignal, v))
+}
+
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Outbox {
 	return predicate.Outbox(sql.FieldEQ(FieldTenantId, v))
@@ -483,6 +493,106 @@ func EventIsNil() predicate.Outbox {
 // EventNotNil applies the NotNil predicate on the "event" field.
 func EventNotNil() predicate.Outbox {
 	return predicate.Outbox(sql.FieldNotNull(FieldEvent))
+}
+
+// RoutesEQ applies the EQ predicate on the "routes" field.
+func RoutesEQ(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldEQ(FieldRoutes, v))
+}
+
+// RoutesNEQ applies the NEQ predicate on the "routes" field.
+func RoutesNEQ(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldNEQ(FieldRoutes, v))
+}
+
+// RoutesIn applies the In predicate on the "routes" field.
+func RoutesIn(vs ...[]byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldIn(FieldRoutes, vs...))
+}
+
+// RoutesNotIn applies the NotIn predicate on the "routes" field.
+func RoutesNotIn(vs ...[]byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldNotIn(FieldRoutes, vs...))
+}
+
+// RoutesGT applies the GT predicate on the "routes" field.
+func RoutesGT(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldGT(FieldRoutes, v))
+}
+
+// RoutesGTE applies the GTE predicate on the "routes" field.
+func RoutesGTE(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldGTE(FieldRoutes, v))
+}
+
+// RoutesLT applies the LT predicate on the "routes" field.
+func RoutesLT(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldLT(FieldRoutes, v))
+}
+
+// RoutesLTE applies the LTE predicate on the "routes" field.
+func RoutesLTE(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldLTE(FieldRoutes, v))
+}
+
+// RoutesIsNil applies the IsNil predicate on the "routes" field.
+func RoutesIsNil() predicate.Outbox {
+	return predicate.Outbox(sql.FieldIsNull(FieldRoutes))
+}
+
+// RoutesNotNil applies the NotNil predicate on the "routes" field.
+func RoutesNotNil() predicate.Outbox {
+	return predicate.Outbox(sql.FieldNotNull(FieldRoutes))
+}
+
+// SignalEQ applies the EQ predicate on the "signal" field.
+func SignalEQ(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldEQ(FieldSignal, v))
+}
+
+// SignalNEQ applies the NEQ predicate on the "signal" field.
+func SignalNEQ(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldNEQ(FieldSignal, v))
+}
+
+// SignalIn applies the In predicate on the "signal" field.
+func SignalIn(vs ...[]byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldIn(FieldSignal, vs...))
+}
+
+// SignalNotIn applies the NotIn predicate on the "signal" field.
+func SignalNotIn(vs ...[]byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldNotIn(FieldSignal, vs...))
+}
+
+// SignalGT applies the GT predicate on the "signal" field.
+func SignalGT(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldGT(FieldSignal, v))
+}
+
+// SignalGTE applies the GTE predicate on the "signal" field.
+func SignalGTE(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldGTE(FieldSignal, v))
+}
+
+// SignalLT applies the LT predicate on the "signal" field.
+func SignalLT(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldLT(FieldSignal, v))
+}
+
+// SignalLTE applies the LTE predicate on the "signal" field.
+func SignalLTE(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldLTE(FieldSignal, v))
+}
+
+// SignalIsNil applies the IsNil predicate on the "signal" field.
+func SignalIsNil() predicate.Outbox {
+	return predicate.Outbox(sql.FieldIsNull(FieldSignal))
+}
+
+// SignalNotNil applies the NotNil predicate on the "signal" field.
+func SignalNotNil() predicate.Outbox {
+	return predicate.Outbox(sql.FieldNotNull(FieldSignal))
 }
 
 // And groups predicates with the AND operator between them.

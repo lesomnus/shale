@@ -517,7 +517,7 @@ var File_shale_camera_worker_proto protoreflect.FileDescriptor
 
 const file_shale_camera_worker_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/camera_worker.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x10shale/site.proto\x1a\x19shale/payday/tenant.proto\"\xcc\n" +
+	"\x19shale/camera_worker.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x10shale/site.proto\x1a\x19shale/payday/tenant.proto\"\xd7\n" +
 	"\n" +
 	"\fCameraWorker\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
@@ -549,7 +549,7 @@ const file_shale_camera_worker_proto_rawDesc = "" +
 	"\aca_hash\x18\x17 \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xcb\x01\xca\xfc\x15|\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xd6\x01\xca\xfc\x15\x86\x01\x12\f\x82\x01\x00\x8a\x01\x00\x92\x01\x00\x9a\x01\x00\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +

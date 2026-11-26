@@ -24,11 +24,14 @@ type AccessServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewAccessServiceServer(db *ent.Client, opts ...Option) api.AccessServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return AccessServiceServer{Store: s.Store}
 }
@@ -80,7 +83,9 @@ func (s AccessServiceServer) Get(ctx context.Context, req *api.AccessGetRequest)
 	}
 
 	q := s.Db.Access.Query().Where(p)
-	AccessSelectInit(q, req.GetSelect())
+	if err := AccessSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -145,17 +150,25 @@ func AccessSelectedFields(m *api.AccessSelect) []string {
 	return vs
 }
 
-func AccessSelect(q *ent.AccessQuery, m *api.AccessSelect) {
+// AccessSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func AccessSelect(ctx context.Context, scope Scope, q *ent.AccessQuery, m *api.AccessSelect) error {
 	if !m.GetAll() {
 		fields := AccessSelectedFields(m)
 		q.Select(fields...)
 	}
+	return nil
 }
 
-func AccessSelectInit(q *ent.AccessQuery, m *api.AccessSelect) {
+// AccessSelectInit is [AccessSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func AccessSelectInit(ctx context.Context, scope Scope, q *ent.AccessQuery, m *api.AccessSelect) error {
 	if m != nil {
-		AccessSelect(q, m)
+		return AccessSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func AccessPick(req *api.AccessRef) (predicate.Access, error) {

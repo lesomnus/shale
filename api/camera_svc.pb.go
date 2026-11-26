@@ -7,7 +7,7 @@
 package api
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1506,192 +1506,20 @@ func (b0 CameraNetworkPatchRequest_builder) Build() *CameraNetworkPatchRequest {
 	return m0
 }
 
-type CameraNetworkApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraNetworkRef      `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraNetworkApplyRequest) Reset() {
-	*x = CameraNetworkApplyRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraNetworkApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraNetworkApplyRequest) ProtoMessage() {}
-
-func (x *CameraNetworkApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraNetworkApplyRequest) GetRef() *CameraNetworkRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraNetworkApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraNetworkApplyRequest) SetRef(v *CameraNetworkRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraNetworkApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraNetworkApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraNetworkApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraNetworkApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraNetworkApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraNetworkApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraNetworkRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraNetworkApplyRequest_builder) Build() *CameraNetworkApplyRequest {
-	m0 := &CameraNetworkApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraNetworkEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraNetworkEraseResponse) Reset() {
-	*x = CameraNetworkEraseResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraNetworkEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraNetworkEraseResponse) ProtoMessage() {}
-
-func (x *CameraNetworkEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraNetworkEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraNetworkEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraNetworkEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraNetworkEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraNetworkEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraNetworkEraseResponse_builder) Build() *CameraNetworkEraseResponse {
-	m0 := &CameraNetworkEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraNetworkListRequest struct {
 	state              protoimpl.MessageState  `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraNetworkFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                   `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                  `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                    `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraNetworkSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraNetworkListRequest) Reset() {
 	*x = CameraNetworkListRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[7]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1703,7 +1531,7 @@ func (x *CameraNetworkListRequest) String() string {
 func (*CameraNetworkListRequest) ProtoMessage() {}
 
 func (x *CameraNetworkListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[7]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1744,6 +1572,13 @@ func (x *CameraNetworkListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraNetworkListRequest) GetSelect() *CameraNetworkSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraNetworkListRequest) SetFilters(v []*CameraNetworkFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1758,6 +1593,21 @@ func (x *CameraNetworkListRequest) SetAfter(v string) {
 
 func (x *CameraNetworkListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraNetworkListRequest) SetSelect(v *CameraNetworkSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraNetworkListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraNetworkListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraNetworkListRequest_builder struct {
@@ -1780,6 +1630,15 @@ type CameraNetworkListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraNetworkSelect
 }
 
 func (b0 CameraNetworkListRequest_builder) Build() *CameraNetworkListRequest {
@@ -1790,6 +1649,7 @@ func (b0 CameraNetworkListRequest_builder) Build() *CameraNetworkListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1803,7 +1663,7 @@ type CameraNetworkListResponse struct {
 
 func (x *CameraNetworkListResponse) Reset() {
 	*x = CameraNetworkListResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1815,7 +1675,7 @@ func (x *CameraNetworkListResponse) String() string {
 func (*CameraNetworkListResponse) ProtoMessage() {}
 
 func (x *CameraNetworkListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[8]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1884,7 +1744,7 @@ type CameraNetworkFilter struct {
 
 func (x *CameraNetworkFilter) Reset() {
 	*x = CameraNetworkFilter{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1896,7 +1756,7 @@ func (x *CameraNetworkFilter) String() string {
 func (*CameraNetworkFilter) ProtoMessage() {}
 
 func (x *CameraNetworkFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[9]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2001,7 +1861,7 @@ type CameraNetworkWatchRequest struct {
 
 func (x *CameraNetworkWatchRequest) Reset() {
 	*x = CameraNetworkWatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2013,7 +1873,7 @@ func (x *CameraNetworkWatchRequest) String() string {
 func (*CameraNetworkWatchRequest) ProtoMessage() {}
 
 func (x *CameraNetworkWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[10]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2051,13 +1911,15 @@ func (x *CameraNetworkWatchRequest) SetSkipSnapshot(v bool) {
 type CameraNetworkWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraNetworkFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2085,7 +1947,7 @@ type CameraNetworkWatchResponse struct {
 
 func (x *CameraNetworkWatchResponse) Reset() {
 	*x = CameraNetworkWatchResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2097,7 +1959,7 @@ func (x *CameraNetworkWatchResponse) String() string {
 func (*CameraNetworkWatchResponse) ProtoMessage() {}
 
 func (x *CameraNetworkWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[11]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2149,7 +2011,7 @@ type CameraNetworkWatchItem struct {
 
 func (x *CameraNetworkWatchItem) Reset() {
 	*x = CameraNetworkWatchItem{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2161,7 +2023,7 @@ func (x *CameraNetworkWatchItem) String() string {
 func (*CameraNetworkWatchItem) ProtoMessage() {}
 
 func (x *CameraNetworkWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[12]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2238,7 +2100,7 @@ type CameraNetworkWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2246,7 +2108,8 @@ type CameraNetworkWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraNetwork
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2288,7 +2151,7 @@ type CameraNetworkConfigureRequest struct {
 
 func (x *CameraNetworkConfigureRequest) Reset() {
 	*x = CameraNetworkConfigureRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2300,7 +2163,7 @@ func (x *CameraNetworkConfigureRequest) String() string {
 func (*CameraNetworkConfigureRequest) ProtoMessage() {}
 
 func (x *CameraNetworkConfigureRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[13]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2527,7 +2390,7 @@ type CameraDeviceAddRequest struct {
 
 func (x *CameraDeviceAddRequest) Reset() {
 	*x = CameraDeviceAddRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2539,7 +2402,7 @@ func (x *CameraDeviceAddRequest) String() string {
 func (*CameraDeviceAddRequest) ProtoMessage() {}
 
 func (x *CameraDeviceAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[14]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2982,7 +2845,7 @@ type CameraDeviceGetRequest struct {
 
 func (x *CameraDeviceGetRequest) Reset() {
 	*x = CameraDeviceGetRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2994,7 +2857,7 @@ func (x *CameraDeviceGetRequest) String() string {
 func (*CameraDeviceGetRequest) ProtoMessage() {}
 
 func (x *CameraDeviceGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[15]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3074,7 +2937,7 @@ type CameraDeviceRef struct {
 
 func (x *CameraDeviceRef) Reset() {
 	*x = CameraDeviceRef{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[16]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3086,7 +2949,7 @@ func (x *CameraDeviceRef) String() string {
 func (*CameraDeviceRef) ProtoMessage() {}
 
 func (x *CameraDeviceRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[16]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3212,7 +3075,7 @@ func (b0 CameraDeviceRef_builder) Build() *CameraDeviceRef {
 type case_CameraDeviceRef_Key protoreflect.FieldNumber
 
 func (x case_CameraDeviceRef_Key) String() string {
-	md := file_shale_camera_svc_g_proto_msgTypes[16].Descriptor()
+	md := file_shale_camera_svc_g_proto_msgTypes[14].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -3247,7 +3110,7 @@ type CameraDeviceRefByIdentity struct {
 
 func (x *CameraDeviceRefByIdentity) Reset() {
 	*x = CameraDeviceRefByIdentity{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[17]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3259,7 +3122,7 @@ func (x *CameraDeviceRefByIdentity) String() string {
 func (*CameraDeviceRefByIdentity) ProtoMessage() {}
 
 func (x *CameraDeviceRefByIdentity) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[17]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3370,7 +3233,7 @@ type CameraDeviceSelect struct {
 
 func (x *CameraDeviceSelect) Reset() {
 	*x = CameraDeviceSelect{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[18]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3382,7 +3245,7 @@ func (x *CameraDeviceSelect) String() string {
 func (*CameraDeviceSelect) ProtoMessage() {}
 
 func (x *CameraDeviceSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[18]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4062,7 +3925,7 @@ type CameraDevicePatchRequest struct {
 
 func (x *CameraDevicePatchRequest) Reset() {
 	*x = CameraDevicePatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[19]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4074,7 +3937,7 @@ func (x *CameraDevicePatchRequest) String() string {
 func (*CameraDevicePatchRequest) ProtoMessage() {}
 
 func (x *CameraDevicePatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[19]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4775,192 +4638,20 @@ func (b0 CameraDevicePatchRequest_builder) Build() *CameraDevicePatchRequest {
 	return m0
 }
 
-type CameraDeviceApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraDeviceRef       `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraDeviceApplyRequest) Reset() {
-	*x = CameraDeviceApplyRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraDeviceApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraDeviceApplyRequest) ProtoMessage() {}
-
-func (x *CameraDeviceApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraDeviceApplyRequest) GetRef() *CameraDeviceRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraDeviceApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraDeviceApplyRequest) SetRef(v *CameraDeviceRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraDeviceApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraDeviceApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraDeviceApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraDeviceApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraDeviceApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraDeviceApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraDeviceRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraDeviceApplyRequest_builder) Build() *CameraDeviceApplyRequest {
-	m0 := &CameraDeviceApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraDeviceEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraDeviceEraseResponse) Reset() {
-	*x = CameraDeviceEraseResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraDeviceEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraDeviceEraseResponse) ProtoMessage() {}
-
-func (x *CameraDeviceEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraDeviceEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraDeviceEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraDeviceEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraDeviceEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraDeviceEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraDeviceEraseResponse_builder) Build() *CameraDeviceEraseResponse {
-	m0 := &CameraDeviceEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraDeviceListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraDeviceFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraDeviceSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraDeviceListRequest) Reset() {
 	*x = CameraDeviceListRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[22]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4972,7 +4663,7 @@ func (x *CameraDeviceListRequest) String() string {
 func (*CameraDeviceListRequest) ProtoMessage() {}
 
 func (x *CameraDeviceListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[22]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5013,6 +4704,13 @@ func (x *CameraDeviceListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraDeviceListRequest) GetSelect() *CameraDeviceSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraDeviceListRequest) SetFilters(v []*CameraDeviceFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -5027,6 +4725,21 @@ func (x *CameraDeviceListRequest) SetAfter(v string) {
 
 func (x *CameraDeviceListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraDeviceListRequest) SetSelect(v *CameraDeviceSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraDeviceListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraDeviceListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraDeviceListRequest_builder struct {
@@ -5049,6 +4762,15 @@ type CameraDeviceListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraDeviceSelect
 }
 
 func (b0 CameraDeviceListRequest_builder) Build() *CameraDeviceListRequest {
@@ -5059,6 +4781,7 @@ func (b0 CameraDeviceListRequest_builder) Build() *CameraDeviceListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -5072,7 +4795,7 @@ type CameraDeviceListResponse struct {
 
 func (x *CameraDeviceListResponse) Reset() {
 	*x = CameraDeviceListResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[23]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5084,7 +4807,7 @@ func (x *CameraDeviceListResponse) String() string {
 func (*CameraDeviceListResponse) ProtoMessage() {}
 
 func (x *CameraDeviceListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[23]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5154,7 +4877,7 @@ type CameraDeviceFilter struct {
 
 func (x *CameraDeviceFilter) Reset() {
 	*x = CameraDeviceFilter{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[24]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5166,7 +4889,7 @@ func (x *CameraDeviceFilter) String() string {
 func (*CameraDeviceFilter) ProtoMessage() {}
 
 func (x *CameraDeviceFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[24]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5295,7 +5018,7 @@ type CameraDeviceWatchRequest struct {
 
 func (x *CameraDeviceWatchRequest) Reset() {
 	*x = CameraDeviceWatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[25]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5307,7 +5030,7 @@ func (x *CameraDeviceWatchRequest) String() string {
 func (*CameraDeviceWatchRequest) ProtoMessage() {}
 
 func (x *CameraDeviceWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[25]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5345,13 +5068,15 @@ func (x *CameraDeviceWatchRequest) SetSkipSnapshot(v bool) {
 type CameraDeviceWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraDeviceFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -5379,7 +5104,7 @@ type CameraDeviceWatchResponse struct {
 
 func (x *CameraDeviceWatchResponse) Reset() {
 	*x = CameraDeviceWatchResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[26]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5391,7 +5116,7 @@ func (x *CameraDeviceWatchResponse) String() string {
 func (*CameraDeviceWatchResponse) ProtoMessage() {}
 
 func (x *CameraDeviceWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[26]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5443,7 +5168,7 @@ type CameraDeviceWatchItem struct {
 
 func (x *CameraDeviceWatchItem) Reset() {
 	*x = CameraDeviceWatchItem{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[27]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5455,7 +5180,7 @@ func (x *CameraDeviceWatchItem) String() string {
 func (*CameraDeviceWatchItem) ProtoMessage() {}
 
 func (x *CameraDeviceWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[27]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5532,7 +5257,7 @@ type CameraDeviceWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -5540,7 +5265,8 @@ type CameraDeviceWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraDevice
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -5576,7 +5302,7 @@ type CameraDeviceClaimRequest struct {
 
 func (x *CameraDeviceClaimRequest) Reset() {
 	*x = CameraDeviceClaimRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[28]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5588,7 +5314,7 @@ func (x *CameraDeviceClaimRequest) String() string {
 func (*CameraDeviceClaimRequest) ProtoMessage() {}
 
 func (x *CameraDeviceClaimRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[28]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5688,7 +5414,7 @@ type CameraDeviceObserveRequest struct {
 
 func (x *CameraDeviceObserveRequest) Reset() {
 	*x = CameraDeviceObserveRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[29]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5700,7 +5426,7 @@ func (x *CameraDeviceObserveRequest) String() string {
 func (*CameraDeviceObserveRequest) ProtoMessage() {}
 
 func (x *CameraDeviceObserveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[29]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5835,7 +5561,7 @@ type CameraAssignmentAddRequest struct {
 
 func (x *CameraAssignmentAddRequest) Reset() {
 	*x = CameraAssignmentAddRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[30]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5847,7 +5573,7 @@ func (x *CameraAssignmentAddRequest) String() string {
 func (*CameraAssignmentAddRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[30]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6179,7 +5905,7 @@ type CameraAssignmentGetRequest struct {
 
 func (x *CameraAssignmentGetRequest) Reset() {
 	*x = CameraAssignmentGetRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[31]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6191,7 +5917,7 @@ func (x *CameraAssignmentGetRequest) String() string {
 func (*CameraAssignmentGetRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[31]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6271,7 +5997,7 @@ type CameraAssignmentRef struct {
 
 func (x *CameraAssignmentRef) Reset() {
 	*x = CameraAssignmentRef{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[32]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6283,7 +6009,7 @@ func (x *CameraAssignmentRef) String() string {
 func (*CameraAssignmentRef) ProtoMessage() {}
 
 func (x *CameraAssignmentRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[32]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6409,7 +6135,7 @@ func (b0 CameraAssignmentRef_builder) Build() *CameraAssignmentRef {
 type case_CameraAssignmentRef_Key protoreflect.FieldNumber
 
 func (x case_CameraAssignmentRef_Key) String() string {
-	md := file_shale_camera_svc_g_proto_msgTypes[32].Descriptor()
+	md := file_shale_camera_svc_g_proto_msgTypes[28].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -6441,7 +6167,7 @@ type CameraAssignmentRefBySet struct {
 
 func (x *CameraAssignmentRefBySet) Reset() {
 	*x = CameraAssignmentRefBySet{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[33]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6453,7 +6179,7 @@ func (x *CameraAssignmentRefBySet) String() string {
 func (*CameraAssignmentRefBySet) ProtoMessage() {}
 
 func (x *CameraAssignmentRefBySet) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[33]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6527,7 +6253,7 @@ type CameraAssignmentSelect struct {
 
 func (x *CameraAssignmentSelect) Reset() {
 	*x = CameraAssignmentSelect{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[34]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6539,7 +6265,7 @@ func (x *CameraAssignmentSelect) String() string {
 func (*CameraAssignmentSelect) ProtoMessage() {}
 
 func (x *CameraAssignmentSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[34]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7053,7 +6779,7 @@ type CameraAssignmentPatchRequest struct {
 
 func (x *CameraAssignmentPatchRequest) Reset() {
 	*x = CameraAssignmentPatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[35]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7065,7 +6791,7 @@ func (x *CameraAssignmentPatchRequest) String() string {
 func (*CameraAssignmentPatchRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[35]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7465,192 +7191,20 @@ func (b0 CameraAssignmentPatchRequest_builder) Build() *CameraAssignmentPatchReq
 	return m0
 }
 
-type CameraAssignmentApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraAssignmentRef   `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraAssignmentApplyRequest) Reset() {
-	*x = CameraAssignmentApplyRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[36]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraAssignmentApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraAssignmentApplyRequest) ProtoMessage() {}
-
-func (x *CameraAssignmentApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[36]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraAssignmentApplyRequest) GetRef() *CameraAssignmentRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraAssignmentApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraAssignmentApplyRequest) SetRef(v *CameraAssignmentRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraAssignmentApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraAssignmentApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraAssignmentApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraAssignmentApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraAssignmentApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraAssignmentApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraAssignmentRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraAssignmentApplyRequest_builder) Build() *CameraAssignmentApplyRequest {
-	m0 := &CameraAssignmentApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraAssignmentEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraAssignmentEraseResponse) Reset() {
-	*x = CameraAssignmentEraseResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[37]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraAssignmentEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraAssignmentEraseResponse) ProtoMessage() {}
-
-func (x *CameraAssignmentEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[37]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraAssignmentEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraAssignmentEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraAssignmentEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraAssignmentEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraAssignmentEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraAssignmentEraseResponse_builder) Build() *CameraAssignmentEraseResponse {
-	m0 := &CameraAssignmentEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraAssignmentListRequest struct {
 	state              protoimpl.MessageState     `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraAssignmentFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                      `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                     `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                       `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraAssignmentSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraAssignmentListRequest) Reset() {
 	*x = CameraAssignmentListRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[38]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7662,7 +7216,7 @@ func (x *CameraAssignmentListRequest) String() string {
 func (*CameraAssignmentListRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[38]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7703,6 +7257,13 @@ func (x *CameraAssignmentListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraAssignmentListRequest) GetSelect() *CameraAssignmentSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraAssignmentListRequest) SetFilters(v []*CameraAssignmentFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -7717,6 +7278,21 @@ func (x *CameraAssignmentListRequest) SetAfter(v string) {
 
 func (x *CameraAssignmentListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraAssignmentListRequest) SetSelect(v *CameraAssignmentSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraAssignmentListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraAssignmentListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraAssignmentListRequest_builder struct {
@@ -7739,6 +7315,15 @@ type CameraAssignmentListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraAssignmentSelect
 }
 
 func (b0 CameraAssignmentListRequest_builder) Build() *CameraAssignmentListRequest {
@@ -7749,6 +7334,7 @@ func (b0 CameraAssignmentListRequest_builder) Build() *CameraAssignmentListReque
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -7762,7 +7348,7 @@ type CameraAssignmentListResponse struct {
 
 func (x *CameraAssignmentListResponse) Reset() {
 	*x = CameraAssignmentListResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[39]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7774,7 +7360,7 @@ func (x *CameraAssignmentListResponse) String() string {
 func (*CameraAssignmentListResponse) ProtoMessage() {}
 
 func (x *CameraAssignmentListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[39]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7846,7 +7432,7 @@ type CameraAssignmentFilter struct {
 
 func (x *CameraAssignmentFilter) Reset() {
 	*x = CameraAssignmentFilter{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[40]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7858,7 +7444,7 @@ func (x *CameraAssignmentFilter) String() string {
 func (*CameraAssignmentFilter) ProtoMessage() {}
 
 func (x *CameraAssignmentFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[40]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8035,7 +7621,7 @@ type CameraAssignmentWatchRequest struct {
 
 func (x *CameraAssignmentWatchRequest) Reset() {
 	*x = CameraAssignmentWatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[41]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8047,7 +7633,7 @@ func (x *CameraAssignmentWatchRequest) String() string {
 func (*CameraAssignmentWatchRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[41]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8085,13 +7671,15 @@ func (x *CameraAssignmentWatchRequest) SetSkipSnapshot(v bool) {
 type CameraAssignmentWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraAssignmentFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -8119,7 +7707,7 @@ type CameraAssignmentWatchResponse struct {
 
 func (x *CameraAssignmentWatchResponse) Reset() {
 	*x = CameraAssignmentWatchResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[42]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8131,7 +7719,7 @@ func (x *CameraAssignmentWatchResponse) String() string {
 func (*CameraAssignmentWatchResponse) ProtoMessage() {}
 
 func (x *CameraAssignmentWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[42]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8183,7 +7771,7 @@ type CameraAssignmentWatchItem struct {
 
 func (x *CameraAssignmentWatchItem) Reset() {
 	*x = CameraAssignmentWatchItem{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[43]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8195,7 +7783,7 @@ func (x *CameraAssignmentWatchItem) String() string {
 func (*CameraAssignmentWatchItem) ProtoMessage() {}
 
 func (x *CameraAssignmentWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[43]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8272,7 +7860,7 @@ type CameraAssignmentWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -8280,7 +7868,8 @@ type CameraAssignmentWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraAssignment
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -8318,7 +7907,7 @@ type CameraAssignmentAssignRequest struct {
 
 func (x *CameraAssignmentAssignRequest) Reset() {
 	*x = CameraAssignmentAssignRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[44]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8330,7 +7919,7 @@ func (x *CameraAssignmentAssignRequest) String() string {
 func (*CameraAssignmentAssignRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentAssignRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[44]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8487,7 +8076,7 @@ type CameraAssignmentSnapshotRequest struct {
 
 func (x *CameraAssignmentSnapshotRequest) Reset() {
 	*x = CameraAssignmentSnapshotRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[45]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8499,7 +8088,7 @@ func (x *CameraAssignmentSnapshotRequest) String() string {
 func (*CameraAssignmentSnapshotRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentSnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[45]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8557,7 +8146,7 @@ type CameraCatalogSnapshot struct {
 
 func (x *CameraCatalogSnapshot) Reset() {
 	*x = CameraCatalogSnapshot{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[46]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8569,7 +8158,7 @@ func (x *CameraCatalogSnapshot) String() string {
 func (*CameraCatalogSnapshot) ProtoMessage() {}
 
 func (x *CameraCatalogSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[46]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8656,7 +8245,7 @@ type CameraAssignmentHandoverRequest struct {
 
 func (x *CameraAssignmentHandoverRequest) Reset() {
 	*x = CameraAssignmentHandoverRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[47]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8668,7 +8257,7 @@ func (x *CameraAssignmentHandoverRequest) String() string {
 func (*CameraAssignmentHandoverRequest) ProtoMessage() {}
 
 func (x *CameraAssignmentHandoverRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[47]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8785,7 +8374,7 @@ type CameraApplicationRequest struct {
 
 func (x *CameraApplicationRequest) Reset() {
 	*x = CameraApplicationRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[48]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8797,7 +8386,7 @@ func (x *CameraApplicationRequest) String() string {
 func (*CameraApplicationRequest) ProtoMessage() {}
 
 func (x *CameraApplicationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[48]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8855,7 +8444,7 @@ type CameraBeginApplyRequest struct {
 
 func (x *CameraBeginApplyRequest) Reset() {
 	*x = CameraBeginApplyRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[49]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8867,7 +8456,7 @@ func (x *CameraBeginApplyRequest) String() string {
 func (*CameraBeginApplyRequest) ProtoMessage() {}
 
 func (x *CameraBeginApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[49]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8953,7 +8542,7 @@ type CameraAppliedRequest struct {
 
 func (x *CameraAppliedRequest) Reset() {
 	*x = CameraAppliedRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[50]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8965,7 +8554,7 @@ func (x *CameraAppliedRequest) String() string {
 func (*CameraAppliedRequest) ProtoMessage() {}
 
 func (x *CameraAppliedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[50]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9118,7 +8707,7 @@ type CameraBindingAddRequest struct {
 
 func (x *CameraBindingAddRequest) Reset() {
 	*x = CameraBindingAddRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[51]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9130,7 +8719,7 @@ func (x *CameraBindingAddRequest) String() string {
 func (*CameraBindingAddRequest) ProtoMessage() {}
 
 func (x *CameraBindingAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[51]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9580,7 +9169,7 @@ type CameraBindingGetRequest struct {
 
 func (x *CameraBindingGetRequest) Reset() {
 	*x = CameraBindingGetRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[52]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9592,7 +9181,7 @@ func (x *CameraBindingGetRequest) String() string {
 func (*CameraBindingGetRequest) ProtoMessage() {}
 
 func (x *CameraBindingGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[52]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9672,7 +9261,7 @@ type CameraBindingRef struct {
 
 func (x *CameraBindingRef) Reset() {
 	*x = CameraBindingRef{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[53]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9684,7 +9273,7 @@ func (x *CameraBindingRef) String() string {
 func (*CameraBindingRef) ProtoMessage() {}
 
 func (x *CameraBindingRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[53]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9848,7 +9437,7 @@ func (b0 CameraBindingRef_builder) Build() *CameraBindingRef {
 type case_CameraBindingRef_Key protoreflect.FieldNumber
 
 func (x case_CameraBindingRef_Key) String() string {
-	md := file_shale_camera_svc_g_proto_msgTypes[53].Descriptor()
+	md := file_shale_camera_svc_g_proto_msgTypes[47].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -9889,7 +9478,7 @@ type CameraBindingRefByLogical struct {
 
 func (x *CameraBindingRefByLogical) Reset() {
 	*x = CameraBindingRefByLogical{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[54]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9901,7 +9490,7 @@ func (x *CameraBindingRefByLogical) String() string {
 func (*CameraBindingRefByLogical) ProtoMessage() {}
 
 func (x *CameraBindingRefByLogical) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[54]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9989,7 +9578,7 @@ type CameraBindingRefBySource struct {
 
 func (x *CameraBindingRefBySource) Reset() {
 	*x = CameraBindingRefBySource{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[55]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10001,7 +9590,7 @@ func (x *CameraBindingRefBySource) String() string {
 func (*CameraBindingRefBySource) ProtoMessage() {}
 
 func (x *CameraBindingRefBySource) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[55]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10082,7 +9671,7 @@ type CameraBindingSelect struct {
 
 func (x *CameraBindingSelect) Reset() {
 	*x = CameraBindingSelect{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[56]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10094,7 +9683,7 @@ func (x *CameraBindingSelect) String() string {
 func (*CameraBindingSelect) ProtoMessage() {}
 
 func (x *CameraBindingSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[56]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10818,7 +10407,7 @@ type CameraBindingPatchRequest struct {
 
 func (x *CameraBindingPatchRequest) Reset() {
 	*x = CameraBindingPatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[57]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10830,7 +10419,7 @@ func (x *CameraBindingPatchRequest) String() string {
 func (*CameraBindingPatchRequest) ProtoMessage() {}
 
 func (x *CameraBindingPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[57]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11410,192 +10999,20 @@ func (b0 CameraBindingPatchRequest_builder) Build() *CameraBindingPatchRequest {
 	return m0
 }
 
-type CameraBindingApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraBindingRef      `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraBindingApplyRequest) Reset() {
-	*x = CameraBindingApplyRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[58]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraBindingApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraBindingApplyRequest) ProtoMessage() {}
-
-func (x *CameraBindingApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[58]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraBindingApplyRequest) GetRef() *CameraBindingRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraBindingApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraBindingApplyRequest) SetRef(v *CameraBindingRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraBindingApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraBindingApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraBindingApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraBindingApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraBindingApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraBindingApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraBindingRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraBindingApplyRequest_builder) Build() *CameraBindingApplyRequest {
-	m0 := &CameraBindingApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraBindingEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraBindingEraseResponse) Reset() {
-	*x = CameraBindingEraseResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[59]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraBindingEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraBindingEraseResponse) ProtoMessage() {}
-
-func (x *CameraBindingEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[59]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraBindingEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraBindingEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraBindingEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraBindingEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraBindingEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraBindingEraseResponse_builder) Build() *CameraBindingEraseResponse {
-	m0 := &CameraBindingEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraBindingListRequest struct {
 	state              protoimpl.MessageState  `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraBindingFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                   `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                  `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                    `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraBindingSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraBindingListRequest) Reset() {
 	*x = CameraBindingListRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[60]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11607,7 +11024,7 @@ func (x *CameraBindingListRequest) String() string {
 func (*CameraBindingListRequest) ProtoMessage() {}
 
 func (x *CameraBindingListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[60]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11648,6 +11065,13 @@ func (x *CameraBindingListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraBindingListRequest) GetSelect() *CameraBindingSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraBindingListRequest) SetFilters(v []*CameraBindingFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -11662,6 +11086,21 @@ func (x *CameraBindingListRequest) SetAfter(v string) {
 
 func (x *CameraBindingListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraBindingListRequest) SetSelect(v *CameraBindingSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraBindingListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraBindingListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraBindingListRequest_builder struct {
@@ -11684,6 +11123,15 @@ type CameraBindingListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraBindingSelect
 }
 
 func (b0 CameraBindingListRequest_builder) Build() *CameraBindingListRequest {
@@ -11694,6 +11142,7 @@ func (b0 CameraBindingListRequest_builder) Build() *CameraBindingListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -11707,7 +11156,7 @@ type CameraBindingListResponse struct {
 
 func (x *CameraBindingListResponse) Reset() {
 	*x = CameraBindingListResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[61]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11719,7 +11168,7 @@ func (x *CameraBindingListResponse) String() string {
 func (*CameraBindingListResponse) ProtoMessage() {}
 
 func (x *CameraBindingListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[61]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11791,7 +11240,7 @@ type CameraBindingFilter struct {
 
 func (x *CameraBindingFilter) Reset() {
 	*x = CameraBindingFilter{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[62]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11803,7 +11252,7 @@ func (x *CameraBindingFilter) String() string {
 func (*CameraBindingFilter) ProtoMessage() {}
 
 func (x *CameraBindingFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[62]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11980,7 +11429,7 @@ type CameraBindingWatchRequest struct {
 
 func (x *CameraBindingWatchRequest) Reset() {
 	*x = CameraBindingWatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[63]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11992,7 +11441,7 @@ func (x *CameraBindingWatchRequest) String() string {
 func (*CameraBindingWatchRequest) ProtoMessage() {}
 
 func (x *CameraBindingWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[63]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12030,13 +11479,15 @@ func (x *CameraBindingWatchRequest) SetSkipSnapshot(v bool) {
 type CameraBindingWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraBindingFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -12064,7 +11515,7 @@ type CameraBindingWatchResponse struct {
 
 func (x *CameraBindingWatchResponse) Reset() {
 	*x = CameraBindingWatchResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[64]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12076,7 +11527,7 @@ func (x *CameraBindingWatchResponse) String() string {
 func (*CameraBindingWatchResponse) ProtoMessage() {}
 
 func (x *CameraBindingWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[64]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12128,7 +11579,7 @@ type CameraBindingWatchItem struct {
 
 func (x *CameraBindingWatchItem) Reset() {
 	*x = CameraBindingWatchItem{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[65]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12140,7 +11591,7 @@ func (x *CameraBindingWatchItem) String() string {
 func (*CameraBindingWatchItem) ProtoMessage() {}
 
 func (x *CameraBindingWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[65]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12217,7 +11668,7 @@ type CameraBindingWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -12225,7 +11676,8 @@ type CameraBindingWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraBinding
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -12263,7 +11715,7 @@ type CameraBindingBindRequest struct {
 
 func (x *CameraBindingBindRequest) Reset() {
 	*x = CameraBindingBindRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[66]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12275,7 +11727,7 @@ func (x *CameraBindingBindRequest) String() string {
 func (*CameraBindingBindRequest) ProtoMessage() {}
 
 func (x *CameraBindingBindRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[66]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12421,7 +11873,7 @@ type CameraBindingSetCollectRequest struct {
 
 func (x *CameraBindingSetCollectRequest) Reset() {
 	*x = CameraBindingSetCollectRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[67]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12433,7 +11885,7 @@ func (x *CameraBindingSetCollectRequest) String() string {
 func (*CameraBindingSetCollectRequest) ProtoMessage() {}
 
 func (x *CameraBindingSetCollectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[67]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12551,7 +12003,7 @@ type CameraJobAddRequest struct {
 
 func (x *CameraJobAddRequest) Reset() {
 	*x = CameraJobAddRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[68]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12563,7 +12015,7 @@ func (x *CameraJobAddRequest) String() string {
 func (*CameraJobAddRequest) ProtoMessage() {}
 
 func (x *CameraJobAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[68]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13078,7 +12530,7 @@ type CameraJobGetRequest struct {
 
 func (x *CameraJobGetRequest) Reset() {
 	*x = CameraJobGetRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[69]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13090,7 +12542,7 @@ func (x *CameraJobGetRequest) String() string {
 func (*CameraJobGetRequest) ProtoMessage() {}
 
 func (x *CameraJobGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[69]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13170,7 +12622,7 @@ type CameraJobRef struct {
 
 func (x *CameraJobRef) Reset() {
 	*x = CameraJobRef{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[70]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13182,7 +12634,7 @@ func (x *CameraJobRef) String() string {
 func (*CameraJobRef) ProtoMessage() {}
 
 func (x *CameraJobRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[70]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13308,7 +12760,7 @@ func (b0 CameraJobRef_builder) Build() *CameraJobRef {
 type case_CameraJobRef_Key protoreflect.FieldNumber
 
 func (x case_CameraJobRef_Key) String() string {
-	md := file_shale_camera_svc_g_proto_msgTypes[70].Descriptor()
+	md := file_shale_camera_svc_g_proto_msgTypes[62].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -13343,7 +12795,7 @@ type CameraJobRefByIntent struct {
 
 func (x *CameraJobRefByIntent) Reset() {
 	*x = CameraJobRefByIntent{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[71]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13355,7 +12807,7 @@ func (x *CameraJobRefByIntent) String() string {
 func (*CameraJobRefByIntent) ProtoMessage() {}
 
 func (x *CameraJobRefByIntent) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[71]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13470,7 +12922,7 @@ type CameraJobSelect struct {
 
 func (x *CameraJobSelect) Reset() {
 	*x = CameraJobSelect{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[72]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13482,7 +12934,7 @@ func (x *CameraJobSelect) String() string {
 func (*CameraJobSelect) ProtoMessage() {}
 
 func (x *CameraJobSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[72]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14273,7 +13725,7 @@ type CameraJobPatchRequest struct {
 
 func (x *CameraJobPatchRequest) Reset() {
 	*x = CameraJobPatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[73]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14285,7 +13737,7 @@ func (x *CameraJobPatchRequest) String() string {
 func (*CameraJobPatchRequest) ProtoMessage() {}
 
 func (x *CameraJobPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[73]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15014,192 +14466,20 @@ func (b0 CameraJobPatchRequest_builder) Build() *CameraJobPatchRequest {
 	return m0
 }
 
-type CameraJobApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *CameraJobRef          `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CameraJobApplyRequest) Reset() {
-	*x = CameraJobApplyRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[74]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraJobApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraJobApplyRequest) ProtoMessage() {}
-
-func (x *CameraJobApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[74]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraJobApplyRequest) GetRef() *CameraJobRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *CameraJobApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *CameraJobApplyRequest) SetRef(v *CameraJobRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *CameraJobApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *CameraJobApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *CameraJobApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *CameraJobApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *CameraJobApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type CameraJobApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *CameraJobRef
-	Patch *patchpb.Patch
-}
-
-func (b0 CameraJobApplyRequest_builder) Build() *CameraJobApplyRequest {
-	m0 := &CameraJobApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type CameraJobEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *CameraJobEraseResponse) Reset() {
-	*x = CameraJobEraseResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[75]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CameraJobEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CameraJobEraseResponse) ProtoMessage() {}
-
-func (x *CameraJobEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[75]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *CameraJobEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *CameraJobEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *CameraJobEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *CameraJobEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type CameraJobEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 CameraJobEraseResponse_builder) Build() *CameraJobEraseResponse {
-	m0 := &CameraJobEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type CameraJobListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CameraJobFilter    `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CameraJobSelect       `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CameraJobListRequest) Reset() {
 	*x = CameraJobListRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[76]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15211,7 +14491,7 @@ func (x *CameraJobListRequest) String() string {
 func (*CameraJobListRequest) ProtoMessage() {}
 
 func (x *CameraJobListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[76]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15252,6 +14532,13 @@ func (x *CameraJobListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CameraJobListRequest) GetSelect() *CameraJobSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CameraJobListRequest) SetFilters(v []*CameraJobFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -15266,6 +14553,21 @@ func (x *CameraJobListRequest) SetAfter(v string) {
 
 func (x *CameraJobListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CameraJobListRequest) SetSelect(v *CameraJobSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CameraJobListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CameraJobListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CameraJobListRequest_builder struct {
@@ -15288,6 +14590,15 @@ type CameraJobListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CameraJobSelect
 }
 
 func (b0 CameraJobListRequest_builder) Build() *CameraJobListRequest {
@@ -15298,6 +14609,7 @@ func (b0 CameraJobListRequest_builder) Build() *CameraJobListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -15311,7 +14623,7 @@ type CameraJobListResponse struct {
 
 func (x *CameraJobListResponse) Reset() {
 	*x = CameraJobListResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[77]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15323,7 +14635,7 @@ func (x *CameraJobListResponse) String() string {
 func (*CameraJobListResponse) ProtoMessage() {}
 
 func (x *CameraJobListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[77]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15394,7 +14706,7 @@ type CameraJobFilter struct {
 
 func (x *CameraJobFilter) Reset() {
 	*x = CameraJobFilter{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[78]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15406,7 +14718,7 @@ func (x *CameraJobFilter) String() string {
 func (*CameraJobFilter) ProtoMessage() {}
 
 func (x *CameraJobFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[78]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15559,7 +14871,7 @@ type CameraJobWatchRequest struct {
 
 func (x *CameraJobWatchRequest) Reset() {
 	*x = CameraJobWatchRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[79]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15571,7 +14883,7 @@ func (x *CameraJobWatchRequest) String() string {
 func (*CameraJobWatchRequest) ProtoMessage() {}
 
 func (x *CameraJobWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[79]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15609,13 +14921,15 @@ func (x *CameraJobWatchRequest) SetSkipSnapshot(v bool) {
 type CameraJobWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CameraJobFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -15643,7 +14957,7 @@ type CameraJobWatchResponse struct {
 
 func (x *CameraJobWatchResponse) Reset() {
 	*x = CameraJobWatchResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[80]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15655,7 +14969,7 @@ func (x *CameraJobWatchResponse) String() string {
 func (*CameraJobWatchResponse) ProtoMessage() {}
 
 func (x *CameraJobWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[80]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15707,7 +15021,7 @@ type CameraJobWatchItem struct {
 
 func (x *CameraJobWatchItem) Reset() {
 	*x = CameraJobWatchItem{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[81]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15719,7 +15033,7 @@ func (x *CameraJobWatchItem) String() string {
 func (*CameraJobWatchItem) ProtoMessage() {}
 
 func (x *CameraJobWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[81]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15796,7 +15110,7 @@ type CameraJobWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -15804,7 +15118,8 @@ type CameraJobWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *CameraJob
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -15839,7 +15154,7 @@ type CameraJobCreateRequest struct {
 
 func (x *CameraJobCreateRequest) Reset() {
 	*x = CameraJobCreateRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[82]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15851,7 +15166,7 @@ func (x *CameraJobCreateRequest) String() string {
 func (*CameraJobCreateRequest) ProtoMessage() {}
 
 func (x *CameraJobCreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[82]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15947,7 +15262,7 @@ type CameraJobClaimRequest struct {
 
 func (x *CameraJobClaimRequest) Reset() {
 	*x = CameraJobClaimRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[83]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15959,7 +15274,7 @@ func (x *CameraJobClaimRequest) String() string {
 func (*CameraJobClaimRequest) ProtoMessage() {}
 
 func (x *CameraJobClaimRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[83]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16071,7 +15386,7 @@ type CameraJobReportRequest struct {
 
 func (x *CameraJobReportRequest) Reset() {
 	*x = CameraJobReportRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[84]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16083,7 +15398,7 @@ func (x *CameraJobReportRequest) String() string {
 func (*CameraJobReportRequest) ProtoMessage() {}
 
 func (x *CameraJobReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[84]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16245,7 +15560,7 @@ type CameraJobPublishRequest struct {
 
 func (x *CameraJobPublishRequest) Reset() {
 	*x = CameraJobPublishRequest{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[85]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16257,7 +15572,7 @@ func (x *CameraJobPublishRequest) String() string {
 func (*CameraJobPublishRequest) ProtoMessage() {}
 
 func (x *CameraJobPublishRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[85]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16426,7 +15741,7 @@ type CameraJobPublishResponse struct {
 
 func (x *CameraJobPublishResponse) Reset() {
 	*x = CameraJobPublishResponse{}
-	mi := &file_shale_camera_svc_g_proto_msgTypes[86]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16438,7 +15753,7 @@ func (x *CameraJobPublishResponse) String() string {
 func (*CameraJobPublishResponse) ProtoMessage() {}
 
 func (x *CameraJobPublishResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_svc_g_proto_msgTypes[86]
+	mi := &file_shale_camera_svc_g_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16526,9 +15841,9 @@ var File_shale_camera_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/camera_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xd4\x04\n" +
-	"\x17CameraNetworkAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x18shale/camera_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xe4\x04\n" +
+	"\x17CameraNetworkAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -16540,17 +15855,17 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05seeds\x18\n" +
 	" \x03(\tR\x05seeds\x12,\n" +
 	"\x0einterface_hint\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\rinterfaceHint\x12!\n" +
-	"\brevision\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\brevision\x12(\n" +
-	"\x10active_policy_id\x18\x10 \x01(\fR\x0eactivePolicyId\x12=\n" +
+	"\brevision\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\brevision\x120\n" +
+	"\x10active_policy_id\x18\x10 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x0eactivePolicyId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"x\n" +
 	"\x17CameraNetworkGetRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraNetworkRefR\x03ref\x122\n" +
-	"\x06select\x18\x02 \x01(\v2\x1a.shale.CameraNetworkSelectR\x06select\"+\n" +
-	"\x10CameraNetworkRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x1a.shale.CameraNetworkSelectR\x06select\"3\n" +
+	"\x10CameraNetworkRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02idB\x05\n" +
 	"\x03key\"\xef\x03\n" +
 	"\x13CameraNetworkSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
@@ -16570,7 +15885,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xdc\x04\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe4\x04\n" +
 	"\x19CameraNetworkPatchRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraNetworkRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -16582,24 +15897,20 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\tmulticast\x18\x12 \x01(\bR\tmulticast\x12\x14\n" +
 	"\x05seeds\x18\x14 \x03(\tR\x05seeds\x12%\n" +
 	"\x0einterface_hint\x18\x16 \x01(\tR\rinterfaceHint\x12\x1a\n" +
-	"\brevision\x18\x18 \x01(\x03R\brevision\x12(\n" +
-	"\x10active_policy_id\x18  \x01(\fR\x0eactivePolicyId\x121\n" +
+	"\brevision\x18\x18 \x01(\x03R\brevision\x120\n" +
+	"\x10active_policy_id\x18  \x01(\fB\x06\xea\x82\x16\x02\x10@R\x0eactivePolicyId\x121\n" +
 	"\x15active_policy_id_null\x18! \x01(\bR\x12activePolicyIdNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
-	"\x19CameraNetworkApplyRequest\x12)\n" +
-	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraNetworkRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"4\n" +
-	"\x1aCameraNetworkEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa9\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xdd\x01\n" +
 	"\x18CameraNetworkListRequest\x124\n" +
 	"\afilters\x18\x01 \x03(\v2\x1a.shale.CameraNetworkFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"b\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x122\n" +
+	"\x06select\x18\x06 \x01(\v2\x1a.shale.CameraNetworkSelectR\x06select\"b\n" +
 	"\x19CameraNetworkListResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.shale.CameraNetworkR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x8e\x01\n" +
@@ -16627,9 +15938,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05seeds\x18\n" +
 	" \x03(\tR\x05seeds\x12,\n" +
 	"\x0einterface_hint\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\rinterfaceHint\x12E\n" +
-	"\x10expected_version\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0fexpectedVersion\"\x9c\b\n" +
-	"\x16CameraDeviceAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x10expected_version\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0fexpectedVersion\"\xac\b\n" +
+	"\x16CameraDeviceAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -16642,8 +15953,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\bidentity\x18\n" +
 	" \x01(\v2\x1d.shale.CameraIdentityEvidenceR\bidentity\x12;\n" +
 	"\tendpoints\x18\v \x03(\v2\x1d.shale.CameraObservedEndpointR\tendpoints\x128\n" +
-	"\x14observation_revision\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\x13observationRevision\x12\"\n" +
-	"\ractive_job_id\x18\x10 \x01(\fR\vactiveJobId\x120\n" +
+	"\x14observation_revision\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\x13observationRevision\x12*\n" +
+	"\ractive_job_id\x18\x10 \x01(\fB\x06\xea\x82\x16\x02\x10@R\vactiveJobId\x120\n" +
 	"\x10claim_generation\x18\x11 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fclaimGeneration\x12B\n" +
 	"\n" +
 	"enrollment\x18\x12 \x01(\v2\".shale.CameraEnrollmentObservationR\n" +
@@ -16659,9 +15970,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
 	"\x16CameraDeviceGetRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraDeviceRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraDeviceSelectR\x06select\"j\n" +
-	"\x0fCameraDeviceRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12>\n" +
+	"\x06select\x18\x02 \x01(\v2\x19.shale.CameraDeviceSelectR\x06select\"r\n" +
+	"\x0fCameraDeviceRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12>\n" +
 	"\bidentity\x18\b \x01(\v2 .shale.CameraDeviceRefByIdentityH\x00R\bidentityB\x05\n" +
 	"\x03key\"m\n" +
 	"\x19CameraDeviceRefByIdentity\x121\n" +
@@ -16696,7 +16007,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xb5\t\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xbd\t\n" +
 	"\x18CameraDevicePatchRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraDeviceRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -16707,8 +16018,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\bidentity\x18\x14 \x01(\v2\x1d.shale.CameraIdentityEvidenceR\bidentity\x12#\n" +
 	"\ridentity_null\x18\x15 \x01(\bR\fidentityNull\x12;\n" +
 	"\tendpoints\x18\x16 \x03(\v2\x1d.shale.CameraObservedEndpointR\tendpoints\x121\n" +
-	"\x14observation_revision\x18\x18 \x01(\x03R\x13observationRevision\x12\"\n" +
-	"\ractive_job_id\x18  \x01(\fR\vactiveJobId\x12+\n" +
+	"\x14observation_revision\x18\x18 \x01(\x03R\x13observationRevision\x12*\n" +
+	"\ractive_job_id\x18  \x01(\fB\x06\xea\x82\x16\x02\x10@R\vactiveJobId\x12+\n" +
 	"\x12active_job_id_null\x18! \x01(\bR\x0factiveJobIdNull\x12)\n" +
 	"\x10claim_generation\x18\" \x01(\x03R\x0fclaimGeneration\x12B\n" +
 	"\n" +
@@ -16729,17 +16040,13 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
-	"\x18CameraDeviceApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraDeviceRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
-	"\x19CameraDeviceEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa7\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xda\x01\n" +
 	"\x17CameraDeviceListRequest\x123\n" +
 	"\afilters\x18\x01 \x03(\v2\x19.shale.CameraDeviceFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"`\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x121\n" +
+	"\x06select\x18\x06 \x01(\v2\x19.shale.CameraDeviceSelectR\x06select\"`\n" +
 	"\x18CameraDeviceListResponse\x12)\n" +
 	"\x05items\x18\x01 \x03(\v2\x13.shale.CameraDeviceR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xbf\x01\n" +
@@ -16767,9 +16074,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraDeviceRefR\x03ref\x12E\n" +
 	"\x10expected_version\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x0fexpectedVersion\x129\n" +
 	"\bidentity\x18\x03 \x01(\v2\x1d.shale.CameraIdentityEvidenceR\bidentity\x12;\n" +
-	"\tendpoints\x18\x04 \x03(\v2\x1d.shale.CameraObservedEndpointR\tendpoints\"\xb0\x05\n" +
-	"\x1aCameraAssignmentAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\tendpoints\x18\x04 \x03(\v2\x1d.shale.CameraObservedEndpointR\tendpoints\"\xc0\x05\n" +
+	"\x1aCameraAssignmentAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -16781,8 +16088,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\bproducer\x18\n" +
 	" \x01(\v2\x12.shale.ProducerRefR\bproducer\x12&\n" +
 	"\vworker_slot\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
-	"workerSlot\x12\x1b\n" +
-	"\tworker_id\x18\f \x01(\fR\bworkerId\x12%\n" +
+	"workerSlot\x12#\n" +
+	"\tworker_id\x18\f \x01(\fB\x06\xea\x82\x16\x02\x10@R\bworkerId\x12%\n" +
 	"\n" +
 	"generation\x18\x10 \x01(\x03B\x05\xaa\x01\x02\b\x02R\n" +
 	"generation\x120\n" +
@@ -16793,9 +16100,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x81\x01\n" +
 	"\x1aCameraAssignmentGetRequest\x12,\n" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.shale.CameraAssignmentRefR\x03ref\x125\n" +
-	"\x06select\x18\x02 \x01(\v2\x1d.shale.CameraAssignmentSelectR\x06select\"c\n" +
-	"\x13CameraAssignmentRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x123\n" +
+	"\x06select\x18\x02 \x01(\v2\x1d.shale.CameraAssignmentSelectR\x06select\"k\n" +
+	"\x13CameraAssignmentRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x123\n" +
 	"\x03set\x18\t \x01(\v2\x1f.shale.CameraAssignmentRefBySetH\x00R\x03setB\x05\n" +
 	"\x03key\";\n" +
 	"\x18CameraAssignmentRefBySet\x12\x1f\n" +
@@ -16822,7 +16129,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xda\x04\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe2\x04\n" +
 	"\x1cCameraAssignmentPatchRequest\x12,\n" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.shale.CameraAssignmentRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -16832,8 +16139,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x06labels\x18\x0e \x03(\v2/.shale.CameraAssignmentPatchRequest.LabelsEntryR\x06labels\x12.\n" +
 	"\bproducer\x18\x14 \x01(\v2\x12.shale.ProducerRefR\bproducer\x12\x1f\n" +
 	"\vworker_slot\x18\x16 \x01(\tR\n" +
-	"workerSlot\x12\x1b\n" +
-	"\tworker_id\x18\x18 \x01(\fR\bworkerId\x12$\n" +
+	"workerSlot\x12#\n" +
+	"\tworker_id\x18\x18 \x01(\fB\x06\xea\x82\x16\x02\x10@R\bworkerId\x12$\n" +
 	"\x0eworker_id_null\x18\x19 \x01(\bR\fworkerIdNull\x12\x1e\n" +
 	"\n" +
 	"generation\x18  \x01(\x03R\n" +
@@ -16843,17 +16150,13 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"p\n" +
-	"\x1cCameraAssignmentApplyRequest\x12,\n" +
-	"\x03ref\x18\x01 \x01(\v2\x1a.shale.CameraAssignmentRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"7\n" +
-	"\x1dCameraAssignmentEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xaf\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe6\x01\n" +
 	"\x1bCameraAssignmentListRequest\x127\n" +
 	"\afilters\x18\x01 \x03(\v2\x1d.shale.CameraAssignmentFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"h\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x125\n" +
+	"\x06select\x18\x06 \x01(\v2\x1d.shale.CameraAssignmentSelectR\x06select\"h\n" +
 	"\x1cCameraAssignmentListResponse\x12-\n" +
 	"\x05items\x18\x01 \x03(\v2\x17.shale.CameraAssignmentR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x98\x02\n" +
@@ -16906,9 +16209,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\bsequence\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\bsequence\x12*\n" +
 	"\rcapture_epoch\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\fcaptureEpoch\x12/\n" +
 	"\x05media\x18\x04 \x01(\v2\x19.shale.CameraRuntimeMediaR\x05media\x12I\n" +
-	"\x0fused_credential\x18\x05 \x01(\v2 .shale.CameraCredentialReferenceR\x0eusedCredential\"\xa1\t\n" +
-	"\x17CameraBindingAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x0fused_credential\x18\x05 \x01(\v2 .shale.CameraCredentialReferenceR\x0eusedCredential\"\xa9\t\n" +
+	"\x17CameraBindingAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -16939,9 +16242,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"x\n" +
 	"\x17CameraBindingGetRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraBindingRefR\x03ref\x122\n" +
-	"\x06select\x18\x02 \x01(\v2\x1a.shale.CameraBindingSelectR\x06select\"\xa4\x01\n" +
-	"\x10CameraBindingRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12<\n" +
+	"\x06select\x18\x02 \x01(\v2\x1a.shale.CameraBindingSelectR\x06select\"\xac\x01\n" +
+	"\x10CameraBindingRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12<\n" +
 	"\alogical\x18\x02 \x01(\v2 .shale.CameraBindingRefByLogicalH\x00R\alogical\x129\n" +
 	"\x06source\x18\n" +
 	" \x01(\v2\x1f.shale.CameraBindingRefBySourceH\x00R\x06sourceB\x05\n" +
@@ -17007,17 +16310,13 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
-	"\x19CameraBindingApplyRequest\x12)\n" +
-	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraBindingRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"4\n" +
-	"\x1aCameraBindingEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa9\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xdd\x01\n" +
 	"\x18CameraBindingListRequest\x124\n" +
 	"\afilters\x18\x01 \x03(\v2\x1a.shale.CameraBindingFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"b\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x122\n" +
+	"\x06select\x18\x06 \x01(\v2\x1a.shale.CameraBindingSelectR\x06select\"b\n" +
 	"\x19CameraBindingListResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.shale.CameraBindingR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xa4\x02\n" +
@@ -17052,9 +16351,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x1eCameraBindingSetCollectRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraBindingRefR\x03ref\x12E\n" +
 	"\x10expected_version\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x0fexpectedVersion\x12\x1f\n" +
-	"\acollect\x18\x03 \x01(\bB\x05\xaa\x01\x02\b\x02R\acollect\"\xce\t\n" +
-	"\x13CameraJobAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\acollect\x18\x03 \x01(\bB\x05\xaa\x01\x02\b\x02R\acollect\"\xde\t\n" +
+	"\x13CameraJobAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -17071,8 +16370,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\frequest_hash\x18\v \x01(\fB\x05\xaa\x01\x02\b\x02R\vrequestHash\x122\n" +
 	"\x05stage\x18\f \x01(\x0e2\x15.shale.CameraJobStageB\x05\xaa\x01\x02\b\x02R\x05stage\x120\n" +
 	"\x10lease_generation\x18\x10 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fleaseGeneration\x12:\n" +
-	"\x15assignment_generation\x18\x11 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x14assignmentGeneration\x12\x1f\n" +
-	"\vlease_owner\x18\x12 \x01(\fR\n" +
+	"\x15assignment_generation\x18\x11 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x14assignmentGeneration\x12'\n" +
+	"\vlease_owner\x18\x12 \x01(\fB\x06\xea\x82\x16\x02\x10@R\n" +
 	"leaseOwner\x12?\n" +
 	"\rlease_expires\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\fleaseExpires\x12.\n" +
 	"\x06inputs\x18\x14 \x01(\v2\x16.shale.CameraJobInputsR\x06inputs\x127\n" +
@@ -17088,9 +16387,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"l\n" +
 	"\x13CameraJobGetRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.shale.CameraJobRefR\x03ref\x12.\n" +
-	"\x06select\x18\x02 \x01(\v2\x16.shale.CameraJobSelectR\x06select\"^\n" +
-	"\fCameraJobRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x125\n" +
+	"\x06select\x18\x02 \x01(\v2\x16.shale.CameraJobSelectR\x06select\"f\n" +
+	"\fCameraJobRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x125\n" +
 	"\x06intent\x18\x02 \x01(\v2\x1b.shale.CameraJobRefByIntentH\x00R\x06intentB\x05\n" +
 	"\x03key\"a\n" +
 	"\x14CameraJobRefByIntent\x12(\n" +
@@ -17130,7 +16429,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xb4\t\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xbc\t\n" +
 	"\x15CameraJobPatchRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.shale.CameraJobRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -17140,8 +16439,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x06labels\x18\x0e \x03(\v2(.shale.CameraJobPatchRequest.LabelsEntryR\x06labels\x12+\n" +
 	"\x05stage\x18\x18 \x01(\x0e2\x15.shale.CameraJobStageR\x05stage\x12)\n" +
 	"\x10lease_generation\x18  \x01(\x03R\x0fleaseGeneration\x123\n" +
-	"\x15assignment_generation\x18\" \x01(\x03R\x14assignmentGeneration\x12\x1f\n" +
-	"\vlease_owner\x18$ \x01(\fR\n" +
+	"\x15assignment_generation\x18\" \x01(\x03R\x14assignmentGeneration\x12'\n" +
+	"\vlease_owner\x18$ \x01(\fB\x06\xea\x82\x16\x02\x10@R\n" +
 	"leaseOwner\x12(\n" +
 	"\x10lease_owner_null\x18% \x01(\bR\x0eleaseOwnerNull\x12?\n" +
 	"\rlease_expires\x18& \x01(\v2\x1a.google.protobuf.TimestampR\fleaseExpires\x12,\n" +
@@ -17160,17 +16459,13 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
-	"\x15CameraJobApplyRequest\x12%\n" +
-	"\x03ref\x18\x01 \x01(\v2\x13.shale.CameraJobRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"0\n" +
-	"\x16CameraJobEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd1\x01\n" +
 	"\x14CameraJobListRequest\x120\n" +
 	"\afilters\x18\x01 \x03(\v2\x16.shale.CameraJobFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Z\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12.\n" +
+	"\x06select\x18\x06 \x01(\v2\x16.shale.CameraJobSelectR\x06select\"Z\n" +
 	"\x15CameraJobListResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.shale.CameraJobR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xf5\x01\n" +
@@ -17220,32 +16515,26 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x18CameraJobPublishResponse\x12\"\n" +
 	"\x03job\x18\x01 \x01(\v2\x10.shale.CameraJobR\x03job\x12.\n" +
 	"\abinding\x18\x02 \x01(\v2\x14.shale.CameraBindingR\abinding\x120\n" +
-	"\x10catalog_revision\x18\x03 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fcatalogRevision2\xbb\x04\n" +
+	"\x10catalog_revision\x18\x03 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fcatalogRevision2\xb5\x03\n" +
 	"\x14CameraNetworkService\x12;\n" +
 	"\x03Add\x12\x1e.shale.CameraNetworkAddRequest\x1a\x14.shale.CameraNetwork\x12;\n" +
 	"\x03Get\x12\x1e.shale.CameraNetworkGetRequest\x1a\x14.shale.CameraNetwork\x12?\n" +
-	"\x05Patch\x12 .shale.CameraNetworkPatchRequest\x1a\x14.shale.CameraNetwork\x12?\n" +
-	"\x05Apply\x12 .shale.CameraNetworkApplyRequest\x1a\x14.shale.CameraNetwork\x12C\n" +
-	"\x05Erase\x12\x17.shale.CameraNetworkRef\x1a!.shale.CameraNetworkEraseResponse\x12I\n" +
+	"\x05Patch\x12 .shale.CameraNetworkPatchRequest\x1a\x14.shale.CameraNetwork\x12I\n" +
 	"\x04List\x12\x1f.shale.CameraNetworkListRequest\x1a .shale.CameraNetworkListResponse\x12N\n" +
 	"\x05Watch\x12 .shale.CameraNetworkWatchRequest\x1a!.shale.CameraNetworkWatchResponse0\x01\x12G\n" +
-	"\tConfigure\x12$.shale.CameraNetworkConfigureRequest\x1a\x14.shale.CameraNetwork2\xe5\x04\n" +
+	"\tConfigure\x12$.shale.CameraNetworkConfigureRequest\x1a\x14.shale.CameraNetwork2\xe3\x03\n" +
 	"\x13CameraDeviceService\x129\n" +
 	"\x03Add\x12\x1d.shale.CameraDeviceAddRequest\x1a\x13.shale.CameraDevice\x129\n" +
 	"\x03Get\x12\x1d.shale.CameraDeviceGetRequest\x1a\x13.shale.CameraDevice\x12=\n" +
-	"\x05Patch\x12\x1f.shale.CameraDevicePatchRequest\x1a\x13.shale.CameraDevice\x12=\n" +
-	"\x05Apply\x12\x1f.shale.CameraDeviceApplyRequest\x1a\x13.shale.CameraDevice\x12A\n" +
-	"\x05Erase\x12\x16.shale.CameraDeviceRef\x1a .shale.CameraDeviceEraseResponse\x12G\n" +
+	"\x05Patch\x12\x1f.shale.CameraDevicePatchRequest\x1a\x13.shale.CameraDevice\x12G\n" +
 	"\x04List\x12\x1e.shale.CameraDeviceListRequest\x1a\x1f.shale.CameraDeviceListResponse\x12L\n" +
 	"\x05Watch\x12\x1f.shale.CameraDeviceWatchRequest\x1a .shale.CameraDeviceWatchResponse0\x01\x12=\n" +
 	"\x05Claim\x12\x1f.shale.CameraDeviceClaimRequest\x1a\x13.shale.CameraDevice\x12A\n" +
-	"\aObserve\x12!.shale.CameraDeviceObserveRequest\x1a\x13.shale.CameraDevice2\xda\a\n" +
+	"\aObserve\x12!.shale.CameraDeviceObserveRequest\x1a\x13.shale.CameraDevice2\xc8\x06\n" +
 	"\x17CameraAssignmentService\x12A\n" +
 	"\x03Add\x12!.shale.CameraAssignmentAddRequest\x1a\x17.shale.CameraAssignment\x12A\n" +
 	"\x03Get\x12!.shale.CameraAssignmentGetRequest\x1a\x17.shale.CameraAssignment\x12E\n" +
-	"\x05Patch\x12#.shale.CameraAssignmentPatchRequest\x1a\x17.shale.CameraAssignment\x12E\n" +
-	"\x05Apply\x12#.shale.CameraAssignmentApplyRequest\x1a\x17.shale.CameraAssignment\x12I\n" +
-	"\x05Erase\x12\x1a.shale.CameraAssignmentRef\x1a$.shale.CameraAssignmentEraseResponse\x12O\n" +
+	"\x05Patch\x12#.shale.CameraAssignmentPatchRequest\x1a\x17.shale.CameraAssignment\x12O\n" +
 	"\x04List\x12\".shale.CameraAssignmentListRequest\x1a#.shale.CameraAssignmentListResponse\x12T\n" +
 	"\x05Watch\x12#.shale.CameraAssignmentWatchRequest\x1a$.shale.CameraAssignmentWatchResponse0\x01\x12G\n" +
 	"\x06Assign\x12$.shale.CameraAssignmentAssignRequest\x1a\x17.shale.CameraAssignment\x12P\n" +
@@ -17254,24 +16543,20 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\vApplication\x12\x1f.shale.CameraApplicationRequest\x1a\x17.shale.CameraApplyState\x12F\n" +
 	"\n" +
 	"BeginApply\x12\x1e.shale.CameraBeginApplyRequest\x1a\x18.shale.CameraApplication\x12@\n" +
-	"\aApplied\x12\x1b.shale.CameraAppliedRequest\x1a\x18.shale.CameraApplication2\xfc\x04\n" +
+	"\aApplied\x12\x1b.shale.CameraAppliedRequest\x1a\x18.shale.CameraApplication2\xf6\x03\n" +
 	"\x14CameraBindingService\x12;\n" +
 	"\x03Add\x12\x1e.shale.CameraBindingAddRequest\x1a\x14.shale.CameraBinding\x12;\n" +
 	"\x03Get\x12\x1e.shale.CameraBindingGetRequest\x1a\x14.shale.CameraBinding\x12?\n" +
-	"\x05Patch\x12 .shale.CameraBindingPatchRequest\x1a\x14.shale.CameraBinding\x12?\n" +
-	"\x05Apply\x12 .shale.CameraBindingApplyRequest\x1a\x14.shale.CameraBinding\x12C\n" +
-	"\x05Erase\x12\x17.shale.CameraBindingRef\x1a!.shale.CameraBindingEraseResponse\x12I\n" +
+	"\x05Patch\x12 .shale.CameraBindingPatchRequest\x1a\x14.shale.CameraBinding\x12I\n" +
 	"\x04List\x12\x1f.shale.CameraBindingListRequest\x1a .shale.CameraBindingListResponse\x12N\n" +
 	"\x05Watch\x12 .shale.CameraBindingWatchRequest\x1a!.shale.CameraBindingWatchResponse0\x01\x12=\n" +
 	"\x04Bind\x12\x1f.shale.CameraBindingBindRequest\x1a\x14.shale.CameraBinding\x12I\n" +
 	"\n" +
-	"SetCollect\x12%.shale.CameraBindingSetCollectRequest\x1a\x14.shale.CameraBinding2\xb1\x05\n" +
+	"SetCollect\x12%.shale.CameraBindingSetCollectRequest\x1a\x14.shale.CameraBinding2\xbb\x04\n" +
 	"\x10CameraJobService\x123\n" +
 	"\x03Add\x12\x1a.shale.CameraJobAddRequest\x1a\x10.shale.CameraJob\x123\n" +
 	"\x03Get\x12\x1a.shale.CameraJobGetRequest\x1a\x10.shale.CameraJob\x127\n" +
-	"\x05Patch\x12\x1c.shale.CameraJobPatchRequest\x1a\x10.shale.CameraJob\x127\n" +
-	"\x05Apply\x12\x1c.shale.CameraJobApplyRequest\x1a\x10.shale.CameraJob\x12;\n" +
-	"\x05Erase\x12\x13.shale.CameraJobRef\x1a\x1d.shale.CameraJobEraseResponse\x12A\n" +
+	"\x05Patch\x12\x1c.shale.CameraJobPatchRequest\x1a\x10.shale.CameraJob\x12A\n" +
 	"\x04List\x12\x1b.shale.CameraJobListRequest\x1a\x1c.shale.CameraJobListResponse\x12F\n" +
 	"\x05Watch\x12\x1c.shale.CameraJobWatchRequest\x1a\x1d.shale.CameraJobWatchResponse0\x01\x129\n" +
 	"\x06Create\x12\x1d.shale.CameraJobCreateRequest\x1a\x10.shale.CameraJob\x127\n" +
@@ -17279,468 +16564,432 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x06Report\x12\x1d.shale.CameraJobReportRequest\x1a\x10.shale.CameraJob\x12J\n" +
 	"\aPublish\x12\x1e.shale.CameraJobPublishRequest\x1a\x1f.shale.CameraJobPublishResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_camera_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 97)
+var file_shale_camera_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 87)
 var file_shale_camera_svc_g_proto_goTypes = []any{
 	(*CameraNetworkAddRequest)(nil),         // 0: shale.CameraNetworkAddRequest
 	(*CameraNetworkGetRequest)(nil),         // 1: shale.CameraNetworkGetRequest
 	(*CameraNetworkRef)(nil),                // 2: shale.CameraNetworkRef
 	(*CameraNetworkSelect)(nil),             // 3: shale.CameraNetworkSelect
 	(*CameraNetworkPatchRequest)(nil),       // 4: shale.CameraNetworkPatchRequest
-	(*CameraNetworkApplyRequest)(nil),       // 5: shale.CameraNetworkApplyRequest
-	(*CameraNetworkEraseResponse)(nil),      // 6: shale.CameraNetworkEraseResponse
-	(*CameraNetworkListRequest)(nil),        // 7: shale.CameraNetworkListRequest
-	(*CameraNetworkListResponse)(nil),       // 8: shale.CameraNetworkListResponse
-	(*CameraNetworkFilter)(nil),             // 9: shale.CameraNetworkFilter
-	(*CameraNetworkWatchRequest)(nil),       // 10: shale.CameraNetworkWatchRequest
-	(*CameraNetworkWatchResponse)(nil),      // 11: shale.CameraNetworkWatchResponse
-	(*CameraNetworkWatchItem)(nil),          // 12: shale.CameraNetworkWatchItem
-	(*CameraNetworkConfigureRequest)(nil),   // 13: shale.CameraNetworkConfigureRequest
-	(*CameraDeviceAddRequest)(nil),          // 14: shale.CameraDeviceAddRequest
-	(*CameraDeviceGetRequest)(nil),          // 15: shale.CameraDeviceGetRequest
-	(*CameraDeviceRef)(nil),                 // 16: shale.CameraDeviceRef
-	(*CameraDeviceRefByIdentity)(nil),       // 17: shale.CameraDeviceRefByIdentity
-	(*CameraDeviceSelect)(nil),              // 18: shale.CameraDeviceSelect
-	(*CameraDevicePatchRequest)(nil),        // 19: shale.CameraDevicePatchRequest
-	(*CameraDeviceApplyRequest)(nil),        // 20: shale.CameraDeviceApplyRequest
-	(*CameraDeviceEraseResponse)(nil),       // 21: shale.CameraDeviceEraseResponse
-	(*CameraDeviceListRequest)(nil),         // 22: shale.CameraDeviceListRequest
-	(*CameraDeviceListResponse)(nil),        // 23: shale.CameraDeviceListResponse
-	(*CameraDeviceFilter)(nil),              // 24: shale.CameraDeviceFilter
-	(*CameraDeviceWatchRequest)(nil),        // 25: shale.CameraDeviceWatchRequest
-	(*CameraDeviceWatchResponse)(nil),       // 26: shale.CameraDeviceWatchResponse
-	(*CameraDeviceWatchItem)(nil),           // 27: shale.CameraDeviceWatchItem
-	(*CameraDeviceClaimRequest)(nil),        // 28: shale.CameraDeviceClaimRequest
-	(*CameraDeviceObserveRequest)(nil),      // 29: shale.CameraDeviceObserveRequest
-	(*CameraAssignmentAddRequest)(nil),      // 30: shale.CameraAssignmentAddRequest
-	(*CameraAssignmentGetRequest)(nil),      // 31: shale.CameraAssignmentGetRequest
-	(*CameraAssignmentRef)(nil),             // 32: shale.CameraAssignmentRef
-	(*CameraAssignmentRefBySet)(nil),        // 33: shale.CameraAssignmentRefBySet
-	(*CameraAssignmentSelect)(nil),          // 34: shale.CameraAssignmentSelect
-	(*CameraAssignmentPatchRequest)(nil),    // 35: shale.CameraAssignmentPatchRequest
-	(*CameraAssignmentApplyRequest)(nil),    // 36: shale.CameraAssignmentApplyRequest
-	(*CameraAssignmentEraseResponse)(nil),   // 37: shale.CameraAssignmentEraseResponse
-	(*CameraAssignmentListRequest)(nil),     // 38: shale.CameraAssignmentListRequest
-	(*CameraAssignmentListResponse)(nil),    // 39: shale.CameraAssignmentListResponse
-	(*CameraAssignmentFilter)(nil),          // 40: shale.CameraAssignmentFilter
-	(*CameraAssignmentWatchRequest)(nil),    // 41: shale.CameraAssignmentWatchRequest
-	(*CameraAssignmentWatchResponse)(nil),   // 42: shale.CameraAssignmentWatchResponse
-	(*CameraAssignmentWatchItem)(nil),       // 43: shale.CameraAssignmentWatchItem
-	(*CameraAssignmentAssignRequest)(nil),   // 44: shale.CameraAssignmentAssignRequest
-	(*CameraAssignmentSnapshotRequest)(nil), // 45: shale.CameraAssignmentSnapshotRequest
-	(*CameraCatalogSnapshot)(nil),           // 46: shale.CameraCatalogSnapshot
-	(*CameraAssignmentHandoverRequest)(nil), // 47: shale.CameraAssignmentHandoverRequest
-	(*CameraApplicationRequest)(nil),        // 48: shale.CameraApplicationRequest
-	(*CameraBeginApplyRequest)(nil),         // 49: shale.CameraBeginApplyRequest
-	(*CameraAppliedRequest)(nil),            // 50: shale.CameraAppliedRequest
-	(*CameraBindingAddRequest)(nil),         // 51: shale.CameraBindingAddRequest
-	(*CameraBindingGetRequest)(nil),         // 52: shale.CameraBindingGetRequest
-	(*CameraBindingRef)(nil),                // 53: shale.CameraBindingRef
-	(*CameraBindingRefByLogical)(nil),       // 54: shale.CameraBindingRefByLogical
-	(*CameraBindingRefBySource)(nil),        // 55: shale.CameraBindingRefBySource
-	(*CameraBindingSelect)(nil),             // 56: shale.CameraBindingSelect
-	(*CameraBindingPatchRequest)(nil),       // 57: shale.CameraBindingPatchRequest
-	(*CameraBindingApplyRequest)(nil),       // 58: shale.CameraBindingApplyRequest
-	(*CameraBindingEraseResponse)(nil),      // 59: shale.CameraBindingEraseResponse
-	(*CameraBindingListRequest)(nil),        // 60: shale.CameraBindingListRequest
-	(*CameraBindingListResponse)(nil),       // 61: shale.CameraBindingListResponse
-	(*CameraBindingFilter)(nil),             // 62: shale.CameraBindingFilter
-	(*CameraBindingWatchRequest)(nil),       // 63: shale.CameraBindingWatchRequest
-	(*CameraBindingWatchResponse)(nil),      // 64: shale.CameraBindingWatchResponse
-	(*CameraBindingWatchItem)(nil),          // 65: shale.CameraBindingWatchItem
-	(*CameraBindingBindRequest)(nil),        // 66: shale.CameraBindingBindRequest
-	(*CameraBindingSetCollectRequest)(nil),  // 67: shale.CameraBindingSetCollectRequest
-	(*CameraJobAddRequest)(nil),             // 68: shale.CameraJobAddRequest
-	(*CameraJobGetRequest)(nil),             // 69: shale.CameraJobGetRequest
-	(*CameraJobRef)(nil),                    // 70: shale.CameraJobRef
-	(*CameraJobRefByIntent)(nil),            // 71: shale.CameraJobRefByIntent
-	(*CameraJobSelect)(nil),                 // 72: shale.CameraJobSelect
-	(*CameraJobPatchRequest)(nil),           // 73: shale.CameraJobPatchRequest
-	(*CameraJobApplyRequest)(nil),           // 74: shale.CameraJobApplyRequest
-	(*CameraJobEraseResponse)(nil),          // 75: shale.CameraJobEraseResponse
-	(*CameraJobListRequest)(nil),            // 76: shale.CameraJobListRequest
-	(*CameraJobListResponse)(nil),           // 77: shale.CameraJobListResponse
-	(*CameraJobFilter)(nil),                 // 78: shale.CameraJobFilter
-	(*CameraJobWatchRequest)(nil),           // 79: shale.CameraJobWatchRequest
-	(*CameraJobWatchResponse)(nil),          // 80: shale.CameraJobWatchResponse
-	(*CameraJobWatchItem)(nil),              // 81: shale.CameraJobWatchItem
-	(*CameraJobCreateRequest)(nil),          // 82: shale.CameraJobCreateRequest
-	(*CameraJobClaimRequest)(nil),           // 83: shale.CameraJobClaimRequest
-	(*CameraJobReportRequest)(nil),          // 84: shale.CameraJobReportRequest
-	(*CameraJobPublishRequest)(nil),         // 85: shale.CameraJobPublishRequest
-	(*CameraJobPublishResponse)(nil),        // 86: shale.CameraJobPublishResponse
-	nil,                                     // 87: shale.CameraNetworkAddRequest.LabelsEntry
-	nil,                                     // 88: shale.CameraNetworkPatchRequest.LabelsEntry
-	nil,                                     // 89: shale.CameraDeviceAddRequest.LabelsEntry
-	nil,                                     // 90: shale.CameraDevicePatchRequest.LabelsEntry
-	nil,                                     // 91: shale.CameraAssignmentAddRequest.LabelsEntry
-	nil,                                     // 92: shale.CameraAssignmentPatchRequest.LabelsEntry
-	nil,                                     // 93: shale.CameraBindingAddRequest.LabelsEntry
-	nil,                                     // 94: shale.CameraBindingPatchRequest.LabelsEntry
-	nil,                                     // 95: shale.CameraJobAddRequest.LabelsEntry
-	nil,                                     // 96: shale.CameraJobPatchRequest.LabelsEntry
-	(*TenantRef)(nil),                       // 97: shale.TenantRef
-	(*SiteRef)(nil),                         // 98: shale.SiteRef
-	(*timestamppb.Timestamp)(nil),           // 99: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                    // 100: shale.TenantSelect
-	(*SiteSelect)(nil),                      // 101: shale.SiteSelect
-	(*patchpb.Patch)(nil),                   // 102: patch.Patch
-	(*CameraNetwork)(nil),                   // 103: shale.CameraNetwork
-	(*CameraIdentityEvidence)(nil),          // 104: shale.CameraIdentityEvidence
-	(*CameraObservedEndpoint)(nil),          // 105: shale.CameraObservedEndpoint
-	(*CameraEnrollmentObservation)(nil),     // 106: shale.CameraEnrollmentObservation
-	(*CameraFactoryTLSState)(nil),           // 107: shale.CameraFactoryTLSState
-	(*CameraFirmwareTLSState)(nil),          // 108: shale.CameraFirmwareTLSState
-	(*CameraTransportState)(nil),            // 109: shale.CameraTransportState
-	(*CameraClockObservation)(nil),          // 110: shale.CameraClockObservation
-	(*CameraDevice)(nil),                    // 111: shale.CameraDevice
-	(*SetRef)(nil),                          // 112: shale.SetRef
-	(*ProducerRef)(nil),                     // 113: shale.ProducerRef
-	(*SetSelect)(nil),                       // 114: shale.SetSelect
-	(*ProducerSelect)(nil),                  // 115: shale.ProducerSelect
-	(*CameraAssignment)(nil),                // 116: shale.CameraAssignment
-	(*CameraCaptureSpec)(nil),               // 117: shale.CameraCaptureSpec
-	(*CameraApplyTarget)(nil),               // 118: shale.CameraApplyTarget
-	(*CameraRuntimeMedia)(nil),              // 119: shale.CameraRuntimeMedia
-	(*CameraCredentialReference)(nil),       // 120: shale.CameraCredentialReference
-	(*SourceRef)(nil),                       // 121: shale.SourceRef
-	(*CameraJobObservation)(nil),            // 122: shale.CameraJobObservation
-	(*CameraApplication)(nil),               // 123: shale.CameraApplication
-	(*SourceSelect)(nil),                    // 124: shale.SourceSelect
-	(*CameraBinding)(nil),                   // 125: shale.CameraBinding
-	(CameraJobStage)(0),                     // 126: shale.CameraJobStage
-	(*CameraJobInputs)(nil),                 // 127: shale.CameraJobInputs
-	(*CameraResolvedPreset)(nil),            // 128: shale.CameraResolvedPreset
-	(*CameraJob)(nil),                       // 129: shale.CameraJob
-	(*CameraApplyState)(nil),                // 130: shale.CameraApplyState
+	(*CameraNetworkListRequest)(nil),        // 5: shale.CameraNetworkListRequest
+	(*CameraNetworkListResponse)(nil),       // 6: shale.CameraNetworkListResponse
+	(*CameraNetworkFilter)(nil),             // 7: shale.CameraNetworkFilter
+	(*CameraNetworkWatchRequest)(nil),       // 8: shale.CameraNetworkWatchRequest
+	(*CameraNetworkWatchResponse)(nil),      // 9: shale.CameraNetworkWatchResponse
+	(*CameraNetworkWatchItem)(nil),          // 10: shale.CameraNetworkWatchItem
+	(*CameraNetworkConfigureRequest)(nil),   // 11: shale.CameraNetworkConfigureRequest
+	(*CameraDeviceAddRequest)(nil),          // 12: shale.CameraDeviceAddRequest
+	(*CameraDeviceGetRequest)(nil),          // 13: shale.CameraDeviceGetRequest
+	(*CameraDeviceRef)(nil),                 // 14: shale.CameraDeviceRef
+	(*CameraDeviceRefByIdentity)(nil),       // 15: shale.CameraDeviceRefByIdentity
+	(*CameraDeviceSelect)(nil),              // 16: shale.CameraDeviceSelect
+	(*CameraDevicePatchRequest)(nil),        // 17: shale.CameraDevicePatchRequest
+	(*CameraDeviceListRequest)(nil),         // 18: shale.CameraDeviceListRequest
+	(*CameraDeviceListResponse)(nil),        // 19: shale.CameraDeviceListResponse
+	(*CameraDeviceFilter)(nil),              // 20: shale.CameraDeviceFilter
+	(*CameraDeviceWatchRequest)(nil),        // 21: shale.CameraDeviceWatchRequest
+	(*CameraDeviceWatchResponse)(nil),       // 22: shale.CameraDeviceWatchResponse
+	(*CameraDeviceWatchItem)(nil),           // 23: shale.CameraDeviceWatchItem
+	(*CameraDeviceClaimRequest)(nil),        // 24: shale.CameraDeviceClaimRequest
+	(*CameraDeviceObserveRequest)(nil),      // 25: shale.CameraDeviceObserveRequest
+	(*CameraAssignmentAddRequest)(nil),      // 26: shale.CameraAssignmentAddRequest
+	(*CameraAssignmentGetRequest)(nil),      // 27: shale.CameraAssignmentGetRequest
+	(*CameraAssignmentRef)(nil),             // 28: shale.CameraAssignmentRef
+	(*CameraAssignmentRefBySet)(nil),        // 29: shale.CameraAssignmentRefBySet
+	(*CameraAssignmentSelect)(nil),          // 30: shale.CameraAssignmentSelect
+	(*CameraAssignmentPatchRequest)(nil),    // 31: shale.CameraAssignmentPatchRequest
+	(*CameraAssignmentListRequest)(nil),     // 32: shale.CameraAssignmentListRequest
+	(*CameraAssignmentListResponse)(nil),    // 33: shale.CameraAssignmentListResponse
+	(*CameraAssignmentFilter)(nil),          // 34: shale.CameraAssignmentFilter
+	(*CameraAssignmentWatchRequest)(nil),    // 35: shale.CameraAssignmentWatchRequest
+	(*CameraAssignmentWatchResponse)(nil),   // 36: shale.CameraAssignmentWatchResponse
+	(*CameraAssignmentWatchItem)(nil),       // 37: shale.CameraAssignmentWatchItem
+	(*CameraAssignmentAssignRequest)(nil),   // 38: shale.CameraAssignmentAssignRequest
+	(*CameraAssignmentSnapshotRequest)(nil), // 39: shale.CameraAssignmentSnapshotRequest
+	(*CameraCatalogSnapshot)(nil),           // 40: shale.CameraCatalogSnapshot
+	(*CameraAssignmentHandoverRequest)(nil), // 41: shale.CameraAssignmentHandoverRequest
+	(*CameraApplicationRequest)(nil),        // 42: shale.CameraApplicationRequest
+	(*CameraBeginApplyRequest)(nil),         // 43: shale.CameraBeginApplyRequest
+	(*CameraAppliedRequest)(nil),            // 44: shale.CameraAppliedRequest
+	(*CameraBindingAddRequest)(nil),         // 45: shale.CameraBindingAddRequest
+	(*CameraBindingGetRequest)(nil),         // 46: shale.CameraBindingGetRequest
+	(*CameraBindingRef)(nil),                // 47: shale.CameraBindingRef
+	(*CameraBindingRefByLogical)(nil),       // 48: shale.CameraBindingRefByLogical
+	(*CameraBindingRefBySource)(nil),        // 49: shale.CameraBindingRefBySource
+	(*CameraBindingSelect)(nil),             // 50: shale.CameraBindingSelect
+	(*CameraBindingPatchRequest)(nil),       // 51: shale.CameraBindingPatchRequest
+	(*CameraBindingListRequest)(nil),        // 52: shale.CameraBindingListRequest
+	(*CameraBindingListResponse)(nil),       // 53: shale.CameraBindingListResponse
+	(*CameraBindingFilter)(nil),             // 54: shale.CameraBindingFilter
+	(*CameraBindingWatchRequest)(nil),       // 55: shale.CameraBindingWatchRequest
+	(*CameraBindingWatchResponse)(nil),      // 56: shale.CameraBindingWatchResponse
+	(*CameraBindingWatchItem)(nil),          // 57: shale.CameraBindingWatchItem
+	(*CameraBindingBindRequest)(nil),        // 58: shale.CameraBindingBindRequest
+	(*CameraBindingSetCollectRequest)(nil),  // 59: shale.CameraBindingSetCollectRequest
+	(*CameraJobAddRequest)(nil),             // 60: shale.CameraJobAddRequest
+	(*CameraJobGetRequest)(nil),             // 61: shale.CameraJobGetRequest
+	(*CameraJobRef)(nil),                    // 62: shale.CameraJobRef
+	(*CameraJobRefByIntent)(nil),            // 63: shale.CameraJobRefByIntent
+	(*CameraJobSelect)(nil),                 // 64: shale.CameraJobSelect
+	(*CameraJobPatchRequest)(nil),           // 65: shale.CameraJobPatchRequest
+	(*CameraJobListRequest)(nil),            // 66: shale.CameraJobListRequest
+	(*CameraJobListResponse)(nil),           // 67: shale.CameraJobListResponse
+	(*CameraJobFilter)(nil),                 // 68: shale.CameraJobFilter
+	(*CameraJobWatchRequest)(nil),           // 69: shale.CameraJobWatchRequest
+	(*CameraJobWatchResponse)(nil),          // 70: shale.CameraJobWatchResponse
+	(*CameraJobWatchItem)(nil),              // 71: shale.CameraJobWatchItem
+	(*CameraJobCreateRequest)(nil),          // 72: shale.CameraJobCreateRequest
+	(*CameraJobClaimRequest)(nil),           // 73: shale.CameraJobClaimRequest
+	(*CameraJobReportRequest)(nil),          // 74: shale.CameraJobReportRequest
+	(*CameraJobPublishRequest)(nil),         // 75: shale.CameraJobPublishRequest
+	(*CameraJobPublishResponse)(nil),        // 76: shale.CameraJobPublishResponse
+	nil,                                     // 77: shale.CameraNetworkAddRequest.LabelsEntry
+	nil,                                     // 78: shale.CameraNetworkPatchRequest.LabelsEntry
+	nil,                                     // 79: shale.CameraDeviceAddRequest.LabelsEntry
+	nil,                                     // 80: shale.CameraDevicePatchRequest.LabelsEntry
+	nil,                                     // 81: shale.CameraAssignmentAddRequest.LabelsEntry
+	nil,                                     // 82: shale.CameraAssignmentPatchRequest.LabelsEntry
+	nil,                                     // 83: shale.CameraBindingAddRequest.LabelsEntry
+	nil,                                     // 84: shale.CameraBindingPatchRequest.LabelsEntry
+	nil,                                     // 85: shale.CameraJobAddRequest.LabelsEntry
+	nil,                                     // 86: shale.CameraJobPatchRequest.LabelsEntry
+	(*TenantRef)(nil),                       // 87: shale.TenantRef
+	(*SiteRef)(nil),                         // 88: shale.SiteRef
+	(*timestamppb.Timestamp)(nil),           // 89: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                    // 90: shale.TenantSelect
+	(*SiteSelect)(nil),                      // 91: shale.SiteSelect
+	(*CameraNetwork)(nil),                   // 92: shale.CameraNetwork
+	(*CameraIdentityEvidence)(nil),          // 93: shale.CameraIdentityEvidence
+	(*CameraObservedEndpoint)(nil),          // 94: shale.CameraObservedEndpoint
+	(*CameraEnrollmentObservation)(nil),     // 95: shale.CameraEnrollmentObservation
+	(*CameraFactoryTLSState)(nil),           // 96: shale.CameraFactoryTLSState
+	(*CameraFirmwareTLSState)(nil),          // 97: shale.CameraFirmwareTLSState
+	(*CameraTransportState)(nil),            // 98: shale.CameraTransportState
+	(*CameraClockObservation)(nil),          // 99: shale.CameraClockObservation
+	(*CameraDevice)(nil),                    // 100: shale.CameraDevice
+	(*SetRef)(nil),                          // 101: shale.SetRef
+	(*ProducerRef)(nil),                     // 102: shale.ProducerRef
+	(*SetSelect)(nil),                       // 103: shale.SetSelect
+	(*ProducerSelect)(nil),                  // 104: shale.ProducerSelect
+	(*CameraAssignment)(nil),                // 105: shale.CameraAssignment
+	(*CameraCaptureSpec)(nil),               // 106: shale.CameraCaptureSpec
+	(*CameraApplyTarget)(nil),               // 107: shale.CameraApplyTarget
+	(*CameraRuntimeMedia)(nil),              // 108: shale.CameraRuntimeMedia
+	(*CameraCredentialReference)(nil),       // 109: shale.CameraCredentialReference
+	(*SourceRef)(nil),                       // 110: shale.SourceRef
+	(*CameraJobObservation)(nil),            // 111: shale.CameraJobObservation
+	(*CameraApplication)(nil),               // 112: shale.CameraApplication
+	(*SourceSelect)(nil),                    // 113: shale.SourceSelect
+	(*CameraBinding)(nil),                   // 114: shale.CameraBinding
+	(CameraJobStage)(0),                     // 115: shale.CameraJobStage
+	(*CameraJobInputs)(nil),                 // 116: shale.CameraJobInputs
+	(*CameraResolvedPreset)(nil),            // 117: shale.CameraResolvedPreset
+	(*CameraJob)(nil),                       // 118: shale.CameraJob
+	(*CameraApplyState)(nil),                // 119: shale.CameraApplyState
 }
 var file_shale_camera_svc_g_proto_depIdxs = []int32{
-	97,  // 0: shale.CameraNetworkAddRequest.tenant:type_name -> shale.TenantRef
-	98,  // 1: shale.CameraNetworkAddRequest.site:type_name -> shale.SiteRef
-	87,  // 2: shale.CameraNetworkAddRequest.labels:type_name -> shale.CameraNetworkAddRequest.LabelsEntry
-	99,  // 3: shale.CameraNetworkAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	87,  // 0: shale.CameraNetworkAddRequest.tenant:type_name -> shale.TenantRef
+	88,  // 1: shale.CameraNetworkAddRequest.site:type_name -> shale.SiteRef
+	77,  // 2: shale.CameraNetworkAddRequest.labels:type_name -> shale.CameraNetworkAddRequest.LabelsEntry
+	89,  // 3: shale.CameraNetworkAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,   // 4: shale.CameraNetworkGetRequest.ref:type_name -> shale.CameraNetworkRef
 	3,   // 5: shale.CameraNetworkGetRequest.select:type_name -> shale.CameraNetworkSelect
-	100, // 6: shale.CameraNetworkSelect.tenant:type_name -> shale.TenantSelect
-	101, // 7: shale.CameraNetworkSelect.site:type_name -> shale.SiteSelect
+	90,  // 6: shale.CameraNetworkSelect.tenant:type_name -> shale.TenantSelect
+	91,  // 7: shale.CameraNetworkSelect.site:type_name -> shale.SiteSelect
 	2,   // 8: shale.CameraNetworkPatchRequest.ref:type_name -> shale.CameraNetworkRef
-	88,  // 9: shale.CameraNetworkPatchRequest.labels:type_name -> shale.CameraNetworkPatchRequest.LabelsEntry
-	99,  // 10: shale.CameraNetworkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,   // 11: shale.CameraNetworkApplyRequest.ref:type_name -> shale.CameraNetworkRef
-	102, // 12: shale.CameraNetworkApplyRequest.patch:type_name -> patch.Patch
-	9,   // 13: shale.CameraNetworkListRequest.filters:type_name -> shale.CameraNetworkFilter
-	103, // 14: shale.CameraNetworkListResponse.items:type_name -> shale.CameraNetwork
-	2,   // 15: shale.CameraNetworkFilter.ref:type_name -> shale.CameraNetworkRef
-	97,  // 16: shale.CameraNetworkFilter.tenant:type_name -> shale.TenantRef
-	98,  // 17: shale.CameraNetworkFilter.site:type_name -> shale.SiteRef
-	9,   // 18: shale.CameraNetworkWatchRequest.filters:type_name -> shale.CameraNetworkFilter
-	12,  // 19: shale.CameraNetworkWatchResponse.items:type_name -> shale.CameraNetworkWatchItem
-	103, // 20: shale.CameraNetworkWatchItem.value:type_name -> shale.CameraNetwork
-	2,   // 21: shale.CameraNetworkConfigureRequest.ref:type_name -> shale.CameraNetworkRef
-	97,  // 22: shale.CameraNetworkConfigureRequest.tenant:type_name -> shale.TenantRef
-	98,  // 23: shale.CameraNetworkConfigureRequest.site:type_name -> shale.SiteRef
-	99,  // 24: shale.CameraNetworkConfigureRequest.expected_version:type_name -> google.protobuf.Timestamp
-	97,  // 25: shale.CameraDeviceAddRequest.tenant:type_name -> shale.TenantRef
-	98,  // 26: shale.CameraDeviceAddRequest.site:type_name -> shale.SiteRef
-	89,  // 27: shale.CameraDeviceAddRequest.labels:type_name -> shale.CameraDeviceAddRequest.LabelsEntry
-	2,   // 28: shale.CameraDeviceAddRequest.network:type_name -> shale.CameraNetworkRef
-	104, // 29: shale.CameraDeviceAddRequest.identity:type_name -> shale.CameraIdentityEvidence
-	105, // 30: shale.CameraDeviceAddRequest.endpoints:type_name -> shale.CameraObservedEndpoint
-	106, // 31: shale.CameraDeviceAddRequest.enrollment:type_name -> shale.CameraEnrollmentObservation
-	107, // 32: shale.CameraDeviceAddRequest.factory_tls:type_name -> shale.CameraFactoryTLSState
-	108, // 33: shale.CameraDeviceAddRequest.firmware_tls:type_name -> shale.CameraFirmwareTLSState
-	109, // 34: shale.CameraDeviceAddRequest.transport:type_name -> shale.CameraTransportState
-	110, // 35: shale.CameraDeviceAddRequest.clock:type_name -> shale.CameraClockObservation
-	99,  // 36: shale.CameraDeviceAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	16,  // 37: shale.CameraDeviceGetRequest.ref:type_name -> shale.CameraDeviceRef
-	18,  // 38: shale.CameraDeviceGetRequest.select:type_name -> shale.CameraDeviceSelect
-	17,  // 39: shale.CameraDeviceRef.identity:type_name -> shale.CameraDeviceRefByIdentity
-	2,   // 40: shale.CameraDeviceRefByIdentity.network:type_name -> shale.CameraNetworkRef
-	100, // 41: shale.CameraDeviceSelect.tenant:type_name -> shale.TenantSelect
-	101, // 42: shale.CameraDeviceSelect.site:type_name -> shale.SiteSelect
-	3,   // 43: shale.CameraDeviceSelect.network:type_name -> shale.CameraNetworkSelect
-	16,  // 44: shale.CameraDevicePatchRequest.ref:type_name -> shale.CameraDeviceRef
-	90,  // 45: shale.CameraDevicePatchRequest.labels:type_name -> shale.CameraDevicePatchRequest.LabelsEntry
-	104, // 46: shale.CameraDevicePatchRequest.identity:type_name -> shale.CameraIdentityEvidence
-	105, // 47: shale.CameraDevicePatchRequest.endpoints:type_name -> shale.CameraObservedEndpoint
-	106, // 48: shale.CameraDevicePatchRequest.enrollment:type_name -> shale.CameraEnrollmentObservation
-	107, // 49: shale.CameraDevicePatchRequest.factory_tls:type_name -> shale.CameraFactoryTLSState
-	108, // 50: shale.CameraDevicePatchRequest.firmware_tls:type_name -> shale.CameraFirmwareTLSState
-	109, // 51: shale.CameraDevicePatchRequest.transport:type_name -> shale.CameraTransportState
-	110, // 52: shale.CameraDevicePatchRequest.clock:type_name -> shale.CameraClockObservation
-	99,  // 53: shale.CameraDevicePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	16,  // 54: shale.CameraDeviceApplyRequest.ref:type_name -> shale.CameraDeviceRef
-	102, // 55: shale.CameraDeviceApplyRequest.patch:type_name -> patch.Patch
-	24,  // 56: shale.CameraDeviceListRequest.filters:type_name -> shale.CameraDeviceFilter
-	111, // 57: shale.CameraDeviceListResponse.items:type_name -> shale.CameraDevice
-	16,  // 58: shale.CameraDeviceFilter.ref:type_name -> shale.CameraDeviceRef
-	97,  // 59: shale.CameraDeviceFilter.tenant:type_name -> shale.TenantRef
-	98,  // 60: shale.CameraDeviceFilter.site:type_name -> shale.SiteRef
-	2,   // 61: shale.CameraDeviceFilter.network:type_name -> shale.CameraNetworkRef
-	24,  // 62: shale.CameraDeviceWatchRequest.filters:type_name -> shale.CameraDeviceFilter
-	27,  // 63: shale.CameraDeviceWatchResponse.items:type_name -> shale.CameraDeviceWatchItem
-	111, // 64: shale.CameraDeviceWatchItem.value:type_name -> shale.CameraDevice
-	2,   // 65: shale.CameraDeviceClaimRequest.network:type_name -> shale.CameraNetworkRef
-	105, // 66: shale.CameraDeviceClaimRequest.endpoints:type_name -> shale.CameraObservedEndpoint
-	16,  // 67: shale.CameraDeviceObserveRequest.ref:type_name -> shale.CameraDeviceRef
-	99,  // 68: shale.CameraDeviceObserveRequest.expected_version:type_name -> google.protobuf.Timestamp
-	104, // 69: shale.CameraDeviceObserveRequest.identity:type_name -> shale.CameraIdentityEvidence
-	105, // 70: shale.CameraDeviceObserveRequest.endpoints:type_name -> shale.CameraObservedEndpoint
-	97,  // 71: shale.CameraAssignmentAddRequest.tenant:type_name -> shale.TenantRef
-	98,  // 72: shale.CameraAssignmentAddRequest.site:type_name -> shale.SiteRef
-	91,  // 73: shale.CameraAssignmentAddRequest.labels:type_name -> shale.CameraAssignmentAddRequest.LabelsEntry
-	2,   // 74: shale.CameraAssignmentAddRequest.network:type_name -> shale.CameraNetworkRef
-	112, // 75: shale.CameraAssignmentAddRequest.set:type_name -> shale.SetRef
-	113, // 76: shale.CameraAssignmentAddRequest.producer:type_name -> shale.ProducerRef
-	99,  // 77: shale.CameraAssignmentAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	32,  // 78: shale.CameraAssignmentGetRequest.ref:type_name -> shale.CameraAssignmentRef
-	34,  // 79: shale.CameraAssignmentGetRequest.select:type_name -> shale.CameraAssignmentSelect
-	33,  // 80: shale.CameraAssignmentRef.set:type_name -> shale.CameraAssignmentRefBySet
-	112, // 81: shale.CameraAssignmentRefBySet.set:type_name -> shale.SetRef
-	100, // 82: shale.CameraAssignmentSelect.tenant:type_name -> shale.TenantSelect
-	101, // 83: shale.CameraAssignmentSelect.site:type_name -> shale.SiteSelect
-	3,   // 84: shale.CameraAssignmentSelect.network:type_name -> shale.CameraNetworkSelect
-	114, // 85: shale.CameraAssignmentSelect.set:type_name -> shale.SetSelect
-	115, // 86: shale.CameraAssignmentSelect.producer:type_name -> shale.ProducerSelect
-	32,  // 87: shale.CameraAssignmentPatchRequest.ref:type_name -> shale.CameraAssignmentRef
-	92,  // 88: shale.CameraAssignmentPatchRequest.labels:type_name -> shale.CameraAssignmentPatchRequest.LabelsEntry
-	113, // 89: shale.CameraAssignmentPatchRequest.producer:type_name -> shale.ProducerRef
-	99,  // 90: shale.CameraAssignmentPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	32,  // 91: shale.CameraAssignmentApplyRequest.ref:type_name -> shale.CameraAssignmentRef
-	102, // 92: shale.CameraAssignmentApplyRequest.patch:type_name -> patch.Patch
-	40,  // 93: shale.CameraAssignmentListRequest.filters:type_name -> shale.CameraAssignmentFilter
-	116, // 94: shale.CameraAssignmentListResponse.items:type_name -> shale.CameraAssignment
-	32,  // 95: shale.CameraAssignmentFilter.ref:type_name -> shale.CameraAssignmentRef
-	97,  // 96: shale.CameraAssignmentFilter.tenant:type_name -> shale.TenantRef
-	98,  // 97: shale.CameraAssignmentFilter.site:type_name -> shale.SiteRef
-	2,   // 98: shale.CameraAssignmentFilter.network:type_name -> shale.CameraNetworkRef
-	113, // 99: shale.CameraAssignmentFilter.producer:type_name -> shale.ProducerRef
-	112, // 100: shale.CameraAssignmentFilter.set:type_name -> shale.SetRef
-	40,  // 101: shale.CameraAssignmentWatchRequest.filters:type_name -> shale.CameraAssignmentFilter
-	43,  // 102: shale.CameraAssignmentWatchResponse.items:type_name -> shale.CameraAssignmentWatchItem
-	116, // 103: shale.CameraAssignmentWatchItem.value:type_name -> shale.CameraAssignment
-	32,  // 104: shale.CameraAssignmentAssignRequest.ref:type_name -> shale.CameraAssignmentRef
-	2,   // 105: shale.CameraAssignmentAssignRequest.network:type_name -> shale.CameraNetworkRef
-	113, // 106: shale.CameraAssignmentAssignRequest.producer:type_name -> shale.ProducerRef
-	99,  // 107: shale.CameraAssignmentAssignRequest.expected_version:type_name -> google.protobuf.Timestamp
-	32,  // 108: shale.CameraAssignmentSnapshotRequest.ref:type_name -> shale.CameraAssignmentRef
-	116, // 109: shale.CameraCatalogSnapshot.assignment:type_name -> shale.CameraAssignment
-	117, // 110: shale.CameraCatalogSnapshot.sources:type_name -> shale.CameraCaptureSpec
-	32,  // 111: shale.CameraAssignmentHandoverRequest.ref:type_name -> shale.CameraAssignmentRef
-	99,  // 112: shale.CameraAssignmentHandoverRequest.expected_version:type_name -> google.protobuf.Timestamp
-	113, // 113: shale.CameraAssignmentHandoverRequest.replacement:type_name -> shale.ProducerRef
-	118, // 114: shale.CameraApplicationRequest.target:type_name -> shale.CameraApplyTarget
-	118, // 115: shale.CameraBeginApplyRequest.target:type_name -> shale.CameraApplyTarget
-	118, // 116: shale.CameraAppliedRequest.target:type_name -> shale.CameraApplyTarget
-	119, // 117: shale.CameraAppliedRequest.media:type_name -> shale.CameraRuntimeMedia
-	120, // 118: shale.CameraAppliedRequest.used_credential:type_name -> shale.CameraCredentialReference
-	97,  // 119: shale.CameraBindingAddRequest.tenant:type_name -> shale.TenantRef
-	98,  // 120: shale.CameraBindingAddRequest.site:type_name -> shale.SiteRef
-	93,  // 121: shale.CameraBindingAddRequest.labels:type_name -> shale.CameraBindingAddRequest.LabelsEntry
-	32,  // 122: shale.CameraBindingAddRequest.assignment:type_name -> shale.CameraAssignmentRef
-	16,  // 123: shale.CameraBindingAddRequest.device:type_name -> shale.CameraDeviceRef
-	121, // 124: shale.CameraBindingAddRequest.source:type_name -> shale.SourceRef
-	117, // 125: shale.CameraBindingAddRequest.desired:type_name -> shale.CameraCaptureSpec
-	122, // 126: shale.CameraBindingAddRequest.observed:type_name -> shale.CameraJobObservation
-	123, // 127: shale.CameraBindingAddRequest.starting_application:type_name -> shale.CameraApplication
-	123, // 128: shale.CameraBindingAddRequest.applied_application:type_name -> shale.CameraApplication
-	123, // 129: shale.CameraBindingAddRequest.previous_applications:type_name -> shale.CameraApplication
-	99,  // 130: shale.CameraBindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	53,  // 131: shale.CameraBindingGetRequest.ref:type_name -> shale.CameraBindingRef
-	56,  // 132: shale.CameraBindingGetRequest.select:type_name -> shale.CameraBindingSelect
-	54,  // 133: shale.CameraBindingRef.logical:type_name -> shale.CameraBindingRefByLogical
-	55,  // 134: shale.CameraBindingRef.source:type_name -> shale.CameraBindingRefBySource
-	97,  // 135: shale.CameraBindingRefByLogical.tenant:type_name -> shale.TenantRef
-	121, // 136: shale.CameraBindingRefBySource.source:type_name -> shale.SourceRef
-	100, // 137: shale.CameraBindingSelect.tenant:type_name -> shale.TenantSelect
-	101, // 138: shale.CameraBindingSelect.site:type_name -> shale.SiteSelect
-	34,  // 139: shale.CameraBindingSelect.assignment:type_name -> shale.CameraAssignmentSelect
-	18,  // 140: shale.CameraBindingSelect.device:type_name -> shale.CameraDeviceSelect
-	124, // 141: shale.CameraBindingSelect.source:type_name -> shale.SourceSelect
-	53,  // 142: shale.CameraBindingPatchRequest.ref:type_name -> shale.CameraBindingRef
-	94,  // 143: shale.CameraBindingPatchRequest.labels:type_name -> shale.CameraBindingPatchRequest.LabelsEntry
-	117, // 144: shale.CameraBindingPatchRequest.desired:type_name -> shale.CameraCaptureSpec
-	122, // 145: shale.CameraBindingPatchRequest.observed:type_name -> shale.CameraJobObservation
-	123, // 146: shale.CameraBindingPatchRequest.starting_application:type_name -> shale.CameraApplication
-	123, // 147: shale.CameraBindingPatchRequest.applied_application:type_name -> shale.CameraApplication
-	123, // 148: shale.CameraBindingPatchRequest.previous_applications:type_name -> shale.CameraApplication
-	99,  // 149: shale.CameraBindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	53,  // 150: shale.CameraBindingApplyRequest.ref:type_name -> shale.CameraBindingRef
-	102, // 151: shale.CameraBindingApplyRequest.patch:type_name -> patch.Patch
-	62,  // 152: shale.CameraBindingListRequest.filters:type_name -> shale.CameraBindingFilter
-	125, // 153: shale.CameraBindingListResponse.items:type_name -> shale.CameraBinding
-	53,  // 154: shale.CameraBindingFilter.ref:type_name -> shale.CameraBindingRef
-	97,  // 155: shale.CameraBindingFilter.tenant:type_name -> shale.TenantRef
-	98,  // 156: shale.CameraBindingFilter.site:type_name -> shale.SiteRef
-	32,  // 157: shale.CameraBindingFilter.assignment:type_name -> shale.CameraAssignmentRef
-	16,  // 158: shale.CameraBindingFilter.device:type_name -> shale.CameraDeviceRef
-	121, // 159: shale.CameraBindingFilter.source:type_name -> shale.SourceRef
-	62,  // 160: shale.CameraBindingWatchRequest.filters:type_name -> shale.CameraBindingFilter
-	65,  // 161: shale.CameraBindingWatchResponse.items:type_name -> shale.CameraBindingWatchItem
-	125, // 162: shale.CameraBindingWatchItem.value:type_name -> shale.CameraBinding
-	32,  // 163: shale.CameraBindingBindRequest.assignment:type_name -> shale.CameraAssignmentRef
-	16,  // 164: shale.CameraBindingBindRequest.device:type_name -> shale.CameraDeviceRef
-	121, // 165: shale.CameraBindingBindRequest.source:type_name -> shale.SourceRef
-	53,  // 166: shale.CameraBindingSetCollectRequest.ref:type_name -> shale.CameraBindingRef
-	99,  // 167: shale.CameraBindingSetCollectRequest.expected_version:type_name -> google.protobuf.Timestamp
-	97,  // 168: shale.CameraJobAddRequest.tenant:type_name -> shale.TenantRef
-	98,  // 169: shale.CameraJobAddRequest.site:type_name -> shale.SiteRef
-	95,  // 170: shale.CameraJobAddRequest.labels:type_name -> shale.CameraJobAddRequest.LabelsEntry
-	53,  // 171: shale.CameraJobAddRequest.binding:type_name -> shale.CameraBindingRef
-	32,  // 172: shale.CameraJobAddRequest.assignment:type_name -> shale.CameraAssignmentRef
-	126, // 173: shale.CameraJobAddRequest.stage:type_name -> shale.CameraJobStage
-	99,  // 174: shale.CameraJobAddRequest.lease_expires:type_name -> google.protobuf.Timestamp
-	127, // 175: shale.CameraJobAddRequest.inputs:type_name -> shale.CameraJobInputs
-	122, // 176: shale.CameraJobAddRequest.observed:type_name -> shale.CameraJobObservation
-	99,  // 177: shale.CameraJobAddRequest.date_published:type_name -> google.protobuf.Timestamp
-	128, // 178: shale.CameraJobAddRequest.pinned_preset:type_name -> shale.CameraResolvedPreset
-	99,  // 179: shale.CameraJobAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	70,  // 180: shale.CameraJobGetRequest.ref:type_name -> shale.CameraJobRef
-	72,  // 181: shale.CameraJobGetRequest.select:type_name -> shale.CameraJobSelect
-	71,  // 182: shale.CameraJobRef.intent:type_name -> shale.CameraJobRefByIntent
-	97,  // 183: shale.CameraJobRefByIntent.tenant:type_name -> shale.TenantRef
-	100, // 184: shale.CameraJobSelect.tenant:type_name -> shale.TenantSelect
-	101, // 185: shale.CameraJobSelect.site:type_name -> shale.SiteSelect
-	56,  // 186: shale.CameraJobSelect.binding:type_name -> shale.CameraBindingSelect
-	34,  // 187: shale.CameraJobSelect.assignment:type_name -> shale.CameraAssignmentSelect
-	70,  // 188: shale.CameraJobPatchRequest.ref:type_name -> shale.CameraJobRef
-	96,  // 189: shale.CameraJobPatchRequest.labels:type_name -> shale.CameraJobPatchRequest.LabelsEntry
-	126, // 190: shale.CameraJobPatchRequest.stage:type_name -> shale.CameraJobStage
-	99,  // 191: shale.CameraJobPatchRequest.lease_expires:type_name -> google.protobuf.Timestamp
-	122, // 192: shale.CameraJobPatchRequest.observed:type_name -> shale.CameraJobObservation
-	99,  // 193: shale.CameraJobPatchRequest.date_published:type_name -> google.protobuf.Timestamp
-	128, // 194: shale.CameraJobPatchRequest.pinned_preset:type_name -> shale.CameraResolvedPreset
-	99,  // 195: shale.CameraJobPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	70,  // 196: shale.CameraJobApplyRequest.ref:type_name -> shale.CameraJobRef
-	102, // 197: shale.CameraJobApplyRequest.patch:type_name -> patch.Patch
-	78,  // 198: shale.CameraJobListRequest.filters:type_name -> shale.CameraJobFilter
-	129, // 199: shale.CameraJobListResponse.items:type_name -> shale.CameraJob
-	70,  // 200: shale.CameraJobFilter.ref:type_name -> shale.CameraJobRef
-	97,  // 201: shale.CameraJobFilter.tenant:type_name -> shale.TenantRef
-	98,  // 202: shale.CameraJobFilter.site:type_name -> shale.SiteRef
-	32,  // 203: shale.CameraJobFilter.assignment:type_name -> shale.CameraAssignmentRef
-	53,  // 204: shale.CameraJobFilter.binding:type_name -> shale.CameraBindingRef
-	78,  // 205: shale.CameraJobWatchRequest.filters:type_name -> shale.CameraJobFilter
-	81,  // 206: shale.CameraJobWatchResponse.items:type_name -> shale.CameraJobWatchItem
-	129, // 207: shale.CameraJobWatchItem.value:type_name -> shale.CameraJob
-	53,  // 208: shale.CameraJobCreateRequest.binding:type_name -> shale.CameraBindingRef
-	127, // 209: shale.CameraJobCreateRequest.inputs:type_name -> shale.CameraJobInputs
-	70,  // 210: shale.CameraJobClaimRequest.ref:type_name -> shale.CameraJobRef
-	99,  // 211: shale.CameraJobClaimRequest.expected_version:type_name -> google.protobuf.Timestamp
-	70,  // 212: shale.CameraJobReportRequest.ref:type_name -> shale.CameraJobRef
-	99,  // 213: shale.CameraJobReportRequest.expected_version:type_name -> google.protobuf.Timestamp
-	126, // 214: shale.CameraJobReportRequest.stage:type_name -> shale.CameraJobStage
-	122, // 215: shale.CameraJobReportRequest.observed:type_name -> shale.CameraJobObservation
-	70,  // 216: shale.CameraJobPublishRequest.ref:type_name -> shale.CameraJobRef
-	99,  // 217: shale.CameraJobPublishRequest.expected_version:type_name -> google.protobuf.Timestamp
-	117, // 218: shale.CameraJobPublishRequest.spec:type_name -> shale.CameraCaptureSpec
-	122, // 219: shale.CameraJobPublishRequest.observed:type_name -> shale.CameraJobObservation
-	129, // 220: shale.CameraJobPublishResponse.job:type_name -> shale.CameraJob
-	125, // 221: shale.CameraJobPublishResponse.binding:type_name -> shale.CameraBinding
-	0,   // 222: shale.CameraNetworkService.Add:input_type -> shale.CameraNetworkAddRequest
-	1,   // 223: shale.CameraNetworkService.Get:input_type -> shale.CameraNetworkGetRequest
-	4,   // 224: shale.CameraNetworkService.Patch:input_type -> shale.CameraNetworkPatchRequest
-	5,   // 225: shale.CameraNetworkService.Apply:input_type -> shale.CameraNetworkApplyRequest
-	2,   // 226: shale.CameraNetworkService.Erase:input_type -> shale.CameraNetworkRef
-	7,   // 227: shale.CameraNetworkService.List:input_type -> shale.CameraNetworkListRequest
-	10,  // 228: shale.CameraNetworkService.Watch:input_type -> shale.CameraNetworkWatchRequest
-	13,  // 229: shale.CameraNetworkService.Configure:input_type -> shale.CameraNetworkConfigureRequest
-	14,  // 230: shale.CameraDeviceService.Add:input_type -> shale.CameraDeviceAddRequest
-	15,  // 231: shale.CameraDeviceService.Get:input_type -> shale.CameraDeviceGetRequest
-	19,  // 232: shale.CameraDeviceService.Patch:input_type -> shale.CameraDevicePatchRequest
-	20,  // 233: shale.CameraDeviceService.Apply:input_type -> shale.CameraDeviceApplyRequest
-	16,  // 234: shale.CameraDeviceService.Erase:input_type -> shale.CameraDeviceRef
-	22,  // 235: shale.CameraDeviceService.List:input_type -> shale.CameraDeviceListRequest
-	25,  // 236: shale.CameraDeviceService.Watch:input_type -> shale.CameraDeviceWatchRequest
-	28,  // 237: shale.CameraDeviceService.Claim:input_type -> shale.CameraDeviceClaimRequest
-	29,  // 238: shale.CameraDeviceService.Observe:input_type -> shale.CameraDeviceObserveRequest
-	30,  // 239: shale.CameraAssignmentService.Add:input_type -> shale.CameraAssignmentAddRequest
-	31,  // 240: shale.CameraAssignmentService.Get:input_type -> shale.CameraAssignmentGetRequest
-	35,  // 241: shale.CameraAssignmentService.Patch:input_type -> shale.CameraAssignmentPatchRequest
-	36,  // 242: shale.CameraAssignmentService.Apply:input_type -> shale.CameraAssignmentApplyRequest
-	32,  // 243: shale.CameraAssignmentService.Erase:input_type -> shale.CameraAssignmentRef
-	38,  // 244: shale.CameraAssignmentService.List:input_type -> shale.CameraAssignmentListRequest
-	41,  // 245: shale.CameraAssignmentService.Watch:input_type -> shale.CameraAssignmentWatchRequest
-	44,  // 246: shale.CameraAssignmentService.Assign:input_type -> shale.CameraAssignmentAssignRequest
-	45,  // 247: shale.CameraAssignmentService.Snapshot:input_type -> shale.CameraAssignmentSnapshotRequest
-	47,  // 248: shale.CameraAssignmentService.Handover:input_type -> shale.CameraAssignmentHandoverRequest
-	48,  // 249: shale.CameraAssignmentService.Application:input_type -> shale.CameraApplicationRequest
-	49,  // 250: shale.CameraAssignmentService.BeginApply:input_type -> shale.CameraBeginApplyRequest
-	50,  // 251: shale.CameraAssignmentService.Applied:input_type -> shale.CameraAppliedRequest
-	51,  // 252: shale.CameraBindingService.Add:input_type -> shale.CameraBindingAddRequest
-	52,  // 253: shale.CameraBindingService.Get:input_type -> shale.CameraBindingGetRequest
-	57,  // 254: shale.CameraBindingService.Patch:input_type -> shale.CameraBindingPatchRequest
-	58,  // 255: shale.CameraBindingService.Apply:input_type -> shale.CameraBindingApplyRequest
-	53,  // 256: shale.CameraBindingService.Erase:input_type -> shale.CameraBindingRef
-	60,  // 257: shale.CameraBindingService.List:input_type -> shale.CameraBindingListRequest
-	63,  // 258: shale.CameraBindingService.Watch:input_type -> shale.CameraBindingWatchRequest
-	66,  // 259: shale.CameraBindingService.Bind:input_type -> shale.CameraBindingBindRequest
-	67,  // 260: shale.CameraBindingService.SetCollect:input_type -> shale.CameraBindingSetCollectRequest
-	68,  // 261: shale.CameraJobService.Add:input_type -> shale.CameraJobAddRequest
-	69,  // 262: shale.CameraJobService.Get:input_type -> shale.CameraJobGetRequest
-	73,  // 263: shale.CameraJobService.Patch:input_type -> shale.CameraJobPatchRequest
-	74,  // 264: shale.CameraJobService.Apply:input_type -> shale.CameraJobApplyRequest
-	70,  // 265: shale.CameraJobService.Erase:input_type -> shale.CameraJobRef
-	76,  // 266: shale.CameraJobService.List:input_type -> shale.CameraJobListRequest
-	79,  // 267: shale.CameraJobService.Watch:input_type -> shale.CameraJobWatchRequest
-	82,  // 268: shale.CameraJobService.Create:input_type -> shale.CameraJobCreateRequest
-	83,  // 269: shale.CameraJobService.Claim:input_type -> shale.CameraJobClaimRequest
-	84,  // 270: shale.CameraJobService.Report:input_type -> shale.CameraJobReportRequest
-	85,  // 271: shale.CameraJobService.Publish:input_type -> shale.CameraJobPublishRequest
-	103, // 272: shale.CameraNetworkService.Add:output_type -> shale.CameraNetwork
-	103, // 273: shale.CameraNetworkService.Get:output_type -> shale.CameraNetwork
-	103, // 274: shale.CameraNetworkService.Patch:output_type -> shale.CameraNetwork
-	103, // 275: shale.CameraNetworkService.Apply:output_type -> shale.CameraNetwork
-	6,   // 276: shale.CameraNetworkService.Erase:output_type -> shale.CameraNetworkEraseResponse
-	8,   // 277: shale.CameraNetworkService.List:output_type -> shale.CameraNetworkListResponse
-	11,  // 278: shale.CameraNetworkService.Watch:output_type -> shale.CameraNetworkWatchResponse
-	103, // 279: shale.CameraNetworkService.Configure:output_type -> shale.CameraNetwork
-	111, // 280: shale.CameraDeviceService.Add:output_type -> shale.CameraDevice
-	111, // 281: shale.CameraDeviceService.Get:output_type -> shale.CameraDevice
-	111, // 282: shale.CameraDeviceService.Patch:output_type -> shale.CameraDevice
-	111, // 283: shale.CameraDeviceService.Apply:output_type -> shale.CameraDevice
-	21,  // 284: shale.CameraDeviceService.Erase:output_type -> shale.CameraDeviceEraseResponse
-	23,  // 285: shale.CameraDeviceService.List:output_type -> shale.CameraDeviceListResponse
-	26,  // 286: shale.CameraDeviceService.Watch:output_type -> shale.CameraDeviceWatchResponse
-	111, // 287: shale.CameraDeviceService.Claim:output_type -> shale.CameraDevice
-	111, // 288: shale.CameraDeviceService.Observe:output_type -> shale.CameraDevice
-	116, // 289: shale.CameraAssignmentService.Add:output_type -> shale.CameraAssignment
-	116, // 290: shale.CameraAssignmentService.Get:output_type -> shale.CameraAssignment
-	116, // 291: shale.CameraAssignmentService.Patch:output_type -> shale.CameraAssignment
-	116, // 292: shale.CameraAssignmentService.Apply:output_type -> shale.CameraAssignment
-	37,  // 293: shale.CameraAssignmentService.Erase:output_type -> shale.CameraAssignmentEraseResponse
-	39,  // 294: shale.CameraAssignmentService.List:output_type -> shale.CameraAssignmentListResponse
-	42,  // 295: shale.CameraAssignmentService.Watch:output_type -> shale.CameraAssignmentWatchResponse
-	116, // 296: shale.CameraAssignmentService.Assign:output_type -> shale.CameraAssignment
-	46,  // 297: shale.CameraAssignmentService.Snapshot:output_type -> shale.CameraCatalogSnapshot
-	116, // 298: shale.CameraAssignmentService.Handover:output_type -> shale.CameraAssignment
-	130, // 299: shale.CameraAssignmentService.Application:output_type -> shale.CameraApplyState
-	123, // 300: shale.CameraAssignmentService.BeginApply:output_type -> shale.CameraApplication
-	123, // 301: shale.CameraAssignmentService.Applied:output_type -> shale.CameraApplication
-	125, // 302: shale.CameraBindingService.Add:output_type -> shale.CameraBinding
-	125, // 303: shale.CameraBindingService.Get:output_type -> shale.CameraBinding
-	125, // 304: shale.CameraBindingService.Patch:output_type -> shale.CameraBinding
-	125, // 305: shale.CameraBindingService.Apply:output_type -> shale.CameraBinding
-	59,  // 306: shale.CameraBindingService.Erase:output_type -> shale.CameraBindingEraseResponse
-	61,  // 307: shale.CameraBindingService.List:output_type -> shale.CameraBindingListResponse
-	64,  // 308: shale.CameraBindingService.Watch:output_type -> shale.CameraBindingWatchResponse
-	125, // 309: shale.CameraBindingService.Bind:output_type -> shale.CameraBinding
-	125, // 310: shale.CameraBindingService.SetCollect:output_type -> shale.CameraBinding
-	129, // 311: shale.CameraJobService.Add:output_type -> shale.CameraJob
-	129, // 312: shale.CameraJobService.Get:output_type -> shale.CameraJob
-	129, // 313: shale.CameraJobService.Patch:output_type -> shale.CameraJob
-	129, // 314: shale.CameraJobService.Apply:output_type -> shale.CameraJob
-	75,  // 315: shale.CameraJobService.Erase:output_type -> shale.CameraJobEraseResponse
-	77,  // 316: shale.CameraJobService.List:output_type -> shale.CameraJobListResponse
-	80,  // 317: shale.CameraJobService.Watch:output_type -> shale.CameraJobWatchResponse
-	129, // 318: shale.CameraJobService.Create:output_type -> shale.CameraJob
-	129, // 319: shale.CameraJobService.Claim:output_type -> shale.CameraJob
-	129, // 320: shale.CameraJobService.Report:output_type -> shale.CameraJob
-	86,  // 321: shale.CameraJobService.Publish:output_type -> shale.CameraJobPublishResponse
-	272, // [272:322] is the sub-list for method output_type
-	222, // [222:272] is the sub-list for method input_type
-	222, // [222:222] is the sub-list for extension type_name
-	222, // [222:222] is the sub-list for extension extendee
-	0,   // [0:222] is the sub-list for field type_name
+	78,  // 9: shale.CameraNetworkPatchRequest.labels:type_name -> shale.CameraNetworkPatchRequest.LabelsEntry
+	89,  // 10: shale.CameraNetworkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	7,   // 11: shale.CameraNetworkListRequest.filters:type_name -> shale.CameraNetworkFilter
+	3,   // 12: shale.CameraNetworkListRequest.select:type_name -> shale.CameraNetworkSelect
+	92,  // 13: shale.CameraNetworkListResponse.items:type_name -> shale.CameraNetwork
+	2,   // 14: shale.CameraNetworkFilter.ref:type_name -> shale.CameraNetworkRef
+	87,  // 15: shale.CameraNetworkFilter.tenant:type_name -> shale.TenantRef
+	88,  // 16: shale.CameraNetworkFilter.site:type_name -> shale.SiteRef
+	7,   // 17: shale.CameraNetworkWatchRequest.filters:type_name -> shale.CameraNetworkFilter
+	10,  // 18: shale.CameraNetworkWatchResponse.items:type_name -> shale.CameraNetworkWatchItem
+	92,  // 19: shale.CameraNetworkWatchItem.value:type_name -> shale.CameraNetwork
+	2,   // 20: shale.CameraNetworkConfigureRequest.ref:type_name -> shale.CameraNetworkRef
+	87,  // 21: shale.CameraNetworkConfigureRequest.tenant:type_name -> shale.TenantRef
+	88,  // 22: shale.CameraNetworkConfigureRequest.site:type_name -> shale.SiteRef
+	89,  // 23: shale.CameraNetworkConfigureRequest.expected_version:type_name -> google.protobuf.Timestamp
+	87,  // 24: shale.CameraDeviceAddRequest.tenant:type_name -> shale.TenantRef
+	88,  // 25: shale.CameraDeviceAddRequest.site:type_name -> shale.SiteRef
+	79,  // 26: shale.CameraDeviceAddRequest.labels:type_name -> shale.CameraDeviceAddRequest.LabelsEntry
+	2,   // 27: shale.CameraDeviceAddRequest.network:type_name -> shale.CameraNetworkRef
+	93,  // 28: shale.CameraDeviceAddRequest.identity:type_name -> shale.CameraIdentityEvidence
+	94,  // 29: shale.CameraDeviceAddRequest.endpoints:type_name -> shale.CameraObservedEndpoint
+	95,  // 30: shale.CameraDeviceAddRequest.enrollment:type_name -> shale.CameraEnrollmentObservation
+	96,  // 31: shale.CameraDeviceAddRequest.factory_tls:type_name -> shale.CameraFactoryTLSState
+	97,  // 32: shale.CameraDeviceAddRequest.firmware_tls:type_name -> shale.CameraFirmwareTLSState
+	98,  // 33: shale.CameraDeviceAddRequest.transport:type_name -> shale.CameraTransportState
+	99,  // 34: shale.CameraDeviceAddRequest.clock:type_name -> shale.CameraClockObservation
+	89,  // 35: shale.CameraDeviceAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	14,  // 36: shale.CameraDeviceGetRequest.ref:type_name -> shale.CameraDeviceRef
+	16,  // 37: shale.CameraDeviceGetRequest.select:type_name -> shale.CameraDeviceSelect
+	15,  // 38: shale.CameraDeviceRef.identity:type_name -> shale.CameraDeviceRefByIdentity
+	2,   // 39: shale.CameraDeviceRefByIdentity.network:type_name -> shale.CameraNetworkRef
+	90,  // 40: shale.CameraDeviceSelect.tenant:type_name -> shale.TenantSelect
+	91,  // 41: shale.CameraDeviceSelect.site:type_name -> shale.SiteSelect
+	3,   // 42: shale.CameraDeviceSelect.network:type_name -> shale.CameraNetworkSelect
+	14,  // 43: shale.CameraDevicePatchRequest.ref:type_name -> shale.CameraDeviceRef
+	80,  // 44: shale.CameraDevicePatchRequest.labels:type_name -> shale.CameraDevicePatchRequest.LabelsEntry
+	93,  // 45: shale.CameraDevicePatchRequest.identity:type_name -> shale.CameraIdentityEvidence
+	94,  // 46: shale.CameraDevicePatchRequest.endpoints:type_name -> shale.CameraObservedEndpoint
+	95,  // 47: shale.CameraDevicePatchRequest.enrollment:type_name -> shale.CameraEnrollmentObservation
+	96,  // 48: shale.CameraDevicePatchRequest.factory_tls:type_name -> shale.CameraFactoryTLSState
+	97,  // 49: shale.CameraDevicePatchRequest.firmware_tls:type_name -> shale.CameraFirmwareTLSState
+	98,  // 50: shale.CameraDevicePatchRequest.transport:type_name -> shale.CameraTransportState
+	99,  // 51: shale.CameraDevicePatchRequest.clock:type_name -> shale.CameraClockObservation
+	89,  // 52: shale.CameraDevicePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	20,  // 53: shale.CameraDeviceListRequest.filters:type_name -> shale.CameraDeviceFilter
+	16,  // 54: shale.CameraDeviceListRequest.select:type_name -> shale.CameraDeviceSelect
+	100, // 55: shale.CameraDeviceListResponse.items:type_name -> shale.CameraDevice
+	14,  // 56: shale.CameraDeviceFilter.ref:type_name -> shale.CameraDeviceRef
+	87,  // 57: shale.CameraDeviceFilter.tenant:type_name -> shale.TenantRef
+	88,  // 58: shale.CameraDeviceFilter.site:type_name -> shale.SiteRef
+	2,   // 59: shale.CameraDeviceFilter.network:type_name -> shale.CameraNetworkRef
+	20,  // 60: shale.CameraDeviceWatchRequest.filters:type_name -> shale.CameraDeviceFilter
+	23,  // 61: shale.CameraDeviceWatchResponse.items:type_name -> shale.CameraDeviceWatchItem
+	100, // 62: shale.CameraDeviceWatchItem.value:type_name -> shale.CameraDevice
+	2,   // 63: shale.CameraDeviceClaimRequest.network:type_name -> shale.CameraNetworkRef
+	94,  // 64: shale.CameraDeviceClaimRequest.endpoints:type_name -> shale.CameraObservedEndpoint
+	14,  // 65: shale.CameraDeviceObserveRequest.ref:type_name -> shale.CameraDeviceRef
+	89,  // 66: shale.CameraDeviceObserveRequest.expected_version:type_name -> google.protobuf.Timestamp
+	93,  // 67: shale.CameraDeviceObserveRequest.identity:type_name -> shale.CameraIdentityEvidence
+	94,  // 68: shale.CameraDeviceObserveRequest.endpoints:type_name -> shale.CameraObservedEndpoint
+	87,  // 69: shale.CameraAssignmentAddRequest.tenant:type_name -> shale.TenantRef
+	88,  // 70: shale.CameraAssignmentAddRequest.site:type_name -> shale.SiteRef
+	81,  // 71: shale.CameraAssignmentAddRequest.labels:type_name -> shale.CameraAssignmentAddRequest.LabelsEntry
+	2,   // 72: shale.CameraAssignmentAddRequest.network:type_name -> shale.CameraNetworkRef
+	101, // 73: shale.CameraAssignmentAddRequest.set:type_name -> shale.SetRef
+	102, // 74: shale.CameraAssignmentAddRequest.producer:type_name -> shale.ProducerRef
+	89,  // 75: shale.CameraAssignmentAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	28,  // 76: shale.CameraAssignmentGetRequest.ref:type_name -> shale.CameraAssignmentRef
+	30,  // 77: shale.CameraAssignmentGetRequest.select:type_name -> shale.CameraAssignmentSelect
+	29,  // 78: shale.CameraAssignmentRef.set:type_name -> shale.CameraAssignmentRefBySet
+	101, // 79: shale.CameraAssignmentRefBySet.set:type_name -> shale.SetRef
+	90,  // 80: shale.CameraAssignmentSelect.tenant:type_name -> shale.TenantSelect
+	91,  // 81: shale.CameraAssignmentSelect.site:type_name -> shale.SiteSelect
+	3,   // 82: shale.CameraAssignmentSelect.network:type_name -> shale.CameraNetworkSelect
+	103, // 83: shale.CameraAssignmentSelect.set:type_name -> shale.SetSelect
+	104, // 84: shale.CameraAssignmentSelect.producer:type_name -> shale.ProducerSelect
+	28,  // 85: shale.CameraAssignmentPatchRequest.ref:type_name -> shale.CameraAssignmentRef
+	82,  // 86: shale.CameraAssignmentPatchRequest.labels:type_name -> shale.CameraAssignmentPatchRequest.LabelsEntry
+	102, // 87: shale.CameraAssignmentPatchRequest.producer:type_name -> shale.ProducerRef
+	89,  // 88: shale.CameraAssignmentPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	34,  // 89: shale.CameraAssignmentListRequest.filters:type_name -> shale.CameraAssignmentFilter
+	30,  // 90: shale.CameraAssignmentListRequest.select:type_name -> shale.CameraAssignmentSelect
+	105, // 91: shale.CameraAssignmentListResponse.items:type_name -> shale.CameraAssignment
+	28,  // 92: shale.CameraAssignmentFilter.ref:type_name -> shale.CameraAssignmentRef
+	87,  // 93: shale.CameraAssignmentFilter.tenant:type_name -> shale.TenantRef
+	88,  // 94: shale.CameraAssignmentFilter.site:type_name -> shale.SiteRef
+	2,   // 95: shale.CameraAssignmentFilter.network:type_name -> shale.CameraNetworkRef
+	102, // 96: shale.CameraAssignmentFilter.producer:type_name -> shale.ProducerRef
+	101, // 97: shale.CameraAssignmentFilter.set:type_name -> shale.SetRef
+	34,  // 98: shale.CameraAssignmentWatchRequest.filters:type_name -> shale.CameraAssignmentFilter
+	37,  // 99: shale.CameraAssignmentWatchResponse.items:type_name -> shale.CameraAssignmentWatchItem
+	105, // 100: shale.CameraAssignmentWatchItem.value:type_name -> shale.CameraAssignment
+	28,  // 101: shale.CameraAssignmentAssignRequest.ref:type_name -> shale.CameraAssignmentRef
+	2,   // 102: shale.CameraAssignmentAssignRequest.network:type_name -> shale.CameraNetworkRef
+	102, // 103: shale.CameraAssignmentAssignRequest.producer:type_name -> shale.ProducerRef
+	89,  // 104: shale.CameraAssignmentAssignRequest.expected_version:type_name -> google.protobuf.Timestamp
+	28,  // 105: shale.CameraAssignmentSnapshotRequest.ref:type_name -> shale.CameraAssignmentRef
+	105, // 106: shale.CameraCatalogSnapshot.assignment:type_name -> shale.CameraAssignment
+	106, // 107: shale.CameraCatalogSnapshot.sources:type_name -> shale.CameraCaptureSpec
+	28,  // 108: shale.CameraAssignmentHandoverRequest.ref:type_name -> shale.CameraAssignmentRef
+	89,  // 109: shale.CameraAssignmentHandoverRequest.expected_version:type_name -> google.protobuf.Timestamp
+	102, // 110: shale.CameraAssignmentHandoverRequest.replacement:type_name -> shale.ProducerRef
+	107, // 111: shale.CameraApplicationRequest.target:type_name -> shale.CameraApplyTarget
+	107, // 112: shale.CameraBeginApplyRequest.target:type_name -> shale.CameraApplyTarget
+	107, // 113: shale.CameraAppliedRequest.target:type_name -> shale.CameraApplyTarget
+	108, // 114: shale.CameraAppliedRequest.media:type_name -> shale.CameraRuntimeMedia
+	109, // 115: shale.CameraAppliedRequest.used_credential:type_name -> shale.CameraCredentialReference
+	87,  // 116: shale.CameraBindingAddRequest.tenant:type_name -> shale.TenantRef
+	88,  // 117: shale.CameraBindingAddRequest.site:type_name -> shale.SiteRef
+	83,  // 118: shale.CameraBindingAddRequest.labels:type_name -> shale.CameraBindingAddRequest.LabelsEntry
+	28,  // 119: shale.CameraBindingAddRequest.assignment:type_name -> shale.CameraAssignmentRef
+	14,  // 120: shale.CameraBindingAddRequest.device:type_name -> shale.CameraDeviceRef
+	110, // 121: shale.CameraBindingAddRequest.source:type_name -> shale.SourceRef
+	106, // 122: shale.CameraBindingAddRequest.desired:type_name -> shale.CameraCaptureSpec
+	111, // 123: shale.CameraBindingAddRequest.observed:type_name -> shale.CameraJobObservation
+	112, // 124: shale.CameraBindingAddRequest.starting_application:type_name -> shale.CameraApplication
+	112, // 125: shale.CameraBindingAddRequest.applied_application:type_name -> shale.CameraApplication
+	112, // 126: shale.CameraBindingAddRequest.previous_applications:type_name -> shale.CameraApplication
+	89,  // 127: shale.CameraBindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	47,  // 128: shale.CameraBindingGetRequest.ref:type_name -> shale.CameraBindingRef
+	50,  // 129: shale.CameraBindingGetRequest.select:type_name -> shale.CameraBindingSelect
+	48,  // 130: shale.CameraBindingRef.logical:type_name -> shale.CameraBindingRefByLogical
+	49,  // 131: shale.CameraBindingRef.source:type_name -> shale.CameraBindingRefBySource
+	87,  // 132: shale.CameraBindingRefByLogical.tenant:type_name -> shale.TenantRef
+	110, // 133: shale.CameraBindingRefBySource.source:type_name -> shale.SourceRef
+	90,  // 134: shale.CameraBindingSelect.tenant:type_name -> shale.TenantSelect
+	91,  // 135: shale.CameraBindingSelect.site:type_name -> shale.SiteSelect
+	30,  // 136: shale.CameraBindingSelect.assignment:type_name -> shale.CameraAssignmentSelect
+	16,  // 137: shale.CameraBindingSelect.device:type_name -> shale.CameraDeviceSelect
+	113, // 138: shale.CameraBindingSelect.source:type_name -> shale.SourceSelect
+	47,  // 139: shale.CameraBindingPatchRequest.ref:type_name -> shale.CameraBindingRef
+	84,  // 140: shale.CameraBindingPatchRequest.labels:type_name -> shale.CameraBindingPatchRequest.LabelsEntry
+	106, // 141: shale.CameraBindingPatchRequest.desired:type_name -> shale.CameraCaptureSpec
+	111, // 142: shale.CameraBindingPatchRequest.observed:type_name -> shale.CameraJobObservation
+	112, // 143: shale.CameraBindingPatchRequest.starting_application:type_name -> shale.CameraApplication
+	112, // 144: shale.CameraBindingPatchRequest.applied_application:type_name -> shale.CameraApplication
+	112, // 145: shale.CameraBindingPatchRequest.previous_applications:type_name -> shale.CameraApplication
+	89,  // 146: shale.CameraBindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	54,  // 147: shale.CameraBindingListRequest.filters:type_name -> shale.CameraBindingFilter
+	50,  // 148: shale.CameraBindingListRequest.select:type_name -> shale.CameraBindingSelect
+	114, // 149: shale.CameraBindingListResponse.items:type_name -> shale.CameraBinding
+	47,  // 150: shale.CameraBindingFilter.ref:type_name -> shale.CameraBindingRef
+	87,  // 151: shale.CameraBindingFilter.tenant:type_name -> shale.TenantRef
+	88,  // 152: shale.CameraBindingFilter.site:type_name -> shale.SiteRef
+	28,  // 153: shale.CameraBindingFilter.assignment:type_name -> shale.CameraAssignmentRef
+	14,  // 154: shale.CameraBindingFilter.device:type_name -> shale.CameraDeviceRef
+	110, // 155: shale.CameraBindingFilter.source:type_name -> shale.SourceRef
+	54,  // 156: shale.CameraBindingWatchRequest.filters:type_name -> shale.CameraBindingFilter
+	57,  // 157: shale.CameraBindingWatchResponse.items:type_name -> shale.CameraBindingWatchItem
+	114, // 158: shale.CameraBindingWatchItem.value:type_name -> shale.CameraBinding
+	28,  // 159: shale.CameraBindingBindRequest.assignment:type_name -> shale.CameraAssignmentRef
+	14,  // 160: shale.CameraBindingBindRequest.device:type_name -> shale.CameraDeviceRef
+	110, // 161: shale.CameraBindingBindRequest.source:type_name -> shale.SourceRef
+	47,  // 162: shale.CameraBindingSetCollectRequest.ref:type_name -> shale.CameraBindingRef
+	89,  // 163: shale.CameraBindingSetCollectRequest.expected_version:type_name -> google.protobuf.Timestamp
+	87,  // 164: shale.CameraJobAddRequest.tenant:type_name -> shale.TenantRef
+	88,  // 165: shale.CameraJobAddRequest.site:type_name -> shale.SiteRef
+	85,  // 166: shale.CameraJobAddRequest.labels:type_name -> shale.CameraJobAddRequest.LabelsEntry
+	47,  // 167: shale.CameraJobAddRequest.binding:type_name -> shale.CameraBindingRef
+	28,  // 168: shale.CameraJobAddRequest.assignment:type_name -> shale.CameraAssignmentRef
+	115, // 169: shale.CameraJobAddRequest.stage:type_name -> shale.CameraJobStage
+	89,  // 170: shale.CameraJobAddRequest.lease_expires:type_name -> google.protobuf.Timestamp
+	116, // 171: shale.CameraJobAddRequest.inputs:type_name -> shale.CameraJobInputs
+	111, // 172: shale.CameraJobAddRequest.observed:type_name -> shale.CameraJobObservation
+	89,  // 173: shale.CameraJobAddRequest.date_published:type_name -> google.protobuf.Timestamp
+	117, // 174: shale.CameraJobAddRequest.pinned_preset:type_name -> shale.CameraResolvedPreset
+	89,  // 175: shale.CameraJobAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	62,  // 176: shale.CameraJobGetRequest.ref:type_name -> shale.CameraJobRef
+	64,  // 177: shale.CameraJobGetRequest.select:type_name -> shale.CameraJobSelect
+	63,  // 178: shale.CameraJobRef.intent:type_name -> shale.CameraJobRefByIntent
+	87,  // 179: shale.CameraJobRefByIntent.tenant:type_name -> shale.TenantRef
+	90,  // 180: shale.CameraJobSelect.tenant:type_name -> shale.TenantSelect
+	91,  // 181: shale.CameraJobSelect.site:type_name -> shale.SiteSelect
+	50,  // 182: shale.CameraJobSelect.binding:type_name -> shale.CameraBindingSelect
+	30,  // 183: shale.CameraJobSelect.assignment:type_name -> shale.CameraAssignmentSelect
+	62,  // 184: shale.CameraJobPatchRequest.ref:type_name -> shale.CameraJobRef
+	86,  // 185: shale.CameraJobPatchRequest.labels:type_name -> shale.CameraJobPatchRequest.LabelsEntry
+	115, // 186: shale.CameraJobPatchRequest.stage:type_name -> shale.CameraJobStage
+	89,  // 187: shale.CameraJobPatchRequest.lease_expires:type_name -> google.protobuf.Timestamp
+	111, // 188: shale.CameraJobPatchRequest.observed:type_name -> shale.CameraJobObservation
+	89,  // 189: shale.CameraJobPatchRequest.date_published:type_name -> google.protobuf.Timestamp
+	117, // 190: shale.CameraJobPatchRequest.pinned_preset:type_name -> shale.CameraResolvedPreset
+	89,  // 191: shale.CameraJobPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	68,  // 192: shale.CameraJobListRequest.filters:type_name -> shale.CameraJobFilter
+	64,  // 193: shale.CameraJobListRequest.select:type_name -> shale.CameraJobSelect
+	118, // 194: shale.CameraJobListResponse.items:type_name -> shale.CameraJob
+	62,  // 195: shale.CameraJobFilter.ref:type_name -> shale.CameraJobRef
+	87,  // 196: shale.CameraJobFilter.tenant:type_name -> shale.TenantRef
+	88,  // 197: shale.CameraJobFilter.site:type_name -> shale.SiteRef
+	28,  // 198: shale.CameraJobFilter.assignment:type_name -> shale.CameraAssignmentRef
+	47,  // 199: shale.CameraJobFilter.binding:type_name -> shale.CameraBindingRef
+	68,  // 200: shale.CameraJobWatchRequest.filters:type_name -> shale.CameraJobFilter
+	71,  // 201: shale.CameraJobWatchResponse.items:type_name -> shale.CameraJobWatchItem
+	118, // 202: shale.CameraJobWatchItem.value:type_name -> shale.CameraJob
+	47,  // 203: shale.CameraJobCreateRequest.binding:type_name -> shale.CameraBindingRef
+	116, // 204: shale.CameraJobCreateRequest.inputs:type_name -> shale.CameraJobInputs
+	62,  // 205: shale.CameraJobClaimRequest.ref:type_name -> shale.CameraJobRef
+	89,  // 206: shale.CameraJobClaimRequest.expected_version:type_name -> google.protobuf.Timestamp
+	62,  // 207: shale.CameraJobReportRequest.ref:type_name -> shale.CameraJobRef
+	89,  // 208: shale.CameraJobReportRequest.expected_version:type_name -> google.protobuf.Timestamp
+	115, // 209: shale.CameraJobReportRequest.stage:type_name -> shale.CameraJobStage
+	111, // 210: shale.CameraJobReportRequest.observed:type_name -> shale.CameraJobObservation
+	62,  // 211: shale.CameraJobPublishRequest.ref:type_name -> shale.CameraJobRef
+	89,  // 212: shale.CameraJobPublishRequest.expected_version:type_name -> google.protobuf.Timestamp
+	106, // 213: shale.CameraJobPublishRequest.spec:type_name -> shale.CameraCaptureSpec
+	111, // 214: shale.CameraJobPublishRequest.observed:type_name -> shale.CameraJobObservation
+	118, // 215: shale.CameraJobPublishResponse.job:type_name -> shale.CameraJob
+	114, // 216: shale.CameraJobPublishResponse.binding:type_name -> shale.CameraBinding
+	0,   // 217: shale.CameraNetworkService.Add:input_type -> shale.CameraNetworkAddRequest
+	1,   // 218: shale.CameraNetworkService.Get:input_type -> shale.CameraNetworkGetRequest
+	4,   // 219: shale.CameraNetworkService.Patch:input_type -> shale.CameraNetworkPatchRequest
+	5,   // 220: shale.CameraNetworkService.List:input_type -> shale.CameraNetworkListRequest
+	8,   // 221: shale.CameraNetworkService.Watch:input_type -> shale.CameraNetworkWatchRequest
+	11,  // 222: shale.CameraNetworkService.Configure:input_type -> shale.CameraNetworkConfigureRequest
+	12,  // 223: shale.CameraDeviceService.Add:input_type -> shale.CameraDeviceAddRequest
+	13,  // 224: shale.CameraDeviceService.Get:input_type -> shale.CameraDeviceGetRequest
+	17,  // 225: shale.CameraDeviceService.Patch:input_type -> shale.CameraDevicePatchRequest
+	18,  // 226: shale.CameraDeviceService.List:input_type -> shale.CameraDeviceListRequest
+	21,  // 227: shale.CameraDeviceService.Watch:input_type -> shale.CameraDeviceWatchRequest
+	24,  // 228: shale.CameraDeviceService.Claim:input_type -> shale.CameraDeviceClaimRequest
+	25,  // 229: shale.CameraDeviceService.Observe:input_type -> shale.CameraDeviceObserveRequest
+	26,  // 230: shale.CameraAssignmentService.Add:input_type -> shale.CameraAssignmentAddRequest
+	27,  // 231: shale.CameraAssignmentService.Get:input_type -> shale.CameraAssignmentGetRequest
+	31,  // 232: shale.CameraAssignmentService.Patch:input_type -> shale.CameraAssignmentPatchRequest
+	32,  // 233: shale.CameraAssignmentService.List:input_type -> shale.CameraAssignmentListRequest
+	35,  // 234: shale.CameraAssignmentService.Watch:input_type -> shale.CameraAssignmentWatchRequest
+	38,  // 235: shale.CameraAssignmentService.Assign:input_type -> shale.CameraAssignmentAssignRequest
+	39,  // 236: shale.CameraAssignmentService.Snapshot:input_type -> shale.CameraAssignmentSnapshotRequest
+	41,  // 237: shale.CameraAssignmentService.Handover:input_type -> shale.CameraAssignmentHandoverRequest
+	42,  // 238: shale.CameraAssignmentService.Application:input_type -> shale.CameraApplicationRequest
+	43,  // 239: shale.CameraAssignmentService.BeginApply:input_type -> shale.CameraBeginApplyRequest
+	44,  // 240: shale.CameraAssignmentService.Applied:input_type -> shale.CameraAppliedRequest
+	45,  // 241: shale.CameraBindingService.Add:input_type -> shale.CameraBindingAddRequest
+	46,  // 242: shale.CameraBindingService.Get:input_type -> shale.CameraBindingGetRequest
+	51,  // 243: shale.CameraBindingService.Patch:input_type -> shale.CameraBindingPatchRequest
+	52,  // 244: shale.CameraBindingService.List:input_type -> shale.CameraBindingListRequest
+	55,  // 245: shale.CameraBindingService.Watch:input_type -> shale.CameraBindingWatchRequest
+	58,  // 246: shale.CameraBindingService.Bind:input_type -> shale.CameraBindingBindRequest
+	59,  // 247: shale.CameraBindingService.SetCollect:input_type -> shale.CameraBindingSetCollectRequest
+	60,  // 248: shale.CameraJobService.Add:input_type -> shale.CameraJobAddRequest
+	61,  // 249: shale.CameraJobService.Get:input_type -> shale.CameraJobGetRequest
+	65,  // 250: shale.CameraJobService.Patch:input_type -> shale.CameraJobPatchRequest
+	66,  // 251: shale.CameraJobService.List:input_type -> shale.CameraJobListRequest
+	69,  // 252: shale.CameraJobService.Watch:input_type -> shale.CameraJobWatchRequest
+	72,  // 253: shale.CameraJobService.Create:input_type -> shale.CameraJobCreateRequest
+	73,  // 254: shale.CameraJobService.Claim:input_type -> shale.CameraJobClaimRequest
+	74,  // 255: shale.CameraJobService.Report:input_type -> shale.CameraJobReportRequest
+	75,  // 256: shale.CameraJobService.Publish:input_type -> shale.CameraJobPublishRequest
+	92,  // 257: shale.CameraNetworkService.Add:output_type -> shale.CameraNetwork
+	92,  // 258: shale.CameraNetworkService.Get:output_type -> shale.CameraNetwork
+	92,  // 259: shale.CameraNetworkService.Patch:output_type -> shale.CameraNetwork
+	6,   // 260: shale.CameraNetworkService.List:output_type -> shale.CameraNetworkListResponse
+	9,   // 261: shale.CameraNetworkService.Watch:output_type -> shale.CameraNetworkWatchResponse
+	92,  // 262: shale.CameraNetworkService.Configure:output_type -> shale.CameraNetwork
+	100, // 263: shale.CameraDeviceService.Add:output_type -> shale.CameraDevice
+	100, // 264: shale.CameraDeviceService.Get:output_type -> shale.CameraDevice
+	100, // 265: shale.CameraDeviceService.Patch:output_type -> shale.CameraDevice
+	19,  // 266: shale.CameraDeviceService.List:output_type -> shale.CameraDeviceListResponse
+	22,  // 267: shale.CameraDeviceService.Watch:output_type -> shale.CameraDeviceWatchResponse
+	100, // 268: shale.CameraDeviceService.Claim:output_type -> shale.CameraDevice
+	100, // 269: shale.CameraDeviceService.Observe:output_type -> shale.CameraDevice
+	105, // 270: shale.CameraAssignmentService.Add:output_type -> shale.CameraAssignment
+	105, // 271: shale.CameraAssignmentService.Get:output_type -> shale.CameraAssignment
+	105, // 272: shale.CameraAssignmentService.Patch:output_type -> shale.CameraAssignment
+	33,  // 273: shale.CameraAssignmentService.List:output_type -> shale.CameraAssignmentListResponse
+	36,  // 274: shale.CameraAssignmentService.Watch:output_type -> shale.CameraAssignmentWatchResponse
+	105, // 275: shale.CameraAssignmentService.Assign:output_type -> shale.CameraAssignment
+	40,  // 276: shale.CameraAssignmentService.Snapshot:output_type -> shale.CameraCatalogSnapshot
+	105, // 277: shale.CameraAssignmentService.Handover:output_type -> shale.CameraAssignment
+	119, // 278: shale.CameraAssignmentService.Application:output_type -> shale.CameraApplyState
+	112, // 279: shale.CameraAssignmentService.BeginApply:output_type -> shale.CameraApplication
+	112, // 280: shale.CameraAssignmentService.Applied:output_type -> shale.CameraApplication
+	114, // 281: shale.CameraBindingService.Add:output_type -> shale.CameraBinding
+	114, // 282: shale.CameraBindingService.Get:output_type -> shale.CameraBinding
+	114, // 283: shale.CameraBindingService.Patch:output_type -> shale.CameraBinding
+	53,  // 284: shale.CameraBindingService.List:output_type -> shale.CameraBindingListResponse
+	56,  // 285: shale.CameraBindingService.Watch:output_type -> shale.CameraBindingWatchResponse
+	114, // 286: shale.CameraBindingService.Bind:output_type -> shale.CameraBinding
+	114, // 287: shale.CameraBindingService.SetCollect:output_type -> shale.CameraBinding
+	118, // 288: shale.CameraJobService.Add:output_type -> shale.CameraJob
+	118, // 289: shale.CameraJobService.Get:output_type -> shale.CameraJob
+	118, // 290: shale.CameraJobService.Patch:output_type -> shale.CameraJob
+	67,  // 291: shale.CameraJobService.List:output_type -> shale.CameraJobListResponse
+	70,  // 292: shale.CameraJobService.Watch:output_type -> shale.CameraJobWatchResponse
+	118, // 293: shale.CameraJobService.Create:output_type -> shale.CameraJob
+	118, // 294: shale.CameraJobService.Claim:output_type -> shale.CameraJob
+	118, // 295: shale.CameraJobService.Report:output_type -> shale.CameraJob
+	76,  // 296: shale.CameraJobService.Publish:output_type -> shale.CameraJobPublishResponse
+	257, // [257:297] is the sub-list for method output_type
+	217, // [217:257] is the sub-list for method input_type
+	217, // [217:217] is the sub-list for extension type_name
+	217, // [217:217] is the sub-list for extension extendee
+	0,   // [0:217] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_svc_g_proto_init() }
@@ -17757,20 +17006,20 @@ func file_shale_camera_svc_g_proto_init() {
 	file_shale_camera_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*cameraNetworkRef_Id)(nil),
 	}
-	file_shale_camera_svc_g_proto_msgTypes[16].OneofWrappers = []any{
+	file_shale_camera_svc_g_proto_msgTypes[14].OneofWrappers = []any{
 		(*cameraDeviceRef_Id)(nil),
 		(*cameraDeviceRef_Identity)(nil),
 	}
-	file_shale_camera_svc_g_proto_msgTypes[32].OneofWrappers = []any{
+	file_shale_camera_svc_g_proto_msgTypes[28].OneofWrappers = []any{
 		(*cameraAssignmentRef_Id)(nil),
 		(*cameraAssignmentRef_Set)(nil),
 	}
-	file_shale_camera_svc_g_proto_msgTypes[53].OneofWrappers = []any{
+	file_shale_camera_svc_g_proto_msgTypes[47].OneofWrappers = []any{
 		(*cameraBindingRef_Id)(nil),
 		(*cameraBindingRef_Logical)(nil),
 		(*cameraBindingRef_Source)(nil),
 	}
-	file_shale_camera_svc_g_proto_msgTypes[70].OneofWrappers = []any{
+	file_shale_camera_svc_g_proto_msgTypes[62].OneofWrappers = []any{
 		(*cameraJobRef_Id)(nil),
 		(*cameraJobRef_Intent)(nil),
 	}
@@ -17780,7 +17029,7 @@ func file_shale_camera_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_svc_g_proto_rawDesc), len(file_shale_camera_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   97,
+			NumMessages:   87,
 			NumExtensions: 0,
 			NumServices:   5,
 		},

@@ -6,8 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
+import { file_orm } from "../orm_pb.js";
 import type { AllocationSchema, Endpoint } from "./common_pb.js";
 import { file_shale_common } from "./common_pb.js";
 import type { NodeRef, NodeSelect, SatelliteRef, SatelliteSelect } from "./host_svc_pb.js";
@@ -28,7 +27,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/lamina_svc.g.proto.
  */
 export const file_shale_lamina_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhzaGFsZS9sYW1pbmFfc3ZjLmcucHJvdG8SBXNoYWxlIoIHChBMYW1pbmFBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhIaCgNzZXQYCCABKAsyDS5zaGFsZS5TZXRSZWYSIAoGc291cmNlGAkgASgLMhAuc2hhbGUuU291cmNlUmVmEhwKBHNpbmsYCiABKAsyDi5zaGFsZS5TaW5rUmVmEhkKCmxhbWluYV9rZXkYCyABKAlCBaoBAggCEigKBXN0YXRlGAwgASgOMhIuc2hhbGUuTGFtaW5hU3RhdGVCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9zdGFydGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpkYXRlX2VuZGVkGBEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIeCg9lbmRlZF9lc3RpbWF0ZWQYEiABKAhCBaoBAggCEhMKBHNpemUYEyABKANCBaoBAggCEhkKCmluY29tcGxldGUYFCABKAhCBaoBAggCEjAKDGRhdGVfZXhwaXJlZBgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9kZWxldGVkGBYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIbCgxkYXRlc19zeW5jZWQYFyABKAhCBaoBAggCEiAKEXBsYWNlbWVudF92ZXJzaW9uGBggASgDQgWqAQIIAhIyCg5kYXRlX2NvbW1pdHRlZBgZIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9maW5pc2hlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEAoIY2hlY2tzdW0YGyABKAwSFAoFZXBvY2gYHCABKANCBaoBAggCEiwKC3NraXBfcmVhc29uGB0gASgOMhcuc2hhbGUuTGFtaW5hU2tpcFJlYXNvbhIVCg1jYXB0dXJlX2Vwb2NoGB4gASgJEiYKCXNhdGVsbGl0ZRgfIAEoCzITLnNoYWxlLlNhdGVsbGl0ZVJlZiJWChBMYW1pbmFHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIjCgZzZWxlY3QYAiABKAsyEy5zaGFsZS5MYW1pbmFTZWxlY3QiIAoJTGFtaW5hUmVmEgwKAmlkGAEgASgMSABCBQoDa2V5Iv4ECgxMYW1pbmFTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIfCgRzaXRlGAMgASgLMhEuc2hhbGUuU2l0ZVNlbGVjdBIdCgNzZXQYCCABKAsyEC5zaGFsZS5TZXRTZWxlY3QSIwoGc291cmNlGAkgASgLMhMuc2hhbGUuU291cmNlU2VsZWN0Eh8KBHNpbmsYCiABKAsyES5zaGFsZS5TaW5rU2VsZWN0EhIKCmxhbWluYV9rZXkYCyABKAgSDQoFc3RhdGUYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIUCgxkYXRlX3N0YXJ0ZWQYECABKAgSEgoKZGF0ZV9lbmRlZBgRIAEoCBIXCg9lbmRlZF9lc3RpbWF0ZWQYEiABKAgSDAoEc2l6ZRgTIAEoCBISCgppbmNvbXBsZXRlGBQgASgIEhQKDGRhdGVfZXhwaXJlZBgVIAEoCBIUCgxkYXRlX2RlbGV0ZWQYFiABKAgSFAoMZGF0ZXNfc3luY2VkGBcgASgIEhkKEXBsYWNlbWVudF92ZXJzaW9uGBggASgIEhYKDmRhdGVfY29tbWl0dGVkGBkgASgIEhUKDWRhdGVfZmluaXNoZWQYGiABKAgSEAoIY2hlY2tzdW0YGyABKAgSDQoFZXBvY2gYHCABKAgSEwoLc2tpcF9yZWFzb24YHSABKAgSFQoNY2FwdHVyZV9lcG9jaBgeIAEoCBIpCglzYXRlbGxpdGUYHyABKAsyFi5zaGFsZS5TYXRlbGxpdGVTZWxlY3Qi/gYKEkxhbWluYVBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYSHAoEc2luaxgUIAEoCzIOLnNoYWxlLlNpbmtSZWYSEQoJc2lua19udWxsGBUgASgIEhIKCmxhbWluYV9rZXkYFiABKAkSIQoFc3RhdGUYGCABKA4yEi5zaGFsZS5MYW1pbmFTdGF0ZRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIwCgxkYXRlX3N0YXJ0ZWQYICABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmRhdGVfZW5kZWQYIiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhcKD2RhdGVfZW5kZWRfbnVsbBgjIAEoCBIXCg9lbmRlZF9lc3RpbWF0ZWQYJCABKAgSDAoEc2l6ZRgmIAEoAxISCgppbmNvbXBsZXRlGCggASgIEjAKDGRhdGVfZXhwaXJlZBgqIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9kZWxldGVkGCwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX2RlbGV0ZWRfbnVsbBgtIAEoCBIUCgxkYXRlc19zeW5jZWQYLiABKAgSGQoRcGxhY2VtZW50X3ZlcnNpb24YMCABKAMSMgoOZGF0ZV9jb21taXR0ZWQYMiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhsKE2RhdGVfY29tbWl0dGVkX251bGwYMyABKAgSMQoNZGF0ZV9maW5pc2hlZBg0IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV9maW5pc2hlZF9udWxsGDUgASgIEhAKCGNoZWNrc3VtGDYgASgMEg0KBWVwb2NoGDggASgDEiwKC3NraXBfcmVhc29uGDogASgOMhcuc2hhbGUuTGFtaW5hU2tpcFJlYXNvbhImCglzYXRlbGxpdGUYPiABKAsyEy5zaGFsZS5TYXRlbGxpdGVSZWYSFgoOc2F0ZWxsaXRlX251bGwYPyABKAgiUAoSTGFtaW5hQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiUKE0xhbWluYUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIInwKEUxhbWluYUxpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5zaGFsZS5MYW1pbmFGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCIkcKEkxhbWluYUxpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnNoYWxlLkxhbWluYRITCgRuZXh0GAIgASgJQgWqAQIIAiKrAQoMTGFtaW5hRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSGgoDc2V0GAMgASgLMg0uc2hhbGUuU2V0UmVmEiAKBnNvdXJjZRgEIAEoCzIQLnNoYWxlLlNvdXJjZVJlZhIcCgRzaW5rGAUgASgLMg4uc2hhbGUuU2lua1JlZiJYChJMYW1pbmFXYXRjaFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnNoYWxlLkxhbWluYUZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiI8ChNMYW1pbmFXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYuc2hhbGUuTGFtaW5hV2F0Y2hJdGVtIlIKD0xhbWluYVdhdGNoSXRlbRIKCgJpZBgBIAEoDBIcCgV2YWx1ZRgCIAEoCzINLnNoYWxlLkxhbWluYRIVCgZhY3Rpb24YAyABKAlCBaoBAggCIqoBChVMYW1pbmFBbGxvY2F0ZVJlcXVlc3QSIAoGc291cmNlGAEgASgLMhAuc2hhbGUuU291cmNlUmVmEjAKDGRhdGVfc3RhcnRlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHwoFYWZ0ZXIYAyABKAsyEC5zaGFsZS5MYW1pbmFSZWYSHAoNY2FwdHVyZV9lcG9jaBgEIAEoCUIFqgECCAIiOAoXTGFtaW5hUmVhbGxvY2F0ZVJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuTGFtaW5hUmVmIlcKEkxhbWluYVJlbmV3UmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYSIgoHYXR0ZW1wdBgCIAEoCzIRLnNoYWxlLkF0dGVtcHRSZWYiIQoKQXR0ZW1wdFJlZhIMCgJpZBgBIAEoDEgAQgUKA2tleSJ+ChpMYW1pbmFSZXBvcnRBdHRlbXB0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYSIgoHYXR0ZW1wdBgCIAEoCzIRLnNoYWxlLkF0dGVtcHRSZWYSHQoOZmFpbHVyZV9yZWFzb24YAyABKAlCBaoBAggCIlIKGkxhbWluYVJlcG9ydEZhaWx1cmVSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIVCgZyZWFzb24YAiABKAlCBaoBAggCIpIBChFMYW1pbmFTa2lwUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYSLgoKZGF0ZV9lbmRlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoGcmVhc29uGAMgASgOMhcuc2hhbGUuTGFtaW5hU2tpcFJlYXNvbkIFqgECCAIi3gIKF0xhbWluYVJlc2NoZWR1bGVSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIaCgNzZXQYAiABKAsyDS5zaGFsZS5TZXRSZWYSIAoGc291cmNlGAMgASgLMhAuc2hhbGUuU291cmNlUmVmEigKBGZyb20YBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiYKAnRvGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2V4cGlyZWQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfZGVsZXRlZBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoKZGVsZXRlX25vdxgIIAEoCEIFqgECCAISFQoGcmVhc29uGAkgASgJQgWqAQIIAiJMChhMYW1pbmFSZXNjaGVkdWxlUmVzcG9uc2USFgoHY2hhbmdlZBgBIAEoA0IFqgECCAISGAoJcmVtYWluaW5nGAIgASgDQgWqAQIIAiLSAQoVTGFtaW5hVGltZWxpbmVSZXF1ZXN0EhoKA3NldBgBIAEoCzINLnNoYWxlLlNldFJlZhIgCgZzb3VyY2UYAiABKAsyEC5zaGFsZS5Tb3VyY2VSZWYSKAoEZnJvbRgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJgoCdG8YBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKBHNpemUYBSABKAVCBaoBAggCEhQKBWFmdGVyGAYgASgJQgWqAQIIAiJVChZMYW1pbmFUaW1lbGluZVJlc3BvbnNlEiYKB3NvdXJjZXMYASADKAsyFS5zaGFsZS5UaW1lbGluZVNvdXJjZRITCgRuZXh0GAIgASgJQgWqAQIIAiKMAQoOVGltZWxpbmVTb3VyY2USGAoJc291cmNlX2lkGAEgASgMQgWqAQIIAhIWCgdvcmRpbmFsGAIgASgFQgWqAQIIAhImCgdsYW1pbmFlGAMgAygLMhUuc2hhbGUuVGltZWxpbmVMYW1pbmESIAoEZ2FwcxgEIAMoCzISLnNoYWxlLlRpbWVsaW5lR2FwIr0DCg5UaW1lbGluZUxhbWluYRIYCglsYW1pbmFfaWQYASABKAxCBaoBAggCEjAKDGRhdGVfc3RhcnRlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKZGF0ZV9lbmRlZBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHgoPZW5kZWRfZXN0aW1hdGVkGAQgASgIQgWqAQIIAhITCgRzaXplGAUgASgDQgWqAQIIAhImCgVzdGF0ZRgGIAEoDjIQLnNoYWxlLlJlYWRTdGF0ZUIFqgECCAISGQoKaW5jb21wbGV0ZRgHIAEoCEIFqgECCAISFgoHc2lua19pZBgIIAEoDEIFqgECCAISGQoKbGFtaW5hX2tleRgJIAEoCUIFqgECCAISIgoJZW5kcG9pbnRzGAogAygLMg8uc2hhbGUuRW5kcG9pbnQSEgoDdXJsGAsgASgJQgWqAQIIAhIUCgV0b2tlbhgMIAEoCUIFqgECCAISNgoSZGF0ZV90b2tlbl9leHBpcmVzGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKIAQoLVGltZWxpbmVHYXASKAoEZnJvbRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJgoCdG8YAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEicKBnJlYXNvbhgDIAEoDjIQLnNoYWxlLkdhcFJlYXNvbkIFqgECCAIiiQEKE0xhbWluYUV4cG9ydFJlcXVlc3QSIAoGc291cmNlGAEgASgLMhAuc2hhbGUuU291cmNlUmVmEigKBGZyb20YAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiYKAnRvGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJcChRMYW1pbmFFeHBvcnRSZXNwb25zZRISCgN1cmwYASABKAlCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiswMKEUF0dGVtcHRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhIgCgZsYW1pbmEYCCABKAsyEC5zaGFsZS5MYW1pbmFSZWYSHAoEc2luaxgJIAEoCzIOLnNoYWxlLlNpbmtSZWYSHAoEbm9kZRgKIAEoCzIOLnNoYWxlLk5vZGVSZWYSKQoFc3RhdGUYCyABKA4yEy5zaGFsZS5BdHRlbXB0U3RhdGVCBaoBAggCEh0KDmZhaWx1cmVfcmVhc29uGAwgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfZXhwaXJlcxgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9maW5pc2hlZBgRIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoEcmFuaxgSIAEoBUIFqgECCAIiWQoRQXR0ZW1wdEdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEuc2hhbGUuQXR0ZW1wdFJlZhIkCgZzZWxlY3QYAiABKAsyFC5zaGFsZS5BdHRlbXB0U2VsZWN0ItcCCg1BdHRlbXB0U2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSHwoEc2l0ZRgDIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QSIwoGbGFtaW5hGAggASgLMhMuc2hhbGUuTGFtaW5hU2VsZWN0Eh8KBHNpbmsYCSABKAsyES5zaGFsZS5TaW5rU2VsZWN0Eh8KBG5vZGUYCiABKAsyES5zaGFsZS5Ob2RlU2VsZWN0Eg0KBXN0YXRlGAsgASgIEhYKDmZhaWx1cmVfcmVhc29uGAwgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFAoMZGF0ZV9leHBpcmVzGBAgASgIEhUKDWRhdGVfZmluaXNoZWQYESABKAgSDAoEcmFuaxgSIAEoCCLOAgoTQXR0ZW1wdFBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5zaGFsZS5BdHRlbXB0UmVmEiIKBXN0YXRlGBYgASgOMhMuc2hhbGUuQXR0ZW1wdFN0YXRlEhYKDmZhaWx1cmVfcmVhc29uGBggASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEjAKDGRhdGVfZXhwaXJlcxggIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9maW5pc2hlZBgiIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV9maW5pc2hlZF9udWxsGCMgASgIEgwKBHJhbmsYJCABKAUiUgoTQXR0ZW1wdEFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5zaGFsZS5BdHRlbXB0UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJgoUQXR0ZW1wdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIn4KEkF0dGVtcHRMaXN0UmVxdWVzdBIlCgdmaWx0ZXJzGAEgAygLMhQuc2hhbGUuQXR0ZW1wdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiSQoTQXR0ZW1wdExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnNoYWxlLkF0dGVtcHQSEwoEbmV4dBgCIAEoCUIFqgECCAIikQEKDUF0dGVtcHRGaWx0ZXISHgoDcmVmGAEgASgLMhEuc2hhbGUuQXR0ZW1wdFJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSIAoGbGFtaW5hGAMgASgLMhAuc2hhbGUuTGFtaW5hUmVmEhwKBHNpbmsYBCABKAsyDi5zaGFsZS5TaW5rUmVmKooBCglSZWFkU3RhdGUSGgoWUkVBRF9TVEFURV9VTlNQRUNJRklFRBAAEhgKFFJFQURfU1RBVEVfQVZBSUxBQkxFEAESGgoWUkVBRF9TVEFURV9VTkFWQUlMQUJMRRACEhMKD1JFQURfU1RBVEVfTE9TVBADEhYKElJFQURfU1RBVEVfREVMRVRFRBAEKr4BCglHYXBSZWFzb24SGgoWR0FQX1JFQVNPTl9VTlNQRUNJRklFRBAAEhsKF0dBUF9SRUFTT05fTk9UX1JFQ0VJVkVEEAESGgoWR0FQX1JFQVNPTl9JTl9QUk9HUkVTUxACEhMKD0dBUF9SRUFTT05fTE9TVBADEhYKEkdBUF9SRUFTT05fREVMRVRFRBAEEhoKFkdBUF9SRUFTT05fVU5BVkFJTEFCTEUQBRITCg9HQVBfUkVBU09OX0RBUksQBjLRBwoNTGFtaW5hU2VydmljZRItCgNBZGQSFy5zaGFsZS5MYW1pbmFBZGRSZXF1ZXN0Gg0uc2hhbGUuTGFtaW5hEi0KA0dldBIXLnNoYWxlLkxhbWluYUdldFJlcXVlc3QaDS5zaGFsZS5MYW1pbmESMQoFUGF0Y2gSGS5zaGFsZS5MYW1pbmFQYXRjaFJlcXVlc3QaDS5zaGFsZS5MYW1pbmESMQoFQXBwbHkSGS5zaGFsZS5MYW1pbmFBcHBseVJlcXVlc3QaDS5zaGFsZS5MYW1pbmESNQoFRXJhc2USEC5zaGFsZS5MYW1pbmFSZWYaGi5zaGFsZS5MYW1pbmFFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5zaGFsZS5MYW1pbmFMaXN0UmVxdWVzdBoZLnNoYWxlLkxhbWluYUxpc3RSZXNwb25zZRJACgVXYXRjaBIZLnNoYWxlLkxhbWluYVdhdGNoUmVxdWVzdBoaLnNoYWxlLkxhbWluYVdhdGNoUmVzcG9uc2UwARI7CghBbGxvY2F0ZRIcLnNoYWxlLkxhbWluYUFsbG9jYXRlUmVxdWVzdBoRLnNoYWxlLkFsbG9jYXRpb24SPwoKUmVhbGxvY2F0ZRIeLnNoYWxlLkxhbWluYVJlYWxsb2NhdGVSZXF1ZXN0GhEuc2hhbGUuQWxsb2NhdGlvbhI1CgVSZW5ldxIZLnNoYWxlLkxhbWluYVJlbmV3UmVxdWVzdBoRLnNoYWxlLkFsbG9jYXRpb24SQgoNUmVwb3J0QXR0ZW1wdBIhLnNoYWxlLkxhbWluYVJlcG9ydEF0dGVtcHRSZXF1ZXN0Gg4uc2hhbGUuQXR0ZW1wdBJBCg1SZXBvcnRGYWlsdXJlEiEuc2hhbGUuTGFtaW5hUmVwb3J0RmFpbHVyZVJlcXVlc3QaDS5zaGFsZS5MYW1pbmESLwoEU2tpcBIYLnNoYWxlLkxhbWluYVNraXBSZXF1ZXN0Gg0uc2hhbGUuTGFtaW5hEk0KClJlc2NoZWR1bGUSHi5zaGFsZS5MYW1pbmFSZXNjaGVkdWxlUmVxdWVzdBofLnNoYWxlLkxhbWluYVJlc2NoZWR1bGVSZXNwb25zZRJHCghUaW1lbGluZRIcLnNoYWxlLkxhbWluYVRpbWVsaW5lUmVxdWVzdBodLnNoYWxlLkxhbWluYVRpbWVsaW5lUmVzcG9uc2USQQoGRXhwb3J0Ehouc2hhbGUuTGFtaW5hRXhwb3J0UmVxdWVzdBobLnNoYWxlLkxhbWluYUV4cG9ydFJlc3BvbnNlMtQCCg5BdHRlbXB0U2VydmljZRIvCgNBZGQSGC5zaGFsZS5BdHRlbXB0QWRkUmVxdWVzdBoOLnNoYWxlLkF0dGVtcHQSLwoDR2V0Ehguc2hhbGUuQXR0ZW1wdEdldFJlcXVlc3QaDi5zaGFsZS5BdHRlbXB0EjMKBVBhdGNoEhouc2hhbGUuQXR0ZW1wdFBhdGNoUmVxdWVzdBoOLnNoYWxlLkF0dGVtcHQSMwoFQXBwbHkSGi5zaGFsZS5BdHRlbXB0QXBwbHlSZXF1ZXN0Gg4uc2hhbGUuQXR0ZW1wdBI3CgVFcmFzZRIRLnNoYWxlLkF0dGVtcHRSZWYaGy5zaGFsZS5BdHRlbXB0RXJhc2VSZXNwb25zZRI9CgRMaXN0Ehkuc2hhbGUuQXR0ZW1wdExpc3RSZXF1ZXN0Ghouc2hhbGUuQXR0ZW1wdExpc3RSZXNwb25zZUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_shale_common, file_shale_host_svc_g, file_shale_lamina, file_shale_payday_tenant_svc_g, file_shale_set_svc_g, file_shale_site_svc_g, file_shale_storage_svc_g]);
+  fileDesc("ChhzaGFsZS9sYW1pbmFfc3ZjLmcucHJvdG8SBXNoYWxlIooHChBMYW1pbmFBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEhwKBHNpdGUYAyABKAsyDi5zaGFsZS5TaXRlUmVmEhoKA3NldBgIIAEoCzINLnNoYWxlLlNldFJlZhIgCgZzb3VyY2UYCSABKAsyEC5zaGFsZS5Tb3VyY2VSZWYSHAoEc2luaxgKIAEoCzIOLnNoYWxlLlNpbmtSZWYSGQoKbGFtaW5hX2tleRgLIAEoCUIFqgECCAISKAoFc3RhdGUYDCABKA4yEi5zaGFsZS5MYW1pbmFTdGF0ZUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3N0YXJ0ZWQYECABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmRhdGVfZW5kZWQYESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KD2VuZGVkX2VzdGltYXRlZBgSIAEoCEIFqgECCAISEwoEc2l6ZRgTIAEoA0IFqgECCAISGQoKaW5jb21wbGV0ZRgUIAEoCEIFqgECCAISMAoMZGF0ZV9leHBpcmVkGBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2RlbGV0ZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhsKDGRhdGVzX3N5bmNlZBgXIAEoCEIFqgECCAISIAoRcGxhY2VtZW50X3ZlcnNpb24YGCABKANCBaoBAggCEjIKDmRhdGVfY29tbWl0dGVkGBkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIxCg1kYXRlX2ZpbmlzaGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIQCghjaGVja3N1bRgbIAEoDBIUCgVlcG9jaBgcIAEoA0IFqgECCAISLAoLc2tpcF9yZWFzb24YHSABKA4yFy5zaGFsZS5MYW1pbmFTa2lwUmVhc29uEhUKDWNhcHR1cmVfZXBvY2gYHiABKAkSJgoJc2F0ZWxsaXRlGB8gASgLMhMuc2hhbGUuU2F0ZWxsaXRlUmVmIlYKEExhbWluYUdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuTGFtaW5hUmVmEiMKBnNlbGVjdBgCIAEoCzITLnNoYWxlLkxhbWluYVNlbGVjdCIoCglMYW1pbmFSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAQgUKA2tleSL+BAoMTGFtaW5hU2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSHwoEc2l0ZRgDIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QSHQoDc2V0GAggASgLMhAuc2hhbGUuU2V0U2VsZWN0EiMKBnNvdXJjZRgJIAEoCzITLnNoYWxlLlNvdXJjZVNlbGVjdBIfCgRzaW5rGAogASgLMhEuc2hhbGUuU2lua1NlbGVjdBISCgpsYW1pbmFfa2V5GAsgASgIEg0KBXN0YXRlGAwgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFAoMZGF0ZV9zdGFydGVkGBAgASgIEhIKCmRhdGVfZW5kZWQYESABKAgSFwoPZW5kZWRfZXN0aW1hdGVkGBIgASgIEgwKBHNpemUYEyABKAgSEgoKaW5jb21wbGV0ZRgUIAEoCBIUCgxkYXRlX2V4cGlyZWQYFSABKAgSFAoMZGF0ZV9kZWxldGVkGBYgASgIEhQKDGRhdGVzX3N5bmNlZBgXIAEoCBIZChFwbGFjZW1lbnRfdmVyc2lvbhgYIAEoCBIWCg5kYXRlX2NvbW1pdHRlZBgZIAEoCBIVCg1kYXRlX2ZpbmlzaGVkGBogASgIEhAKCGNoZWNrc3VtGBsgASgIEg0KBWVwb2NoGBwgASgIEhMKC3NraXBfcmVhc29uGB0gASgIEhUKDWNhcHR1cmVfZXBvY2gYHiABKAgSKQoJc2F0ZWxsaXRlGB8gASgLMhYuc2hhbGUuU2F0ZWxsaXRlU2VsZWN0Iv4GChJMYW1pbmFQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuTGFtaW5hUmVmEhwKBHNpbmsYFCABKAsyDi5zaGFsZS5TaW5rUmVmEhEKCXNpbmtfbnVsbBgVIAEoCBISCgpsYW1pbmFfa2V5GBYgASgJEiEKBXN0YXRlGBggASgOMhIuc2hhbGUuTGFtaW5hU3RhdGUSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSMAoMZGF0ZV9zdGFydGVkGCAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpkYXRlX2VuZGVkGCIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIXCg9kYXRlX2VuZGVkX251bGwYIyABKAgSFwoPZW5kZWRfZXN0aW1hdGVkGCQgASgIEgwKBHNpemUYJiABKAMSEgoKaW5jb21wbGV0ZRgoIAEoCBIwCgxkYXRlX2V4cGlyZWQYKiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfZGVsZXRlZBgsIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9kZWxldGVkX251bGwYLSABKAgSFAoMZGF0ZXNfc3luY2VkGC4gASgIEhkKEXBsYWNlbWVudF92ZXJzaW9uGDAgASgDEjIKDmRhdGVfY29tbWl0dGVkGDIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIbChNkYXRlX2NvbW1pdHRlZF9udWxsGDMgASgIEjEKDWRhdGVfZmluaXNoZWQYNCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfZmluaXNoZWRfbnVsbBg1IAEoCBIQCghjaGVja3N1bRg2IAEoDBINCgVlcG9jaBg4IAEoAxIsCgtza2lwX3JlYXNvbhg6IAEoDjIXLnNoYWxlLkxhbWluYVNraXBSZWFzb24SJgoJc2F0ZWxsaXRlGD4gASgLMhMuc2hhbGUuU2F0ZWxsaXRlUmVmEhYKDnNhdGVsbGl0ZV9udWxsGD8gASgIIiUKE0xhbWluYUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIqEBChFMYW1pbmFMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMuc2hhbGUuTGFtaW5hRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIjCgZzZWxlY3QYBiABKAsyEy5zaGFsZS5MYW1pbmFTZWxlY3QiRwoSTGFtaW5hTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0uc2hhbGUuTGFtaW5hEhMKBG5leHQYAiABKAlCBaoBAggCIqsBCgxMYW1pbmFGaWx0ZXISHQoDcmVmGAEgASgLMhAuc2hhbGUuTGFtaW5hUmVmEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIaCgNzZXQYAyABKAsyDS5zaGFsZS5TZXRSZWYSIAoGc291cmNlGAQgASgLMhAuc2hhbGUuU291cmNlUmVmEhwKBHNpbmsYBSABKAsyDi5zaGFsZS5TaW5rUmVmIlgKEkxhbWluYVdhdGNoUmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMuc2hhbGUuTGFtaW5hRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjwKE0xhbWluYVdhdGNoUmVzcG9uc2USJQoFaXRlbXMYASADKAsyFi5zaGFsZS5MYW1pbmFXYXRjaEl0ZW0iUgoPTGFtaW5hV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0uc2hhbGUuTGFtaW5hEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiqgEKFUxhbWluYUFsbG9jYXRlUmVxdWVzdBIgCgZzb3VyY2UYASABKAsyEC5zaGFsZS5Tb3VyY2VSZWYSMAoMZGF0ZV9zdGFydGVkGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgVhZnRlchgDIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIcCg1jYXB0dXJlX2Vwb2NoGAQgASgJQgWqAQIIAiI4ChdMYW1pbmFSZWFsbG9jYXRlUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYiVwoSTGFtaW5hUmVuZXdSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnNoYWxlLkxhbWluYVJlZhIiCgdhdHRlbXB0GAIgASgLMhEuc2hhbGUuQXR0ZW1wdFJlZiIpCgpBdHRlbXB0UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIAEIFCgNrZXkifgoaTGFtaW5hUmVwb3J0QXR0ZW1wdFJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuTGFtaW5hUmVmEiIKB2F0dGVtcHQYAiABKAsyES5zaGFsZS5BdHRlbXB0UmVmEh0KDmZhaWx1cmVfcmVhc29uGAMgASgJQgWqAQIIAiJSChpMYW1pbmFSZXBvcnRGYWlsdXJlUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYSFQoGcmVhc29uGAIgASgJQgWqAQIIAiKSAQoRTGFtaW5hU2tpcFJlcXVlc3QSHQoDcmVmGAEgASgLMhAuc2hhbGUuTGFtaW5hUmVmEi4KCmRhdGVfZW5kZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KBnJlYXNvbhgDIAEoDjIXLnNoYWxlLkxhbWluYVNraXBSZWFzb25CBaoBAggCIt4CChdMYW1pbmFSZXNjaGVkdWxlUmVxdWVzdBIdCgNyZWYYASABKAsyEC5zaGFsZS5MYW1pbmFSZWYSGgoDc2V0GAIgASgLMg0uc2hhbGUuU2V0UmVmEiAKBnNvdXJjZRgDIAEoCzIQLnNoYWxlLlNvdXJjZVJlZhIoCgRmcm9tGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBImCgJ0bxgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9leHBpcmVkGAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2RlbGV0ZWQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKCmRlbGV0ZV9ub3cYCCABKAhCBaoBAggCEhUKBnJlYXNvbhgJIAEoCUIFqgECCAIiTAoYTGFtaW5hUmVzY2hlZHVsZVJlc3BvbnNlEhYKB2NoYW5nZWQYASABKANCBaoBAggCEhgKCXJlbWFpbmluZxgCIAEoA0IFqgECCAIi0gEKFUxhbWluYVRpbWVsaW5lUmVxdWVzdBIaCgNzZXQYASABKAsyDS5zaGFsZS5TZXRSZWYSIAoGc291cmNlGAIgASgLMhAuc2hhbGUuU291cmNlUmVmEigKBGZyb20YAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiYKAnRvGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgRzaXplGAUgASgFQgWqAQIIAhIUCgVhZnRlchgGIAEoCUIFqgECCAIiVQoWTGFtaW5hVGltZWxpbmVSZXNwb25zZRImCgdzb3VyY2VzGAEgAygLMhUuc2hhbGUuVGltZWxpbmVTb3VyY2USEwoEbmV4dBgCIAEoCUIFqgECCAIijAEKDlRpbWVsaW5lU291cmNlEhgKCXNvdXJjZV9pZBgBIAEoDEIFqgECCAISFgoHb3JkaW5hbBgCIAEoBUIFqgECCAISJgoHbGFtaW5hZRgDIAMoCzIVLnNoYWxlLlRpbWVsaW5lTGFtaW5hEiAKBGdhcHMYBCADKAsyEi5zaGFsZS5UaW1lbGluZUdhcCK9AwoOVGltZWxpbmVMYW1pbmESGAoJbGFtaW5hX2lkGAEgASgMQgWqAQIIAhIwCgxkYXRlX3N0YXJ0ZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmRhdGVfZW5kZWQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KD2VuZGVkX2VzdGltYXRlZBgEIAEoCEIFqgECCAISEwoEc2l6ZRgFIAEoA0IFqgECCAISJgoFc3RhdGUYBiABKA4yEC5zaGFsZS5SZWFkU3RhdGVCBaoBAggCEhkKCmluY29tcGxldGUYByABKAhCBaoBAggCEhYKB3NpbmtfaWQYCCABKAxCBaoBAggCEhkKCmxhbWluYV9rZXkYCSABKAlCBaoBAggCEiIKCWVuZHBvaW50cxgKIAMoCzIPLnNoYWxlLkVuZHBvaW50EhIKA3VybBgLIAEoCUIFqgECCAISFAoFdG9rZW4YDCABKAlCBaoBAggCEjYKEmRhdGVfdG9rZW5fZXhwaXJlcxgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiiAEKC1RpbWVsaW5lR2FwEigKBGZyb20YASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiYKAnRvGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgZyZWFzb24YAyABKA4yEC5zaGFsZS5HYXBSZWFzb25CBaoBAggCIokBChNMYW1pbmFFeHBvcnRSZXF1ZXN0EiAKBnNvdXJjZRgBIAEoCzIQLnNoYWxlLlNvdXJjZVJlZhIoCgRmcm9tGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBImCgJ0bxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXAoUTGFtaW5hRXhwb3J0UmVzcG9uc2USEgoDdXJsGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZXMYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIrsDChFBdHRlbXB0QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhIgCgZsYW1pbmEYCCABKAsyEC5zaGFsZS5MYW1pbmFSZWYSHAoEc2luaxgJIAEoCzIOLnNoYWxlLlNpbmtSZWYSHAoEbm9kZRgKIAEoCzIOLnNoYWxlLk5vZGVSZWYSKQoFc3RhdGUYCyABKA4yEy5zaGFsZS5BdHRlbXB0U3RhdGVCBaoBAggCEh0KDmZhaWx1cmVfcmVhc29uGAwgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfZXhwaXJlcxgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9maW5pc2hlZBgRIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoEcmFuaxgSIAEoBUIFqgECCAIiWQoRQXR0ZW1wdEdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEuc2hhbGUuQXR0ZW1wdFJlZhIkCgZzZWxlY3QYAiABKAsyFC5zaGFsZS5BdHRlbXB0U2VsZWN0ItcCCg1BdHRlbXB0U2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSHwoEc2l0ZRgDIAEoCzIRLnNoYWxlLlNpdGVTZWxlY3QSIwoGbGFtaW5hGAggASgLMhMuc2hhbGUuTGFtaW5hU2VsZWN0Eh8KBHNpbmsYCSABKAsyES5zaGFsZS5TaW5rU2VsZWN0Eh8KBG5vZGUYCiABKAsyES5zaGFsZS5Ob2RlU2VsZWN0Eg0KBXN0YXRlGAsgASgIEhYKDmZhaWx1cmVfcmVhc29uGAwgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFAoMZGF0ZV9leHBpcmVzGBAgASgIEhUKDWRhdGVfZmluaXNoZWQYESABKAgSDAoEcmFuaxgSIAEoCCLOAgoTQXR0ZW1wdFBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5zaGFsZS5BdHRlbXB0UmVmEiIKBXN0YXRlGBYgASgOMhMuc2hhbGUuQXR0ZW1wdFN0YXRlEhYKDmZhaWx1cmVfcmVhc29uGBggASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEjAKDGRhdGVfZXhwaXJlcxggIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9maW5pc2hlZBgiIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV9maW5pc2hlZF9udWxsGCMgASgIEgwKBHJhbmsYJCABKAUiJgoUQXR0ZW1wdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIqQBChJBdHRlbXB0TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnNoYWxlLkF0dGVtcHRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiQKBnNlbGVjdBgGIAEoCzIULnNoYWxlLkF0dGVtcHRTZWxlY3QiSQoTQXR0ZW1wdExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnNoYWxlLkF0dGVtcHQSEwoEbmV4dBgCIAEoCUIFqgECCAIikQEKDUF0dGVtcHRGaWx0ZXISHgoDcmVmGAEgASgLMhEuc2hhbGUuQXR0ZW1wdFJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSIAoGbGFtaW5hGAMgASgLMhAuc2hhbGUuTGFtaW5hUmVmEhwKBHNpbmsYBCABKAsyDi5zaGFsZS5TaW5rUmVmKooBCglSZWFkU3RhdGUSGgoWUkVBRF9TVEFURV9VTlNQRUNJRklFRBAAEhgKFFJFQURfU1RBVEVfQVZBSUxBQkxFEAESGgoWUkVBRF9TVEFURV9VTkFWQUlMQUJMRRACEhMKD1JFQURfU1RBVEVfTE9TVBADEhYKElJFQURfU1RBVEVfREVMRVRFRBAEKr4BCglHYXBSZWFzb24SGgoWR0FQX1JFQVNPTl9VTlNQRUNJRklFRBAAEhsKF0dBUF9SRUFTT05fTk9UX1JFQ0VJVkVEEAESGgoWR0FQX1JFQVNPTl9JTl9QUk9HUkVTUxACEhMKD0dBUF9SRUFTT05fTE9TVBADEhYKEkdBUF9SRUFTT05fREVMRVRFRBAEEhoKFkdBUF9SRUFTT05fVU5BVkFJTEFCTEUQBRITCg9HQVBfUkVBU09OX0RBUksQBjKeBwoNTGFtaW5hU2VydmljZRItCgNBZGQSFy5zaGFsZS5MYW1pbmFBZGRSZXF1ZXN0Gg0uc2hhbGUuTGFtaW5hEi0KA0dldBIXLnNoYWxlLkxhbWluYUdldFJlcXVlc3QaDS5zaGFsZS5MYW1pbmESMQoFUGF0Y2gSGS5zaGFsZS5MYW1pbmFQYXRjaFJlcXVlc3QaDS5zaGFsZS5MYW1pbmESNQoFRXJhc2USEC5zaGFsZS5MYW1pbmFSZWYaGi5zaGFsZS5MYW1pbmFFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5zaGFsZS5MYW1pbmFMaXN0UmVxdWVzdBoZLnNoYWxlLkxhbWluYUxpc3RSZXNwb25zZRJACgVXYXRjaBIZLnNoYWxlLkxhbWluYVdhdGNoUmVxdWVzdBoaLnNoYWxlLkxhbWluYVdhdGNoUmVzcG9uc2UwARI7CghBbGxvY2F0ZRIcLnNoYWxlLkxhbWluYUFsbG9jYXRlUmVxdWVzdBoRLnNoYWxlLkFsbG9jYXRpb24SPwoKUmVhbGxvY2F0ZRIeLnNoYWxlLkxhbWluYVJlYWxsb2NhdGVSZXF1ZXN0GhEuc2hhbGUuQWxsb2NhdGlvbhI1CgVSZW5ldxIZLnNoYWxlLkxhbWluYVJlbmV3UmVxdWVzdBoRLnNoYWxlLkFsbG9jYXRpb24SQgoNUmVwb3J0QXR0ZW1wdBIhLnNoYWxlLkxhbWluYVJlcG9ydEF0dGVtcHRSZXF1ZXN0Gg4uc2hhbGUuQXR0ZW1wdBJBCg1SZXBvcnRGYWlsdXJlEiEuc2hhbGUuTGFtaW5hUmVwb3J0RmFpbHVyZVJlcXVlc3QaDS5zaGFsZS5MYW1pbmESLwoEU2tpcBIYLnNoYWxlLkxhbWluYVNraXBSZXF1ZXN0Gg0uc2hhbGUuTGFtaW5hEk0KClJlc2NoZWR1bGUSHi5zaGFsZS5MYW1pbmFSZXNjaGVkdWxlUmVxdWVzdBofLnNoYWxlLkxhbWluYVJlc2NoZWR1bGVSZXNwb25zZRJHCghUaW1lbGluZRIcLnNoYWxlLkxhbWluYVRpbWVsaW5lUmVxdWVzdBodLnNoYWxlLkxhbWluYVRpbWVsaW5lUmVzcG9uc2USQQoGRXhwb3J0Ehouc2hhbGUuTGFtaW5hRXhwb3J0UmVxdWVzdBobLnNoYWxlLkxhbWluYUV4cG9ydFJlc3BvbnNlMp8CCg5BdHRlbXB0U2VydmljZRIvCgNBZGQSGC5zaGFsZS5BdHRlbXB0QWRkUmVxdWVzdBoOLnNoYWxlLkF0dGVtcHQSLwoDR2V0Ehguc2hhbGUuQXR0ZW1wdEdldFJlcXVlc3QaDi5zaGFsZS5BdHRlbXB0EjMKBVBhdGNoEhouc2hhbGUuQXR0ZW1wdFBhdGNoUmVxdWVzdBoOLnNoYWxlLkF0dGVtcHQSNwoFRXJhc2USES5zaGFsZS5BdHRlbXB0UmVmGhsuc2hhbGUuQXR0ZW1wdEVyYXNlUmVzcG9uc2USPQoETGlzdBIZLnNoYWxlLkF0dGVtcHRMaXN0UmVxdWVzdBoaLnNoYWxlLkF0dGVtcHRMaXN0UmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_shale_common, file_shale_host_svc_g, file_shale_lamina, file_shale_payday_tenant_svc_g, file_shale_set_svc_g, file_shale_site_svc_g, file_shale_storage_svc_g]);
 
 /**
  * @generated from message shale.LaminaAddRequest
@@ -546,28 +545,6 @@ export const LaminaPatchRequestSchema: GenMessage<LaminaPatchRequest> = /*@__PUR
   messageDesc(file_shale_lamina_svc_g, 4);
 
 /**
- * @generated from message shale.LaminaApplyRequest
- */
-export type LaminaApplyRequest = Message<"shale.LaminaApplyRequest"> & {
-  /**
-   * @generated from field: shale.LaminaRef ref = 1;
-   */
-  ref?: LaminaRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.LaminaApplyRequest.
- * Use `create(LaminaApplyRequestSchema)` to create a new message.
- */
-export const LaminaApplyRequestSchema: GenMessage<LaminaApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 5);
-
-/**
  * @generated from message shale.LaminaEraseResponse
  */
 export type LaminaEraseResponse = Message<"shale.LaminaEraseResponse"> & {
@@ -588,7 +565,7 @@ export type LaminaEraseResponse = Message<"shale.LaminaEraseResponse"> & {
  * Use `create(LaminaEraseResponseSchema)` to create a new message.
  */
 export const LaminaEraseResponseSchema: GenMessage<LaminaEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 6);
+  messageDesc(file_shale_lamina_svc_g, 5);
 
 /**
  * @generated from message shale.LaminaListRequest
@@ -630,6 +607,20 @@ export type LaminaListRequest = Message<"shale.LaminaListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.LaminaSelect select = 6;
+   */
+  select?: LaminaSelect | undefined;
 };
 
 /**
@@ -637,7 +628,7 @@ export type LaminaListRequest = Message<"shale.LaminaListRequest"> & {
  * Use `create(LaminaListRequestSchema)` to create a new message.
  */
 export const LaminaListRequestSchema: GenMessage<LaminaListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 7);
+  messageDesc(file_shale_lamina_svc_g, 6);
 
 /**
  * @generated from message shale.LaminaListResponse
@@ -667,7 +658,7 @@ export type LaminaListResponse = Message<"shale.LaminaListResponse"> & {
  * Use `create(LaminaListResponseSchema)` to create a new message.
  */
 export const LaminaListResponseSchema: GenMessage<LaminaListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 8);
+  messageDesc(file_shale_lamina_svc_g, 7);
 
 /**
  * @generated from message shale.LaminaFilter
@@ -704,20 +695,22 @@ export type LaminaFilter = Message<"shale.LaminaFilter"> & {
  * Use `create(LaminaFilterSchema)` to create a new message.
  */
 export const LaminaFilterSchema: GenMessage<LaminaFilter> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 9);
+  messageDesc(file_shale_lamina_svc_g, 8);
 
 /**
  * @generated from message shale.LaminaWatchRequest
  */
 export type LaminaWatchRequest = Message<"shale.LaminaWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated shale.LaminaFilter filters = 1;
    */
@@ -740,7 +733,7 @@ export type LaminaWatchRequest = Message<"shale.LaminaWatchRequest"> & {
  * Use `create(LaminaWatchRequestSchema)` to create a new message.
  */
 export const LaminaWatchRequestSchema: GenMessage<LaminaWatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 10);
+  messageDesc(file_shale_lamina_svc_g, 9);
 
 /**
  * @generated from message shale.LaminaWatchResponse
@@ -759,7 +752,7 @@ export type LaminaWatchResponse = Message<"shale.LaminaWatchResponse"> & {
  * Use `create(LaminaWatchResponseSchema)` to create a new message.
  */
 export const LaminaWatchResponseSchema: GenMessage<LaminaWatchResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 11);
+  messageDesc(file_shale_lamina_svc_g, 10);
 
 /**
  * @generated from message shale.LaminaWatchItem
@@ -774,7 +767,7 @@ export type LaminaWatchItem = Message<"shale.LaminaWatchItem"> & {
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -782,7 +775,8 @@ export type LaminaWatchItem = Message<"shale.LaminaWatchItem"> & {
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: shale.Lamina value = 2;
    */
@@ -806,7 +800,7 @@ export type LaminaWatchItem = Message<"shale.LaminaWatchItem"> & {
  * Use `create(LaminaWatchItemSchema)` to create a new message.
  */
 export const LaminaWatchItemSchema: GenMessage<LaminaWatchItem> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 12);
+  messageDesc(file_shale_lamina_svc_g, 11);
 
 /**
  * @generated from message shale.LaminaAllocateRequest
@@ -844,7 +838,7 @@ export type LaminaAllocateRequest = Message<"shale.LaminaAllocateRequest"> & {
  * Use `create(LaminaAllocateRequestSchema)` to create a new message.
  */
 export const LaminaAllocateRequestSchema: GenMessage<LaminaAllocateRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 13);
+  messageDesc(file_shale_lamina_svc_g, 12);
 
 /**
  * @generated from message shale.LaminaReallocateRequest
@@ -861,7 +855,7 @@ export type LaminaReallocateRequest = Message<"shale.LaminaReallocateRequest"> &
  * Use `create(LaminaReallocateRequestSchema)` to create a new message.
  */
 export const LaminaReallocateRequestSchema: GenMessage<LaminaReallocateRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 14);
+  messageDesc(file_shale_lamina_svc_g, 13);
 
 /**
  * @generated from message shale.LaminaRenewRequest
@@ -883,7 +877,7 @@ export type LaminaRenewRequest = Message<"shale.LaminaRenewRequest"> & {
  * Use `create(LaminaRenewRequestSchema)` to create a new message.
  */
 export const LaminaRenewRequestSchema: GenMessage<LaminaRenewRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 15);
+  messageDesc(file_shale_lamina_svc_g, 14);
 
 /**
  * @generated from message shale.AttemptRef
@@ -906,7 +900,7 @@ export type AttemptRef = Message<"shale.AttemptRef"> & {
  * Use `create(AttemptRefSchema)` to create a new message.
  */
 export const AttemptRefSchema: GenMessage<AttemptRef> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 16);
+  messageDesc(file_shale_lamina_svc_g, 15);
 
 /**
  * @generated from message shale.LaminaReportAttemptRequest
@@ -933,7 +927,7 @@ export type LaminaReportAttemptRequest = Message<"shale.LaminaReportAttemptReque
  * Use `create(LaminaReportAttemptRequestSchema)` to create a new message.
  */
 export const LaminaReportAttemptRequestSchema: GenMessage<LaminaReportAttemptRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 17);
+  messageDesc(file_shale_lamina_svc_g, 16);
 
 /**
  * @generated from message shale.LaminaReportFailureRequest
@@ -955,7 +949,7 @@ export type LaminaReportFailureRequest = Message<"shale.LaminaReportFailureReque
  * Use `create(LaminaReportFailureRequestSchema)` to create a new message.
  */
 export const LaminaReportFailureRequestSchema: GenMessage<LaminaReportFailureRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 18);
+  messageDesc(file_shale_lamina_svc_g, 17);
 
 /**
  * @generated from message shale.LaminaSkipRequest
@@ -982,7 +976,7 @@ export type LaminaSkipRequest = Message<"shale.LaminaSkipRequest"> & {
  * Use `create(LaminaSkipRequestSchema)` to create a new message.
  */
 export const LaminaSkipRequestSchema: GenMessage<LaminaSkipRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 19);
+  messageDesc(file_shale_lamina_svc_g, 18);
 
 /**
  * @generated from message shale.LaminaRescheduleRequest
@@ -1043,7 +1037,7 @@ export type LaminaRescheduleRequest = Message<"shale.LaminaRescheduleRequest"> &
  * Use `create(LaminaRescheduleRequestSchema)` to create a new message.
  */
 export const LaminaRescheduleRequestSchema: GenMessage<LaminaRescheduleRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 20);
+  messageDesc(file_shale_lamina_svc_g, 19);
 
 /**
  * @generated from message shale.LaminaRescheduleResponse
@@ -1069,7 +1063,7 @@ export type LaminaRescheduleResponse = Message<"shale.LaminaRescheduleResponse">
  * Use `create(LaminaRescheduleResponseSchema)` to create a new message.
  */
 export const LaminaRescheduleResponseSchema: GenMessage<LaminaRescheduleResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 21);
+  messageDesc(file_shale_lamina_svc_g, 20);
 
 /**
  * @generated from message shale.LaminaTimelineRequest
@@ -1115,7 +1109,7 @@ export type LaminaTimelineRequest = Message<"shale.LaminaTimelineRequest"> & {
  * Use `create(LaminaTimelineRequestSchema)` to create a new message.
  */
 export const LaminaTimelineRequestSchema: GenMessage<LaminaTimelineRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 22);
+  messageDesc(file_shale_lamina_svc_g, 21);
 
 /**
  * @generated from message shale.LaminaTimelineResponse
@@ -1137,7 +1131,7 @@ export type LaminaTimelineResponse = Message<"shale.LaminaTimelineResponse"> & {
  * Use `create(LaminaTimelineResponseSchema)` to create a new message.
  */
 export const LaminaTimelineResponseSchema: GenMessage<LaminaTimelineResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 23);
+  messageDesc(file_shale_lamina_svc_g, 22);
 
 /**
  * @generated from message shale.TimelineSource
@@ -1169,7 +1163,7 @@ export type TimelineSource = Message<"shale.TimelineSource"> & {
  * Use `create(TimelineSourceSchema)` to create a new message.
  */
 export const TimelineSourceSchema: GenMessage<TimelineSource> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 24);
+  messageDesc(file_shale_lamina_svc_g, 23);
 
 /**
  * @generated from message shale.TimelineLamina
@@ -1249,7 +1243,7 @@ export type TimelineLamina = Message<"shale.TimelineLamina"> & {
  * Use `create(TimelineLaminaSchema)` to create a new message.
  */
 export const TimelineLaminaSchema: GenMessage<TimelineLamina> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 25);
+  messageDesc(file_shale_lamina_svc_g, 24);
 
 /**
  * @generated from message shale.TimelineGap
@@ -1276,7 +1270,7 @@ export type TimelineGap = Message<"shale.TimelineGap"> & {
  * Use `create(TimelineGapSchema)` to create a new message.
  */
 export const TimelineGapSchema: GenMessage<TimelineGap> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 26);
+  messageDesc(file_shale_lamina_svc_g, 25);
 
 /**
  * @generated from message shale.LaminaExportRequest
@@ -1303,7 +1297,7 @@ export type LaminaExportRequest = Message<"shale.LaminaExportRequest"> & {
  * Use `create(LaminaExportRequestSchema)` to create a new message.
  */
 export const LaminaExportRequestSchema: GenMessage<LaminaExportRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 27);
+  messageDesc(file_shale_lamina_svc_g, 26);
 
 /**
  * @generated from message shale.LaminaExportResponse
@@ -1329,7 +1323,7 @@ export type LaminaExportResponse = Message<"shale.LaminaExportResponse"> & {
  * Use `create(LaminaExportResponseSchema)` to create a new message.
  */
 export const LaminaExportResponseSchema: GenMessage<LaminaExportResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 28);
+  messageDesc(file_shale_lamina_svc_g, 27);
 
 /**
  * @generated from message shale.AttemptAddRequest
@@ -1401,7 +1395,7 @@ export type AttemptAddRequest = Message<"shale.AttemptAddRequest"> & {
  * Use `create(AttemptAddRequestSchema)` to create a new message.
  */
 export const AttemptAddRequestSchema: GenMessage<AttemptAddRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 29);
+  messageDesc(file_shale_lamina_svc_g, 28);
 
 /**
  * @generated from message shale.AttemptGetRequest
@@ -1423,7 +1417,7 @@ export type AttemptGetRequest = Message<"shale.AttemptGetRequest"> & {
  * Use `create(AttemptGetRequestSchema)` to create a new message.
  */
 export const AttemptGetRequestSchema: GenMessage<AttemptGetRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 30);
+  messageDesc(file_shale_lamina_svc_g, 29);
 
 /**
  * @generated from message shale.AttemptSelect
@@ -1500,7 +1494,7 @@ export type AttemptSelect = Message<"shale.AttemptSelect"> & {
  * Use `create(AttemptSelectSchema)` to create a new message.
  */
 export const AttemptSelectSchema: GenMessage<AttemptSelect> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 31);
+  messageDesc(file_shale_lamina_svc_g, 30);
 
 /**
  * @generated from message shale.AttemptPatchRequest
@@ -1576,29 +1570,7 @@ export type AttemptPatchRequest = Message<"shale.AttemptPatchRequest"> & {
  * Use `create(AttemptPatchRequestSchema)` to create a new message.
  */
 export const AttemptPatchRequestSchema: GenMessage<AttemptPatchRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 32);
-
-/**
- * @generated from message shale.AttemptApplyRequest
- */
-export type AttemptApplyRequest = Message<"shale.AttemptApplyRequest"> & {
-  /**
-   * @generated from field: shale.AttemptRef ref = 1;
-   */
-  ref?: AttemptRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message shale.AttemptApplyRequest.
- * Use `create(AttemptApplyRequestSchema)` to create a new message.
- */
-export const AttemptApplyRequestSchema: GenMessage<AttemptApplyRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 33);
+  messageDesc(file_shale_lamina_svc_g, 31);
 
 /**
  * @generated from message shale.AttemptEraseResponse
@@ -1621,7 +1593,7 @@ export type AttemptEraseResponse = Message<"shale.AttemptEraseResponse"> & {
  * Use `create(AttemptEraseResponseSchema)` to create a new message.
  */
 export const AttemptEraseResponseSchema: GenMessage<AttemptEraseResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 34);
+  messageDesc(file_shale_lamina_svc_g, 32);
 
 /**
  * @generated from message shale.AttemptListRequest
@@ -1663,6 +1635,20 @@ export type AttemptListRequest = Message<"shale.AttemptListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: shale.AttemptSelect select = 6;
+   */
+  select?: AttemptSelect | undefined;
 };
 
 /**
@@ -1670,7 +1656,7 @@ export type AttemptListRequest = Message<"shale.AttemptListRequest"> & {
  * Use `create(AttemptListRequestSchema)` to create a new message.
  */
 export const AttemptListRequestSchema: GenMessage<AttemptListRequest> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 35);
+  messageDesc(file_shale_lamina_svc_g, 33);
 
 /**
  * @generated from message shale.AttemptListResponse
@@ -1700,7 +1686,7 @@ export type AttemptListResponse = Message<"shale.AttemptListResponse"> & {
  * Use `create(AttemptListResponseSchema)` to create a new message.
  */
 export const AttemptListResponseSchema: GenMessage<AttemptListResponse> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 36);
+  messageDesc(file_shale_lamina_svc_g, 34);
 
 /**
  * @generated from message shale.AttemptFilter
@@ -1732,7 +1718,7 @@ export type AttemptFilter = Message<"shale.AttemptFilter"> & {
  * Use `create(AttemptFilterSchema)` to create a new message.
  */
 export const AttemptFilterSchema: GenMessage<AttemptFilter> = /*@__PURE__*/
-  messageDesc(file_shale_lamina_svc_g, 37);
+  messageDesc(file_shale_lamina_svc_g, 35);
 
 /**
  * ReadState is what a reader is told about a lamina (§19).
@@ -1858,16 +1844,6 @@ export const LaminaService: GenService<{
     output: typeof LaminaSchema;
   },
   /**
-   * Apply applies a patch document to an existing Lamina
-   *
-   * @generated from rpc shale.LaminaService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof LaminaApplyRequestSchema;
-    output: typeof LaminaSchema;
-  },
-  /**
    * Erase deletes a Lamina
    *
    * @generated from rpc shale.LaminaService.Erase
@@ -1890,15 +1866,23 @@ export const LaminaService: GenService<{
   /**
    * Watch the Laminas this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc shale.LaminaService.Watch
    */
@@ -2044,16 +2028,6 @@ export const AttemptService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof AttemptPatchRequestSchema;
-    output: typeof AttemptSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Attempt
-   *
-   * @generated from rpc shale.AttemptService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof AttemptApplyRequestSchema;
     output: typeof AttemptSchema;
   },
   /**

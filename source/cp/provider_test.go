@@ -106,6 +106,10 @@ func TestRejectedReadsNeverBecomeEmptyOrReplaceCache(t *testing.T) {
 			c.reply.GetSources()[0].SetInput("rtsp://operator:fixture-secret@192.0.2.10/stream")
 		}, source.ErrInvalid},
 		{"transport", func(c *connection) { c.err = errors.New("rtsp://operator:fixture-secret@192.0.2.10/stream") }, source.ErrUnavailable},
+		// What a CP answers a failure that carried no status (payday's grpcx).
+		{"internal", func(c *connection) {
+			c.err = status.Error(codes.Internal, "the server failed to answer this; it is on its log")
+		}, source.ErrUnavailable},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			c, options := fixture()

@@ -208,6 +208,9 @@ var (
 		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "actor_id", Type: field.TypeUuid},
+		{Name: "caller_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "caller_tenant_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "presence", Type: field.TypeString, Nullable: true},
 		{Name: "trace_id", Type: field.TypeBytes},
 		{Name: "action", Type: field.TypeString},
 		{Name: "object_id", Type: field.TypeUuid},
@@ -230,42 +233,42 @@ var (
 			{
 				Name:    "audit_object",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[5]},
+				Columns: []*schema.Column{AuditColumns[8]},
 			},
 			{
 				Name:    "audit_trail",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[1], AuditColumns[7]},
+				Columns: []*schema.Column{AuditColumns[1], AuditColumns[10]},
 			},
 			{
 				Name:    "audit_by_actor_tenant",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[8], AuditColumns[7]},
+				Columns: []*schema.Column{AuditColumns[11], AuditColumns[10]},
 			},
 			{
 				Name:    "audit_by_counterpart",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[10], AuditColumns[7]},
+				Columns: []*schema.Column{AuditColumns[13], AuditColumns[10]},
 			},
 			{
 				Name:    "audit_by_domain",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[11], AuditColumns[7]},
+				Columns: []*schema.Column{AuditColumns[14], AuditColumns[10]},
 			},
 			{
 				Name:    "audit_by_tenant_domain",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[1], AuditColumns[11], AuditColumns[7]},
+				Columns: []*schema.Column{AuditColumns[1], AuditColumns[14], AuditColumns[10]},
 			},
 			{
 				Name:    "audit_by_actor",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[2], AuditColumns[7]},
+				Columns: []*schema.Column{AuditColumns[2], AuditColumns[10]},
 			},
 			{
 				Name:    "audit_by_time",
 				Unique:  false,
-				Columns: []*schema.Column{AuditColumns[7], AuditColumns[0]},
+				Columns: []*schema.Column{AuditColumns[10], AuditColumns[0]},
 			},
 		},
 	}
@@ -1293,6 +1296,8 @@ var (
 		{Name: "patch", Type: field.TypeBytes},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "event", Type: field.TypeBytes, Nullable: true},
+		{Name: "routes", Type: field.TypeBytes, Nullable: true},
+		{Name: "signal", Type: field.TypeBytes, Nullable: true},
 	}
 	// OutboxTable holds the schema information for the "outbox" table.
 	OutboxTable = &schema.Table{

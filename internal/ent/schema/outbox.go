@@ -32,6 +32,12 @@ func (Outbox) Fields() []ent.Field {
 		field.Bytes("event").
 			Nillable().
 			Optional(),
+		field.Bytes("routes").
+			Nillable().
+			Optional(),
+		field.Bytes("signal").
+			Nillable().
+			Optional(),
 	}
 }
 

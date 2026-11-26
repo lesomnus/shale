@@ -22,7 +22,6 @@ const (
 	CameraWorkerService_Add_FullMethodName              = "/shale.CameraWorkerService/Add"
 	CameraWorkerService_Get_FullMethodName              = "/shale.CameraWorkerService/Get"
 	CameraWorkerService_Patch_FullMethodName            = "/shale.CameraWorkerService/Patch"
-	CameraWorkerService_Apply_FullMethodName            = "/shale.CameraWorkerService/Apply"
 	CameraWorkerService_Erase_FullMethodName            = "/shale.CameraWorkerService/Erase"
 	CameraWorkerService_List_FullMethodName             = "/shale.CameraWorkerService/List"
 	CameraWorkerService_Watch_FullMethodName            = "/shale.CameraWorkerService/Watch"
@@ -46,23 +45,29 @@ type CameraWorkerServiceClient interface {
 	Get(ctx context.Context, in *CameraWorkerGetRequest, opts ...grpc.CallOption) (*CameraWorker, error)
 	// Patch updates an existing CameraWorker
 	Patch(ctx context.Context, in *CameraWorkerPatchRequest, opts ...grpc.CallOption) (*CameraWorker, error)
-	// Apply applies a patch document to an existing CameraWorker
-	Apply(ctx context.Context, in *CameraWorkerApplyRequest, opts ...grpc.CallOption) (*CameraWorker, error)
 	// Erase deletes a CameraWorker
 	Erase(ctx context.Context, in *CameraWorkerRef, opts ...grpc.CallOption) (*CameraWorkerEraseResponse, error)
 	// List reads CameraWorkers a page at a time.
 	List(ctx context.Context, in *CameraWorkerListRequest, opts ...grpc.CallOption) (*CameraWorkerListResponse, error)
 	// Watch the CameraWorkers this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *CameraWorkerWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraWorkerWatchResponse], error)
 	Join(ctx context.Context, in *CameraWorkerJoinRequest, opts ...grpc.CallOption) (*CameraWorkerJoinResponse, error)
 	Adopt(ctx context.Context, in *CameraWorkerAdoptRequest, opts ...grpc.CallOption) (*CameraWorker, error)
@@ -111,16 +116,6 @@ func (c *cameraWorkerServiceClient) Patch(ctx context.Context, in *CameraWorkerP
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CameraWorker)
 	err := c.cc.Invoke(ctx, CameraWorkerService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cameraWorkerServiceClient) Apply(ctx context.Context, in *CameraWorkerApplyRequest, opts ...grpc.CallOption) (*CameraWorker, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CameraWorker)
-	err := c.cc.Invoke(ctx, CameraWorkerService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -256,23 +251,29 @@ type CameraWorkerServiceServer interface {
 	Get(context.Context, *CameraWorkerGetRequest) (*CameraWorker, error)
 	// Patch updates an existing CameraWorker
 	Patch(context.Context, *CameraWorkerPatchRequest) (*CameraWorker, error)
-	// Apply applies a patch document to an existing CameraWorker
-	Apply(context.Context, *CameraWorkerApplyRequest) (*CameraWorker, error)
 	// Erase deletes a CameraWorker
 	Erase(context.Context, *CameraWorkerRef) (*CameraWorkerEraseResponse, error)
 	// List reads CameraWorkers a page at a time.
 	List(context.Context, *CameraWorkerListRequest) (*CameraWorkerListResponse, error)
 	// Watch the CameraWorkers this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*CameraWorkerWatchRequest, grpc.ServerStreamingServer[CameraWorkerWatchResponse]) error
 	Join(context.Context, *CameraWorkerJoinRequest) (*CameraWorkerJoinResponse, error)
 	Adopt(context.Context, *CameraWorkerAdoptRequest) (*CameraWorker, error)
@@ -305,9 +306,6 @@ func (UnimplementedCameraWorkerServiceServer) Get(context.Context, *CameraWorker
 }
 func (UnimplementedCameraWorkerServiceServer) Patch(context.Context, *CameraWorkerPatchRequest) (*CameraWorker, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedCameraWorkerServiceServer) Apply(context.Context, *CameraWorkerApplyRequest) (*CameraWorker, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedCameraWorkerServiceServer) Erase(context.Context, *CameraWorkerRef) (*CameraWorkerEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -413,24 +411,6 @@ func _CameraWorkerService_Patch_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CameraWorkerServiceServer).Patch(ctx, req.(*CameraWorkerPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CameraWorkerService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CameraWorkerApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CameraWorkerServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CameraWorkerService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CameraWorkerServiceServer).Apply(ctx, req.(*CameraWorkerApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -644,10 +624,6 @@ var CameraWorkerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _CameraWorkerService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _CameraWorkerService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

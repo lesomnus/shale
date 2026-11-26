@@ -2,7 +2,7 @@ edition = "2023";
 package shale;
 
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
+import "orm.proto";
 import "shale/payday/audit.proto";
 
 option go_package = "github.com/lesomnus/shale/api";
@@ -12,28 +12,37 @@ service AuditService {
   rpc Add(AuditAddRequest) returns (Audit);
   // Get retrieves a Audit
   rpc Get(AuditGetRequest) returns (Audit);
-  // Patch updates an existing Audit
-  rpc Patch(AuditPatchRequest) returns (Audit);
-  // Apply applies a patch document to an existing Audit
-  rpc Apply(AuditApplyRequest) returns (Audit);
-  // Erase deletes a Audit
-  rpc Erase(AuditRef) returns (AuditEraseResponse);
   // List reads Audits a page at a time.
   rpc List(AuditListRequest) returns (AuditListResponse);
 }
 
 message AuditAddRequest {
-  bytes id = 1;
-  bytes tenant_id = 2 [features.field_presence = IMPLICIT];
-  bytes actor_id = 8 [features.field_presence = IMPLICIT];
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
+  bytes tenant_id = 2 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
+  bytes actor_id = 8 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
+  bytes caller_id = 23 [(orm.field) = {type: TYPE_UUID}];
+  bytes caller_tenant_id = 24 [(orm.field) = {type: TYPE_UUID}];
+  string presence = 25;
   bytes trace_id = 9 [features.field_presence = IMPLICIT];
   string action = 10 [features.field_presence = IMPLICIT];
-  bytes object_id = 11 [features.field_presence = IMPLICIT];
+  bytes object_id = 11 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   bytes patch = 12 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
-  bytes actor_tenant_id = 16 [features.field_presence = IMPLICIT];
+  bytes actor_tenant_id = 16 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   bytes value = 17 [features.field_presence = IMPLICIT];
-  bytes counterpart_tenant_id = 18;
+  bytes counterpart_tenant_id = 18 [(orm.field) = {type: TYPE_UUID}];
   uint32 domain = 19;
   repeated uint32 fields = 20;
   bytes digest = 21;
@@ -47,7 +56,7 @@ message AuditGetRequest {
 
 message AuditRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   }
 }
 
@@ -55,6 +64,9 @@ message AuditSelect {
   bool all = 1;
   bool tenant_id = 2;
   bool actor_id = 8;
+  bool caller_id = 23;
+  bool caller_tenant_id = 24;
+  bool presence = 25;
   bool trace_id = 9;
   bool action = 10;
   bool object_id = 11;
@@ -67,42 +79,6 @@ message AuditSelect {
   bool fields = 20;
   bool digest = 21;
   bool digest_fields = 22;
-}
-
-message AuditPatchRequest {
-  AuditRef ref = 1;
-  bytes tenant_id = 4;
-  bytes actor_id = 16;
-  bytes trace_id = 18;
-  string action = 20;
-  bytes object_id = 22;
-  bytes patch = 24;
-  bytes actor_tenant_id = 32;
-  bytes value = 34;
-  bytes counterpart_tenant_id = 36;
-  // Clear counterpart_tenant_id instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and counterpart_tenant_id clears.
-  bool counterpart_tenant_id_null = 37;
-  uint32 domain = 38;
-  repeated uint32 fields = 40;
-  bytes digest = 42;
-  repeated uint32 digest_fields = 44;
-}
-
-message AuditApplyRequest {
-  AuditRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message AuditEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
 }
 
 message AuditListRequest {
@@ -126,6 +102,16 @@ message AuditListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  AuditSelect select = 6;
 }
 
 message AuditListResponse {
@@ -142,9 +128,9 @@ message AuditListResponse {
 }
 
 message AuditFilter {
-  bytes object_id = 1;
-  bytes actor_id = 2;
-  bytes tenant_id = 3;
-  bytes actor_tenant_id = 4;
-  bytes counterpart_tenant_id = 5;
+  bytes object_id = 1 [(orm.field) = {type: TYPE_UUID}];
+  bytes actor_id = 2 [(orm.field) = {type: TYPE_UUID}];
+  bytes tenant_id = 3 [(orm.field) = {type: TYPE_UUID}];
+  bytes actor_tenant_id = 4 [(orm.field) = {type: TYPE_UUID}];
+  bytes counterpart_tenant_id = 5 [(orm.field) = {type: TYPE_UUID}];
 }

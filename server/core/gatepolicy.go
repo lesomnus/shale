@@ -86,10 +86,14 @@ func denied(method, why string) error {
 // surface: rows the system writes (§35.3). An operator holding all of Shale
 // on the cluster API is no exception: what a general write would set there
 // is a state nothing else agrees with just the same.
+//
+// No entity has an Apply (each names the verbs it has, in `proto/shale/`), so
+// none is listed: a patch document would be a general write past every rule
+// below, and an AddressPolicy's TSIG secret stored as written (§34.10).
 func closedToEveryone(m string) bool {
 	// Camera authority rows change only through validated, fenced operations.
 	if strings.HasPrefix(m, "/shale.Camera") {
-		for _, verb := range []string{"/Add", "/Patch", "/Apply", "/Erase"} {
+		for _, verb := range []string{"/Add", "/Patch", "/Erase"} {
 			if strings.HasSuffix(m, verb) {
 				return true
 			}
@@ -97,9 +101,9 @@ func closedToEveryone(m string) bool {
 	}
 	switch {
 	case strings.HasPrefix(m, "/shale.LaminaService/"):
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Erase")
 	case strings.HasPrefix(m, "/shale.AttemptService/"):
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Erase")
 	case strings.HasPrefix(m, "/shale.ReaderService/"),
 		strings.HasPrefix(m, "/shale.NodeService/"), strings.HasPrefix(m, "/shale.DeviceService/"),
 		strings.HasPrefix(m, "/shale.SinkService/"), strings.HasPrefix(m, "/shale.SigningKeyService/"):
@@ -107,27 +111,23 @@ func closedToEveryone(m string) bool {
 		// the custom verbs of §32 (adopt, quarantine, retire, rotate, ...);
 		// a general write could set a state nothing else agrees with. Keys
 		// are made by Rotate.
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Patch")
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch")
 	case strings.HasPrefix(m, "/shale.CertificateAuthorityService/"):
 		// The CA set changes by Rotate and the leader's steps alone (§33.5):
 		// a CA written, patched or erased by hand is a bundle no host holds.
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Erase")
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Erase")
 	case strings.HasPrefix(m, "/shale.ProducerService/"):
 		// `producer patch` is the admin's, for the name, the labels and the
 		// live policy (§39.3); the core layer refuses the rest of the row.
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
+		return strings.HasSuffix(m, "/Add")
 	case strings.HasPrefix(m, "/shale.RelayService/"):
 		// `relay patch` is the operator's, for labels (§39.2).
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
+		return strings.HasSuffix(m, "/Add")
 	case strings.HasPrefix(m, "/shale.SatelliteService/"):
 		// `satellite patch` is the operator's, for labels (§41.2); the core
 		// layer refuses the rest of the row. A satellite row is made by its
 		// own Join.
-		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
-	case m == api.AddressPolicyService_Apply_FullMethodName:
-		// A dns policy's TSIG secret is sealed on its way in through Add
-		// and Patch (§34.10); a patch document would store it as written.
-		return true
+		return strings.HasSuffix(m, "/Add")
 	}
 
 	return false

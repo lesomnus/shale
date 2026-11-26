@@ -38,10 +38,9 @@ func TestCredentialMachineAllowlistIsResolveOnly(t *testing.T) {
 			}
 		}
 	}
+	// Neither has an Apply or an Erase at all (`proto/shale/camera_credential*.proto`).
 	for _, method := range []string{api.CameraCredentialService_Add_FullMethodName, api.CameraCredentialService_Patch_FullMethodName,
-		api.CameraCredentialService_Apply_FullMethodName, api.CameraCredentialService_Erase_FullMethodName,
-		api.CameraCredentialVersionService_Add_FullMethodName, api.CameraCredentialVersionService_Patch_FullMethodName,
-		api.CameraCredentialVersionService_Apply_FullMethodName, api.CameraCredentialVersionService_Erase_FullMethodName} {
+		api.CameraCredentialVersionService_Add_FullMethodName, api.CameraCredentialVersionService_Patch_FullMethodName} {
 		if !closedToEveryone(method) {
 			t.Fatal("generic mutation became a credential-store interface")
 		}
