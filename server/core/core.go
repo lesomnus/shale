@@ -147,6 +147,10 @@ type Deps struct {
 	// AllocationTTL is `allocation_ttl` (§12.1) when set; zero derives it
 	// from the set's link and the source's profile.
 	AllocationTTL time.Duration
+	// KeyRemembered is how long what roster said of a person's key is
+	// believed (`auth.operators.ttl`): what EndKey says a stream opened
+	// with the key may still run (§33.1). Zero is identity.OperatorsTtl.
+	KeyRemembered time.Duration
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger

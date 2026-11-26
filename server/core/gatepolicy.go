@@ -263,6 +263,22 @@ var personMay = map[string]bool{
 	api.ReaderService_Watch_FullMethodName:    true,
 }
 
+// ownKeys are a person's keys for Shale, made, listed and ended by the
+// person for themselves (§33.1): every person may call them on the tenant
+// API whatever roles they hold, and `reads: granted` too, since what they
+// are about is the caller's own and nobody else's. A key may call them
+// where its methods name them. The cluster API serves none of them: an
+// operator ends somebody else's key at roster.
+var ownKeys = map[string]bool{
+	api.HolderService_BeginKey_FullMethodName: true,
+	api.HolderService_PollKey_FullMethodName:  true,
+	api.HolderService_ListKeys_FullMethodName: true,
+	api.HolderService_EndKey_FullMethodName:   true,
+}
+
+// OwnKeys says whether a method is one of a person's own keys' (ownKeys).
+func OwnKeys(method string) bool { return ownKeys[method] }
+
 // PersonMay says whether every person may call a method on the tenant API
 // where roster says what people may change.
 func PersonMay(method string) bool { return personMay[method] }
@@ -293,6 +309,9 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 			return denied(m, "not something a reader does")
 		}
 	case DomHolder:
+		if ownKeys[m] {
+			return nil
+		}
 		if p.Operators != nil {
 			// Reading is everybody's, unless reads are granted too; the
 			// rest is what roster grants (§33.1).
@@ -399,6 +418,9 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	}
 	if strings.HasPrefix(m, "/shale.DelegationService/") {
 		return denied(m, "an app calls this on the tenant API with its exchange token and nothing else (§33.8)")
+	}
+	if ownKeys[m] {
+		return denied(m, "a person's keys for Shale are their own, on the tenant API; an operator ends somebody else's at roster")
 	}
 	switch kindOf(c.Actor) {
 	case DomNode:

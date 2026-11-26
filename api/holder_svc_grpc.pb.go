@@ -26,6 +26,10 @@ const (
 	HolderService_List_FullMethodName          = "/shale.HolderService/List"
 	HolderService_Watch_FullMethodName         = "/shale.HolderService/Watch"
 	HolderService_IssuePassword_FullMethodName = "/shale.HolderService/IssuePassword"
+	HolderService_BeginKey_FullMethodName      = "/shale.HolderService/BeginKey"
+	HolderService_PollKey_FullMethodName       = "/shale.HolderService/PollKey"
+	HolderService_ListKeys_FullMethodName      = "/shale.HolderService/ListKeys"
+	HolderService_EndKey_FullMethodName        = "/shale.HolderService/EndKey"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -67,6 +71,25 @@ type HolderServiceClient interface {
 	// only where roster runs in this process; at an external roster the
 	// operator does it there.
 	IssuePassword(ctx context.Context, in *HolderIssuePasswordRequest, opts ...grpc.CallOption) (*HolderIssuePasswordResponse, error)
+	// BeginKey begins making the caller a key for Shale. Where roster is
+	// elsewhere it is a terminal's sign-in for one key at roster's account
+	// app (`auth.roster.account`): the answer is where to send the caller's
+	// browser to say yes at the identity service and a handle for PollKey,
+	// and nothing is made without that yes. Where roster runs in this
+	// process the key is made at once and answered once, since this console
+	// is roster's front door there; a call made with a key does not make
+	// one there.
+	BeginKey(ctx context.Context, in *HolderBeginKeyRequest, opts ...grpc.CallOption) (*HolderBeginKeyResponse, error)
+	// PollKey asks whether the key BeginKey began is made yet: not yet,
+	// refused, lapsed, or made, with its token this once. Only the session
+	// or the key that began it may ask.
+	PollKey(ctx context.Context, in *HolderPollKeyRequest, opts ...grpc.CallOption) (*HolderPollKeyResponse, error)
+	// ListKeys is the caller's own keys for Shale, as roster holds them.
+	ListKeys(ctx context.Context, in *HolderListKeysRequest, opts ...grpc.CallOption) (*HolderListKeysResponse, error)
+	// EndKey ends one of the caller's keys for Shale at roster. Anything
+	// else -- somebody else's key, one of roster's own or for another app,
+	// one that is gone -- is NotFound.
+	EndKey(ctx context.Context, in *HolderEndKeyRequest, opts ...grpc.CallOption) (*HolderEndKeyResponse, error)
 }
 
 type holderServiceClient struct {
@@ -156,6 +179,46 @@ func (c *holderServiceClient) IssuePassword(ctx context.Context, in *HolderIssue
 	return out, nil
 }
 
+func (c *holderServiceClient) BeginKey(ctx context.Context, in *HolderBeginKeyRequest, opts ...grpc.CallOption) (*HolderBeginKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderBeginKeyResponse)
+	err := c.cc.Invoke(ctx, HolderService_BeginKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) PollKey(ctx context.Context, in *HolderPollKeyRequest, opts ...grpc.CallOption) (*HolderPollKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderPollKeyResponse)
+	err := c.cc.Invoke(ctx, HolderService_PollKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) ListKeys(ctx context.Context, in *HolderListKeysRequest, opts ...grpc.CallOption) (*HolderListKeysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderListKeysResponse)
+	err := c.cc.Invoke(ctx, HolderService_ListKeys_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) EndKey(ctx context.Context, in *HolderEndKeyRequest, opts ...grpc.CallOption) (*HolderEndKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderEndKeyResponse)
+	err := c.cc.Invoke(ctx, HolderService_EndKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -195,6 +258,25 @@ type HolderServiceServer interface {
 	// only where roster runs in this process; at an external roster the
 	// operator does it there.
 	IssuePassword(context.Context, *HolderIssuePasswordRequest) (*HolderIssuePasswordResponse, error)
+	// BeginKey begins making the caller a key for Shale. Where roster is
+	// elsewhere it is a terminal's sign-in for one key at roster's account
+	// app (`auth.roster.account`): the answer is where to send the caller's
+	// browser to say yes at the identity service and a handle for PollKey,
+	// and nothing is made without that yes. Where roster runs in this
+	// process the key is made at once and answered once, since this console
+	// is roster's front door there; a call made with a key does not make
+	// one there.
+	BeginKey(context.Context, *HolderBeginKeyRequest) (*HolderBeginKeyResponse, error)
+	// PollKey asks whether the key BeginKey began is made yet: not yet,
+	// refused, lapsed, or made, with its token this once. Only the session
+	// or the key that began it may ask.
+	PollKey(context.Context, *HolderPollKeyRequest) (*HolderPollKeyResponse, error)
+	// ListKeys is the caller's own keys for Shale, as roster holds them.
+	ListKeys(context.Context, *HolderListKeysRequest) (*HolderListKeysResponse, error)
+	// EndKey ends one of the caller's keys for Shale at roster. Anything
+	// else -- somebody else's key, one of roster's own or for another app,
+	// one that is gone -- is NotFound.
+	EndKey(context.Context, *HolderEndKeyRequest) (*HolderEndKeyResponse, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -225,6 +307,18 @@ func (UnimplementedHolderServiceServer) Watch(*HolderWatchRequest, grpc.ServerSt
 }
 func (UnimplementedHolderServiceServer) IssuePassword(context.Context, *HolderIssuePasswordRequest) (*HolderIssuePasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IssuePassword not implemented")
+}
+func (UnimplementedHolderServiceServer) BeginKey(context.Context, *HolderBeginKeyRequest) (*HolderBeginKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginKey not implemented")
+}
+func (UnimplementedHolderServiceServer) PollKey(context.Context, *HolderPollKeyRequest) (*HolderPollKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PollKey not implemented")
+}
+func (UnimplementedHolderServiceServer) ListKeys(context.Context, *HolderListKeysRequest) (*HolderListKeysResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListKeys not implemented")
+}
+func (UnimplementedHolderServiceServer) EndKey(context.Context, *HolderEndKeyRequest) (*HolderEndKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EndKey not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -366,6 +460,78 @@ func _HolderService_IssuePassword_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_BeginKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderBeginKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).BeginKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_BeginKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).BeginKey(ctx, req.(*HolderBeginKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_PollKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderPollKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).PollKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_PollKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).PollKey(ctx, req.(*HolderPollKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_ListKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderListKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).ListKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_ListKeys_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).ListKeys(ctx, req.(*HolderListKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_EndKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderEndKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).EndKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_EndKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).EndKey(ctx, req.(*HolderEndKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -396,6 +562,22 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IssuePassword",
 			Handler:    _HolderService_IssuePassword_Handler,
+		},
+		{
+			MethodName: "BeginKey",
+			Handler:    _HolderService_BeginKey_Handler,
+		},
+		{
+			MethodName: "PollKey",
+			Handler:    _HolderService_PollKey_Handler,
+		},
+		{
+			MethodName: "ListKeys",
+			Handler:    _HolderService_ListKeys_Handler,
+		},
+		{
+			MethodName: "EndKey",
+			Handler:    _HolderService_EndKey_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

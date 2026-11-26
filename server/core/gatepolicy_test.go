@@ -336,3 +336,31 @@ func TestSatelliteHasOnlyItsOwnVerbs(t *testing.T) {
 	require.NoError(t, byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: api.SatelliteService_Patch_FullMethodName}))
 	require.NoError(t, byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: api.SatelliteService_Adopt_FullMethodName}))
 }
+
+// A person's own keys for Shale are every person's to make, list and end
+// on the tenant API (§33.1), whatever roster grants them, with reads
+// granted or not and with roster down, since nothing about another person
+// is in them; no host's; and nobody's on the cluster API, an operator's
+// included.
+func TestOwnKeysAreEveryPersonsOnTheTenantApi(t *testing.T) {
+	ctx := context.Background()
+	tenant, person := pdid.New(DomTenant), pdid.New(DomHolder)
+	ops := &fakeOperators{tenant: tenant, down: true}
+	ops.grant(tenant, person, "/shale.*/*")
+	methods := []string{
+		api.HolderService_BeginKey_FullMethodName, api.HolderService_PollKey_FullMethodName,
+		api.HolderService_ListKeys_FullMethodName, api.HolderService_EndKey_FullMethodName,
+	}
+	for _, m := range methods {
+		for _, p := range []TenantPolicy{{}, {Operators: ops}, {Operators: ops, Reads: true}} {
+			require.NoError(t, p.May(ctx, gate.Call{Actor: person, Tenant: tenant, Action: m}), "%s, %+v", m, p)
+		}
+		require.Equal(t, codes.PermissionDenied, status.Code(TenantPolicy{}.May(ctx, gate.Call{Actor: pdid.New(DomProducer), Tenant: tenant, Action: m})), m)
+		require.Equal(t, codes.PermissionDenied, status.Code(TenantPolicy{}.May(ctx, gate.Call{Actor: pdid.New(DomReader), Tenant: tenant, Action: m})), m)
+		ops.down = false
+		err := ClusterPolicy{ClusterTenant: tenant, Operators: ops}.May(ctx, gate.Call{Actor: person, Tenant: tenant, Action: m})
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "%s on the cluster API, an operator: %v", m, err)
+		ops.down = true
+	}
+	require.Zero(t, ops.asked, "roster is not asked about a person's own keys")
+}

@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
@@ -389,5 +390,44 @@ func (k *keys) follow(sum [sha256.Size]byte, token string, v *keyStreams) {
 
 			return
 		}
+	}
+}
+
+// credential says, to the core layer, which credential a call on the
+// tenant API came with, by a digest of it (core.WithCredential): the
+// session's cookie, the person's key, or, in development, the plain
+// header's person. A handle BeginKey seals is bound to it, so PollKey is
+// answered only to the session or the key that began it (§33.1). Nothing
+// of the credential is kept.
+func (s *Server) credential(surface Surface) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if surface != SurfaceTenant || !core.OwnKeys(info.FullMethod) {
+			return handler(ctx, req)
+		}
+		f, ok := frame.From(ctx)
+		if !ok {
+			return handler(ctx, req)
+		}
+		md, _ := metadata.FromIncomingContext(ctx)
+		var of string
+		switch f.Authentication.Method {
+		case authsession.Method:
+			if ss := s.Sessions[SurfaceTenant]; ss != nil {
+				if v := ss.KeyOf(md.Get("cookie")); v != "" {
+					of = "session\x00" + v
+				}
+			}
+		case auth.MethodBearer:
+			if v := keyOf(md); v != "" {
+				of = "key\x00" + v
+			}
+		case auth.MethodPlain:
+			of = "plain\x00" + f.Actor.String()
+		}
+		if of != "" {
+			ctx = core.WithCredential(ctx, sha256.Sum256([]byte(of)))
+		}
+
+		return handler(ctx, req)
 	}
 }

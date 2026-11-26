@@ -1,6 +1,7 @@
 edition = "2023";
 package shale;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "shale/payday/holder.proto";
@@ -44,6 +45,25 @@ service HolderService {
   // only where roster runs in this process; at an external roster the
   // operator does it there.
   rpc IssuePassword(HolderIssuePasswordRequest) returns (HolderIssuePasswordResponse);
+  // BeginKey begins making the caller a key for Shale. Where roster is
+  // elsewhere it is a terminal's sign-in for one key at roster's account
+  // app (`auth.roster.account`): the answer is where to send the caller's
+  // browser to say yes at the identity service and a handle for PollKey,
+  // and nothing is made without that yes. Where roster runs in this
+  // process the key is made at once and answered once, since this console
+  // is roster's front door there; a call made with a key does not make
+  // one there.
+  rpc BeginKey(HolderBeginKeyRequest) returns (HolderBeginKeyResponse);
+  // PollKey asks whether the key BeginKey began is made yet: not yet,
+  // refused, lapsed, or made, with its token this once. Only the session
+  // or the key that began it may ask.
+  rpc PollKey(HolderPollKeyRequest) returns (HolderPollKeyResponse);
+  // ListKeys is the caller's own keys for Shale, as roster holds them.
+  rpc ListKeys(HolderListKeysRequest) returns (HolderListKeysResponse);
+  // EndKey ends one of the caller's keys for Shale at roster. Anything
+  // else -- somebody else's key, one of roster's own or for another app,
+  // one that is gone -- is NotFound.
+  rpc EndKey(HolderEndKeyRequest) returns (HolderEndKeyResponse);
 }
 
 message HolderAddRequest {
@@ -228,4 +248,130 @@ message HolderIssuePasswordRequest {
 
 message HolderIssuePasswordResponse {
   string password = 1 [features.field_presence = IMPLICIT];
+}
+
+message HolderBeginKeyRequest {
+  // What the key is called, in the spelling roster keeps a name in:
+  // small letters, digits and single hyphens, beginning with a letter.
+  string name = 1 [features.field_presence = IMPLICIT];
+  // The methods of Shale's it may call, in full: each one the caller
+  // holds at Shale, by a role of Shale's at roster, or roster refuses it.
+  repeated string methods = 2;
+  // When it stops working, after now; unset is a key that does not.
+  google.protobuf.Timestamp date_expired = 3;
+  // Shale's own word about the key, which roster keeps on it and answers
+  // back when it is used (`ApiKey.scope`); empty for none.
+  string scope = 4 [features.field_presence = IMPLICIT];
+}
+
+// HolderBeginKeyResponse is one answer of two shapes, told apart by
+// `token`.
+//
+// Where roster is elsewhere `token` is empty, and `approve_at`,
+// `user_code`, `handle`, `interval` and `date_lapses` are said: the
+// caller's browser goes to `approve_at` to say yes, and PollKey is asked
+// with `handle` every `interval` until it answers otherwise than pending.
+//
+// Where roster runs in this process `token` and `key` are said and the
+// rest is empty: the key is made, and there is nothing to poll.
+message HolderBeginKeyResponse {
+  // Where the person says yes at the identity service, the code in it:
+  // roster's account app's `verification_uri_complete`.
+  string approve_at = 1 [features.field_presence = IMPLICIT];
+  // The code that page asks for, for a person who opens it by hand.
+  string user_code = 2 [features.field_presence = IMPLICIT];
+  // What PollKey takes: sealed by Shale, opaque to whoever holds it, and
+  // answered only to the session or the key that began it.
+  string handle = 3 [features.field_presence = IMPLICIT];
+  // How long to wait between two PollKey.
+  google.protobuf.Duration interval = 4;
+  // When the code lapses unless somebody said yes.
+  google.protobuf.Timestamp date_lapses = 5;
+
+  // The key's token, this once; only where roster runs in this process.
+  string token = 6 [features.field_presence = IMPLICIT];
+  // The key, as roster holds it; only beside `token`.
+  HolderKey key = 7;
+}
+
+// HolderKey is a key of the caller's for Shale, as roster holds it; never
+// its token, which is answered once, when it is made.
+message HolderKey {
+  // roster's identifier of the key: what EndKey takes.
+  bytes id = 1 [features.field_presence = IMPLICIT];
+  // What the person called it.
+  string name = 2 [features.field_presence = IMPLICIT];
+  // The methods of Shale's it may call, in full.
+  repeated string methods = 3;
+  // When it stops working; unset is a key that does not.
+  google.protobuf.Timestamp date_expired = 4;
+  // When it was last used; unset is never.
+  google.protobuf.Timestamp date_used = 5;
+  // When it was made.
+  google.protobuf.Timestamp date_created = 6;
+  // The word Shale had roster keep on it when it was made, as roster
+  // holds it (`ApiKey.scope`); empty for none. Nothing reads it yet.
+  string scope = 7 [features.field_presence = IMPLICIT];
+}
+
+message HolderPollKeyRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+}
+
+message HolderPollKeyResponse {
+  HolderKeyState state = 1 [features.field_presence = IMPLICIT];
+  // The key's token, this once, when `state` is MADE.
+  string token = 2 [features.field_presence = IMPLICIT];
+  // How long to wait before asking again, when `state` is PENDING.
+  google.protobuf.Duration interval = 3;
+}
+
+// HolderKeyState is where a key BeginKey began is.
+enum HolderKeyState {
+  HOLDER_KEY_STATE_UNSPECIFIED = 0;
+  // Nobody has said yes or no yet: ask again after the interval.
+  HOLDER_KEY_STATE_PENDING = 1;
+  // Made: `token` is the key's, answered this once.
+  HOLDER_KEY_STATE_MADE = 2;
+  // The person said no at the identity service. Nothing was made.
+  HOLDER_KEY_STATE_REFUSED = 3;
+  // Nobody said yes in time, or the key was carried away already by an
+  // earlier PollKey. Nothing more comes of this handle.
+  HOLDER_KEY_STATE_LAPSED = 4;
+}
+
+message HolderListKeysRequest {}
+
+message HolderListKeysResponse {
+  repeated HolderKey keys = 1;
+  // The methods of Shale's the caller holds across their tenant, by a role
+  // of Shale's at roster, of those the tenant API serves: what a key of
+  // theirs may be given, and nothing else. Empty is a person who holds
+  // none, who can make no key (roster's rule: a key acts as its person).
+  repeated string holds = 2;
+  // The console's reads, with Get beside every Watch: what every person
+  // reads where roster says what people may change (§33.1), and what a key
+  // that views and reads names, of those the caller holds.
+  repeated string reads = 3;
+  // How long a call made with a key may still be served, and a stream
+  // opened with it still run, once it is ended (`auth.operators.ttl`).
+  google.protobuf.Duration remembered = 4;
+  // Why `holds` is empty where that is this deployment's doing and not the
+  // person's: roster runs in this process and the deployment names no
+  // operators (`auth.operators`), so no role of Shale's exists for anybody
+  // to hold. Empty otherwise.
+  string none_held = 5 [features.field_presence = IMPLICIT];
+}
+
+message HolderEndKeyRequest {
+  // The key, by roster's identifier (`HolderKey.id`).
+  bytes id = 1 [features.field_presence = IMPLICIT];
+}
+
+message HolderEndKeyResponse {
+  // How long a call made with the key may still be served, and a stream
+  // opened with it still run: what roster said of a key is believed for
+  // `auth.operators.ttl` (30 s), and a key with a stream open is asked
+  // about again when that runs out (§33.1).
+  google.protobuf.Duration remembered = 1;
 }

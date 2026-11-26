@@ -600,3 +600,47 @@ func (s *Store) InstallApp(ctx context.Context, tenant, app string, serves, admi
 
 	return err
 }
+
+// IssueKeyAs mints a person a key for Shale at the roster in this process,
+// as they do it themselves at a front door: roster's `ApiKeyService/Issue`
+// asked as the person, so the methods are held to what they hold at Shale
+// (a role of Shale's), and the key's name, end and scope are refused in
+// roster's words. This console is that front door where roster runs here
+// (§33.1). Answers the token, shown this once, and the key.
+func (s *Store) IssueKeyAs(ctx context.Context, tenant, holder pdid.Id, k TerminalKey) (string, *rstr.ApiKey, error) {
+	if s.em == nil {
+		return "", nil, ErrExternal
+	}
+	p, err := s.lookupOwn(ctx, holder)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return "", nil, ErrNoPerson
+		}
+
+		return "", nil, err
+	}
+	if p.Tenant != tenant {
+		return "", nil, ErrNoPerson
+	}
+	if err := s.ensureAgent(ctx, p.TenantAlias); err != nil {
+		return "", nil, err
+	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
+	as := auth.PlainProvider("@" + p.TenantAlias + "/" + p.Alias).Provide(ctx)
+	v, err := rstr.NewApiKeyServiceClient(s.conn).Issue(as, issueRequest(tenant, holder, k))
+	if err != nil {
+		return "", nil, err
+	}
+	key := v.GetKey()
+	if got, err := s.Keys(ctx, tenant, holder); err == nil {
+		// The row as listing answers it, with the app's name beside it.
+		for _, w := range got {
+			if bytes.Equal(w.GetId(), key.GetId()) {
+				key = w
+			}
+		}
+	}
+
+	return v.GetToken(), key, nil
+}

@@ -322,6 +322,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		}
 	}
 	deps.Operators, deps.Reads = s.operators(), c.Auth.Operators.GrantedReads()
+	deps.KeyRemembered = c.Auth.Operators.Ttl
 	if c.Auth.Delegation.On() {
 		deps.Delegations, deps.DelegationConfig = delegations{s}, c.Auth.Delegation.core()
 	}
@@ -720,6 +721,7 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), public(surface))).
 		WithUnary(s.keyEnds()).
 		WithStream(s.keyStreams()).
+		WithUnary(s.credential(surface)).
 		// A call costs what it asks for (`pd.Cost`): one, but for an AddMany,
 		// which costs one for each of its items.
 		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant(), pd.Cost)).

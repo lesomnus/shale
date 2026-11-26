@@ -20483,6 +20483,38 @@ func (s guardedHolder) IssuePassword(ctx context.Context, req *api.HolderIssuePa
 	return s.HolderServiceServer.IssuePassword(ctx, req)
 }
 
+func (s guardedHolder) BeginKey(ctx context.Context, req *api.HolderBeginKeyRequest) (*api.HolderBeginKeyResponse, error) {
+	if err := gate.Direct(ctx, api.HolderService_BeginKey_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.HolderServiceServer.BeginKey(ctx, req)
+}
+
+func (s guardedHolder) PollKey(ctx context.Context, req *api.HolderPollKeyRequest) (*api.HolderPollKeyResponse, error) {
+	if err := gate.Direct(ctx, api.HolderService_PollKey_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.HolderServiceServer.PollKey(ctx, req)
+}
+
+func (s guardedHolder) ListKeys(ctx context.Context, req *api.HolderListKeysRequest) (*api.HolderListKeysResponse, error) {
+	if err := gate.Direct(ctx, api.HolderService_ListKeys_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.HolderServiceServer.ListKeys(ctx, req)
+}
+
+func (s guardedHolder) EndKey(ctx context.Context, req *api.HolderEndKeyRequest) (*api.HolderEndKeyResponse, error) {
+	if err := gate.Direct(ctx, api.HolderService_EndKey_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.HolderServiceServer.EndKey(ctx, req)
+}
+
 // guardedDelegation enforces method declarations on in-process calls too.
 type guardedDelegation struct{ api.DelegationServiceServer }
 
@@ -27196,6 +27228,26 @@ func (s interceptHolder) Watch(req *api.HolderWatchRequest, out grpc.ServerStrea
 func (s interceptHolder) IssuePassword(ctx context.Context, req *api.HolderIssuePasswordRequest) (*api.HolderIssuePasswordResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
 		api.HolderService_IssuePassword_FullMethodName, req, s.HolderServiceServer.IssuePassword)
+}
+
+func (s interceptHolder) BeginKey(ctx context.Context, req *api.HolderBeginKeyRequest) (*api.HolderBeginKeyResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_BeginKey_FullMethodName, req, s.HolderServiceServer.BeginKey)
+}
+
+func (s interceptHolder) PollKey(ctx context.Context, req *api.HolderPollKeyRequest) (*api.HolderPollKeyResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_PollKey_FullMethodName, req, s.HolderServiceServer.PollKey)
+}
+
+func (s interceptHolder) ListKeys(ctx context.Context, req *api.HolderListKeysRequest) (*api.HolderListKeysResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_ListKeys_FullMethodName, req, s.HolderServiceServer.ListKeys)
+}
+
+func (s interceptHolder) EndKey(ctx context.Context, req *api.HolderEndKeyRequest) (*api.HolderEndKeyResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_EndKey_FullMethodName, req, s.HolderServiceServer.EndKey)
 }
 
 func (s Intercept) Delegation() api.DelegationServiceServer {

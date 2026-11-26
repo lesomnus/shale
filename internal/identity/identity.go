@@ -83,6 +83,19 @@ type Config struct {
 	// no key here is one this deployment does not serve, whatever roster
 	// holds. Not together with Key.
 	Keys map[string]string `yaml:"keys"`
+	// Account is roster's account app, its front door, by its base URL as
+	// this server reaches it (`https://account.example.com`): where a
+	// person's key for Shale is made from the console, as a terminal's
+	// sign-in for one key, when roster is elsewhere (§33.1). The name it is
+	// reached by is the one roster serves the tenant at (a `Host` of the
+	// tenant's at roster), which is how the account app tells whose front
+	// door a request is; and where the person is sent to say yes is the
+	// address the account app answers (its `account.base`, or this one).
+	// Its deployment turns the terminal's sign-in on (`account.terminal`).
+	// Empty is no key made from here; listing and ending them need none.
+	// Only with Addr: where roster runs in this process, this console is
+	// its front door.
+	Account string `yaml:"account"`
 	// Db is the embedded roster's database. Empty is SQLite beside the
 	// control plane's state; a deployment with more than one control plane
 	// names one they share.
@@ -179,6 +192,8 @@ type Store struct {
 
 	// The embedded roster, nil for an external one.
 	em *embedded
+	// account is roster's account app, where one is named.
+	account *accountClient
 
 	mu     sync.Mutex
 	agents map[string]bool
@@ -206,6 +221,9 @@ func Open(ctx context.Context, cfg Config, stateDir string, log *slog.Logger) (*
 		log = slog.Default()
 	}
 	s := &Store{cfg: cfg, log: log, agents: map[string]bool{}, aliases: map[pdid.Id]string{}, now: time.Now}
+	if cfg.Embedded() && cfg.Account != "" && !cfg.None {
+		return nil, errors.New("auth.roster.account: roster runs in this process, whose front door is this console; the account app is named for a roster elsewhere (auth.roster.addr)")
+	}
 	if cfg.Embedded() {
 		em, err := openEmbedded(ctx, cfg, stateDir, log)
 		if err != nil {
@@ -221,6 +239,13 @@ func Open(ctx context.Context, cfg Config, stateDir string, log *slog.Logger) (*
 		return s, nil
 	}
 
+	if cfg.Account != "" {
+		a, err := newAccountClient(cfg)
+		if err != nil {
+			return nil, err
+		}
+		s.account = a
+	}
 	if cfg.Key != "" && len(cfg.Keys) > 0 {
 		return nil, errors.New("auth.roster: key or keys, not both -- one deployment key, or a tenant key per tenant")
 	}

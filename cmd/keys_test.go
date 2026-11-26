@@ -12,10 +12,13 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/identity"
+	"github.com/lesomnus/shale/server/core"
 )
 
 // A person's key for Shale at the door (§33.1): told apart by its prefix
@@ -267,4 +270,47 @@ func TestPersonsKeyScopeIsTheCallsAndNotThePersons(t *testing.T) {
 	}
 	require.Equal(t, 1, asked["rt_cams"], "kept with the rest of what roster said of the key")
 	require.Len(t, kept, 1, "one frame kept for the person, and two scopes")
+}
+
+// A handle BeginKey seals is bound to the credential the call came with
+// (§33.1): the tenant API tells the core layer which, by a digest -- one
+// session's cookie, one key -- and the same credential is the same digest
+// while another is another. Nothing is said on the cluster API, nor for a
+// method that is not one of a person's own keys'.
+func TestOwnKeysAreBoundToTheCredential(t *testing.T) {
+	sealed, err := authsession.NewSealed(make([]byte, 32))
+	require.NoError(t, err)
+	s := &Server{Sessions: map[Surface]*authsession.Sessions{SurfaceTenant: authsession.New(sealed, authsession.WithCookie("shale_tenant"))}}
+	bob, tenant := pdid.New(2), pdid.New(1)
+	digest := func(surface Surface, method, how string, header ...string) ([32]byte, bool) {
+		t.Helper()
+		f := frame.New(bob, tenant, frame.Grant{})
+		v := *f
+		v.Authentication = frame.Authentication{Method: how}
+		ctx := metadata.NewIncomingContext(frame.Into(context.Background(), &v), metadata.Pairs(header...))
+		var got [32]byte
+		var ok bool
+		_, err := s.credential(surface)(ctx, nil, &grpc.UnaryServerInfo{FullMethod: method}, func(ctx context.Context, _ any) (any, error) {
+			got, ok = core.CredentialFrom(ctx)
+			return nil, nil
+		})
+		require.NoError(t, err)
+		return got, ok
+	}
+	begin := api.HolderService_BeginKey_FullMethodName
+	one, ok := digest(SurfaceTenant, begin, authsession.Method, "cookie", "shale_tenant=one")
+	require.True(t, ok)
+	again, _ := digest(SurfaceTenant, api.HolderService_PollKey_FullMethodName, authsession.Method, "cookie", "other=x; shale_tenant=one")
+	require.Equal(t, one, again, "the same session")
+	two, _ := digest(SurfaceTenant, begin, authsession.Method, "cookie", "shale_tenant=two")
+	require.NotEqual(t, one, two, "another session of the same person")
+	key, ok := digest(SurfaceTenant, begin, auth.MethodBearer, "authorization", "Bearer rt_one")
+	require.True(t, ok)
+	other, _ := digest(SurfaceTenant, begin, auth.MethodBearer, "authorization", "Bearer rt_two")
+	require.NotEqual(t, key, other, "another key")
+	require.NotEqual(t, one, key)
+	_, ok = digest(SurfaceCluster, begin, authsession.Method, "cookie", "shale_tenant=one")
+	require.False(t, ok, "the cluster API")
+	_, ok = digest(SurfaceTenant, api.SetService_List_FullMethodName, authsession.Method, "cookie", "shale_tenant=one")
+	require.False(t, ok, "not one of a person's own keys'")
 }
