@@ -108,11 +108,35 @@ func delegatedFrom(ctx context.Context) (delegated, bool) {
 	return v, ok
 }
 
+// credentialEndsKey marks a context served for a credential that ends:
+// a person's key with an end (§33.1). A token issued in it -- a view
+// token, a read token, an export ticket -- lives no longer than the
+// credential it was asked for with, as a stream opened with one is cut at
+// its end (payday's `auth.InterceptorStream`), so a live view or a signed
+// URL does not outlive the key.
+type credentialEndsKey struct{}
+
+// WithCredentialEnds says the credential a call came with ends at t.
+func WithCredentialEnds(ctx context.Context, t time.Time) context.Context {
+	return context.WithValue(ctx, credentialEndsKey{}, t)
+}
+
+// CredentialEndsFrom is when the credential a call came with ends, where
+// it does.
+func CredentialEndsFrom(ctx context.Context) (time.Time, bool) {
+	v, ok := ctx.Value(credentialEndsKey{}).(time.Time)
+
+	return v, ok && !v.IsZero()
+}
+
 // claimsFor is what a token issued in ctx says of who asked: the actor and
 // its tenant, and the app when it asked for them; and the expiry, shortened
-// to a delegation's.
+// to a delegation's and to the end of the credential the call came with.
 func claimsFor(ctx context.Context, f *frame.Frame, b *api.TokenClaims_builder, now, exp time.Time) {
 	b.Actor, b.ActorTenant = f.Actor.Bytes(), f.Tenant.Bytes()
+	if ends, ok := CredentialEndsFrom(ctx); ok && ends.Before(exp) {
+		exp = ends
+	}
 	if d, ok := delegatedFrom(ctx); ok {
 		b.Delegator = d.app.Bytes()
 		if e := now.Add(d.ttl); e.Before(exp) {

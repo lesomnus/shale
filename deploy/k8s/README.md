@@ -341,7 +341,9 @@ in front (§33.1), Shale runs no roster of its own and takes no password:
 
    The key holds one method as itself -- listing the tenants that
    nominated it, and `/roster.SyncService/Watch` beside it where apps view
-   on people's behalf -- and is answered in each of them as
+   on people's behalf, or where a person's keys for Shale are to stop the
+   moment they are suspended rather than within `auth.operators.ttl` -- and
+   is answered in each of them as
    the holder that tenant nominated (roster's `docs/apps.md`). Then a role
    **of Shale's** (`"app"` the holder `shale` of the tenant) naming
    `/shale.*/*` (all of Shale) or the services somebody looks after, bound
@@ -349,7 +351,9 @@ in front (§33.1), Shale runs no roster of its own and takes no password:
    ([§33.1](../../docs/10-security.md#331-trust-model)); `Host` rows for the two
    names below; and two OAuth clients -- the console's (confidential,
    authorization code, both callbacks) and the CLI's (public, device
-   grant).
+   grant). People's keys for Shale, for their scripts
+   ([§33.1](../../docs/10-security.md#331-trust-model)), need nothing more:
+   `/payday.TokenService/Introspect` in `--allow` is how Shale checks one.
 2. **Two Secrets** in the `shale` namespace: the key, and the console
    client's secret, each mounted as a file in both API Deployments
    (`/run/shale/roster/key`, `/run/shale/oidc/client-secret`).

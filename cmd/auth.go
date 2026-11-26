@@ -26,11 +26,11 @@ import (
 // Resolver turns a claim into the frame a request is served in.
 //
 // Two kinds of principal exist (§33.1): people, who are Holders and arrive
-// with a session or, in development, a plain header; and hosts, whose
-// certificate names their row. A host is served only while its row is
-// adopted and records the serial of the certificate it presented, which is
-// how an erased host or a replaced certificate is refused without a
-// revocation list (§33.4).
+// with a session, a key of theirs for Shale, or, in development, a plain
+// header; and hosts, whose certificate names their row. A host is served
+// only while its row is adopted and records the serial of the certificate
+// it presented, which is how an erased host or a replaced certificate is
+// refused without a revocation list (§33.4).
 //
 // It reads through the server the wall was never installed on: working out
 // who is calling happens before there is anybody to be walled by.
@@ -79,6 +79,10 @@ func Resolver(s *Server) auth.Resolver {
 
 		switch k.Domain() {
 		case core.DomHolder:
+			if id.Authority == authorityKey {
+				return keyFrame(ctx, s, k, id)
+			}
+
 			return holderFrame(ctx, own, api.HolderRef_builder{Id: k.Bytes()}.Build())
 		case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay, core.DomSatellite, core.DomCameraWorker:
 			return hostFrame(ctx, own, k, id)
@@ -110,6 +114,50 @@ func holderFrame(ctx context.Context, own api.Server, ref *api.HolderRef) (*fram
 	}
 
 	return frame.New(actor, tenant, frame.Grant{}).WithRow(v), nil
+}
+
+// keyFrame is the person a key of theirs for Shale names (§33.1), resolved
+// to Shale's own row as a sign-in resolves them: somebody arriving for the
+// first time gets their rows now, read from roster as Shale in the tenant
+// roster answered the key in, since `Introspect` says who by identifier
+// and not by name; somebody roster has suspended is refused as at a
+// sign-in, and so is a key whose holder roster has no more.
+//
+// The frame is the person's, and the gate decides for them as for a
+// session (`TenantPolicy.May`, `auth.operators`); payday's interceptor
+// puts the key's grant on it -- its methods -- and refuses a method it
+// does not name before anything here is asked.
+//
+// This is where a later change narrows a key to some cameras: roster is
+// to answer a key's scope beside its methods (a field of payday's
+// `TokenIntrospectResponse` it is gaining), which goes onto this frame
+// beside the grant, for a scope beside `pd.Wall` and `pd.Grouped` to read.
+// It is the key's, not the person's: nothing that is kept per person
+// (`Sites.Of`, `identity.Operators`, the standing of sessions) may hold it.
+func keyFrame(ctx context.Context, s *Server, k pdid.Id, id auth.Identity) (*frame.Frame, error) {
+	own := s.Ungated
+	ref := api.HolderRef_builder{Id: k.Bytes()}.Build()
+	f, err := holderFrame(ctx, own, ref)
+	if err == nil || !errors.Is(err, auth.ErrNoCredential) || s.Identity == nil {
+		return f, err
+	}
+	tenant, err := pdid.Parse(id.TenantId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: roster named no tenant for the key: %s", auth.ErrNoCredential, err)
+	}
+	p, err := s.Identity.PersonIn(ctx, tenant, k)
+	if err != nil {
+		if errors.Is(err, identity.ErrNoPerson) || errors.Is(err, identity.ErrNoTenant) || errors.Is(err, identity.ErrRefused) {
+			return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
+		}
+
+		return nil, fmt.Errorf("%w: roster: %w", auth.ErrUnavailable, err)
+	}
+	if _, err := s.Provision(ctx, p); err != nil {
+		return nil, err
+	}
+
+	return holderFrame(ctx, own, ref)
 }
 
 // hostFrame resolves a host by its row, and refuses it unless adopted and,

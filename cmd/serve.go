@@ -137,6 +137,9 @@ type Server struct {
 	// standing is what roster says of the people sessions name, asked on
 	// every call a session makes and kept a short while (§33.7).
 	standing *standing
+	// keys is what roster says of the keys people present for Shale on
+	// the tenant API (§33.1); nil without roster.
+	keys *keys
 	// provisionMu serializes making rows for people, so two first sign-ins
 	// of a tenant do not both become its admin.
 	provisionMu sync.Mutex
@@ -371,7 +374,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Dns.Leader = s.Leader.Is
 	}
 	s.Spin = append(s.Spin, s.Jobs, s.Directives, s.Dns)
-	if c.Auth.Delegation.On() {
+	if c.Auth.Delegation.On() || !c.Auth.Roster.None {
 		s.Spin = append(s.Spin, spin.Func(s.followStanding))
 	}
 	if c.Watch.Outbox && b != nil {
@@ -386,8 +389,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Spin = append(s.Spin, core.TrailSweep(pd.TrailStore(client), policy, leader))
 	}
 
-	// Who is calling: a session cookie, the certificate, and in development
-	// the plain header (§33.1). Sessions are sealed into the cookie under a
+	// Who is calling: a session cookie, on the tenant API a person's key
+	// for Shale, the certificate, and in development the plain header
+	// (§33.1). Sessions are sealed into the cookie under a
 	// key derived from the KEK, so every CP process reads them alike -- one
 	// key per surface, so a cookie one listener minted opens nothing on the
 	// other whatever name it is presented under.
@@ -422,10 +426,18 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			}
 		}
 	}
+	if s.Identity != nil {
+		s.keys = newKeys(s.Identity, c.Auth.Operators.Ttl)
+	}
 	for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
 		var hs []auth.Handler
 		if ss := s.Sessions[surface]; ss != nil {
 			hs = append(hs, s.sessionHandler(ss))
+		}
+		if surface == SurfaceTenant && s.keys != nil {
+			// `Authorization: Bearer rt_…`, a key roster minted a person
+			// for Shale; anything else goes on to the handlers after it.
+			hs = append(hs, s.keys.handler())
 		}
 		hs = append(hs, auth.MTls())
 		if c.IsDev() {
@@ -435,6 +447,29 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 
 	return s, nil
+}
+
+// keyEnds is keys.ends where keys are taken, and nothing where they are not.
+func (s *Server) keyEnds() grpc.UnaryServerInterceptor {
+	if s.keys == nil {
+		return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+			return handler(ctx, req)
+		}
+	}
+
+	return s.keys.ends()
+}
+
+// keyStreams is keys.streams where keys are taken, and nothing where they
+// are not.
+func (s *Server) keyStreams() grpc.StreamServerInterceptor {
+	if s.keys == nil {
+		return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+			return handler(srv, ss)
+		}
+	}
+
+	return s.keys.streams()
 }
 
 // operators is the grant lookup as the policies take it: nil, and not a
@@ -683,6 +718,8 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 	).
 		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), public(surface))).
 		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), public(surface))).
+		WithUnary(s.keyEnds()).
+		WithStream(s.keyStreams()).
 		// A call costs what it asks for (`pd.Cost`): one, but for an AddMany,
 		// which costs one for each of its items.
 		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant(), pd.Cost)).
