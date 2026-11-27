@@ -19119,6 +19119,14 @@ func (s guardedSet) Live(ctx context.Context, req *api.SetLiveRequest) (*api.Set
 	return s.SetServiceServer.Live(ctx, req)
 }
 
+func (s guardedSet) Place(ctx context.Context, req *api.SetPlaceRequest) (*api.SetPlaceResponse, error) {
+	if err := gate.Direct(ctx, api.SetService_Place_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.SetServiceServer.Place(ctx, req)
+}
+
 // guardedSource enforces method declarations on in-process calls too.
 type guardedSource struct{ api.SourceServiceServer }
 
@@ -26532,6 +26540,11 @@ func (s interceptSet) Allocate(ctx context.Context, req *api.SetAllocateRequest)
 func (s interceptSet) Live(ctx context.Context, req *api.SetLiveRequest) (*api.SetLiveResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SetServiceServer,
 		api.SetService_Live_FullMethodName, req, s.SetServiceServer.Live)
+}
+
+func (s interceptSet) Place(ctx context.Context, req *api.SetPlaceRequest) (*api.SetPlaceResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SetServiceServer,
+		api.SetService_Place_FullMethodName, req, s.SetServiceServer.Place)
 }
 
 func (s Intercept) Source() api.SourceServiceServer {

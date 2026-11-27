@@ -242,10 +242,6 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	}
 	ttl := s.d.allocationTTL(link, prof)
 
-	var siteRef *api.SiteRef
-	if len(set.GetSite().GetId()) > 0 {
-		siteRef = api.SiteRef_builder{Id: set.GetSite().GetId()}.Build()
-	}
 	at := pdid.New(DomAttempt)
 	transaction := s.tx
 	if managed || by != "" {
@@ -256,15 +252,21 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 		s.d.log().Info("reallocated for a producer", "by", by, "lamina", mustId(obj.GetId()).String())
 	}
 	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
+		// The set's site as it is now, held: a placing meanwhile moves
+		// this attempt with the rest (§7).
+		siteId, err := s.heldSite(ctx, set.GetId())
+		if err != nil {
+			return err
+		}
 		if managed {
 			if _, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, who, tenant); err != nil {
 				return err
 			}
 		}
-		_, err := nx.Attempt().Add(ctx, api.AttemptAddRequest_builder{
+		_, err = nx.Attempt().Add(ctx, api.AttemptAddRequest_builder{
 			Id:          at.Bytes(),
 			Tenant:      tenantRef(tenant),
-			Site:        siteRef,
+			Site:        siteRefOf(siteId),
 			Lamina:      api.LaminaRef_builder{Id: obj.GetId()}.Build(),
 			Sink:        api.SinkRef_builder{Id: next.Id.Bytes()}.Build(),
 			Node:        api.NodeRef_builder{Id: next.Node.Bytes()}.Build(),
@@ -360,6 +362,11 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 	}
 	var out *api.Allocation
 	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
+		// The set's row first, before the attempt's, as a placing takes
+		// them, so that the two never wait on each other.
+		if _, err := s.heldSite(ctx, set.GetId()); err != nil {
+			return err
+		}
 		prof := segmentOf(src, set, a.bounds)
 		if managed {
 			frozen, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, who, tenant)

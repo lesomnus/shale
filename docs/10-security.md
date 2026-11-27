@@ -38,8 +38,8 @@ holds a credential.
   | a person who sees every site | every site, and every row in no site |
   | any other person | the sites said `EVERYBODY`; the sites said `COMPANY` if they are of the company; the sites whose `SiteMember` rows name them, whatever they say |
   | a reader | every site with `all_sites`; otherwise the sites it is a member of, and no site by its kind: a reader is a host and nobody |
-  | a producer | the site of its set, or every site when its set has none |
-  | a camera worker | the site it was adopted for, or none |
+  | a producer | the site of its set, or every site when its set has none; read at each call and not kept, so a set placed in a site is the producer's at once |
+  | a camera worker | the site it was adopted for, or none; read at each call and not kept, so a set placed with its camera network is the worker's at once |
   | a node, a relay, a satellite | every site; they read no camera of a tenant's |
 
   **Who sees every site**: where roster says what people may change
@@ -74,7 +74,16 @@ holds a credential.
   attempts and producer -- matches no site, so it is seen by whoever sees
   every site and by nobody else; no kind and no membership reaches it. A
   camera is shown to others by its set being in a site, which is said when
-  the set is added; a set that exists cannot yet be moved into one.
+  the set is added, or later by **placing the set** (`SetService/Place`,
+  [§7](02-data-model.md#7-source-set-zone-epoch)), which moves every
+  recording the set ever made with it. **Only whoever sees every site
+  places a set** -- where roster says what people may change, whoever it
+  grants all of Shale, which covers `/shale.SetService/Place`; where it
+  does not, whoever's row has `all_sites` -- and somebody who sees only
+  some sites may not, even between two of theirs: a move changes who sees
+  everything the set recorded, before it as after, for the people of
+  sites that are not theirs to show. Out of a site into none is not
+  offered (a site of kind `MEMBERS` with nobody in it hides a set openly).
 
   The answer is kept per caller for 10 seconds and not forgotten when a
   site or a membership is written, so a kind changed, a membership added

@@ -628,7 +628,7 @@ func (ClusterPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error
 //
 // A reader with all_sites sees every site, otherwise its SiteMember rows; a
 // camera worker its adopted site; a producer its set's site, or every site
-// when it has none; a node, a relay or a satellite every site. A row with
+// when it has none, read at each call and never kept; a node, a relay or a satellite every site. A row with
 // no site (a set, a source, a lamina, a producer) matches no site, so only
 // whoever sees every site sees it.
 //
@@ -695,13 +695,17 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 	case DomCameraWorker:
 		// The site approved at adoption is the maximum scope; assignments narrow it
 		// further inside each execution RPC. An unassigned worker has no all-sites flag.
+		// Read each time and not kept, as a producer's: a set placed in a
+		// site moves the worker of its cameras with it (Place).
 		w, err := s.d.Own.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 		if err != nil {
 			return nil, false, err
 		}
 		if len(w.GetSite().GetId()) > 0 {
-			e.ids = []pdid.Id{mustId(w.GetSite().GetId())}
+			return []uuid.UUID{mustId(w.GetSite().GetId()).Uuid()}, false, nil
 		}
+
+		return nil, false, nil
 	case DomReader:
 		// A reader is a host and nobody: a site's kind says which people see
 		// it, and a reader sees the sites it is a member of and no more.
@@ -721,15 +725,19 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 			e.ids = append(e.ids, pdid.Id(m.SiteId))
 		}
 	case DomProducer:
+		// Read each time and not kept: a set placed in a site moves its
+		// producer with it (Place), and a producer told its old site for
+		// ten seconds, on every control plane that kept it, would be
+		// refused its own set while it records. One read by key a call.
 		p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 		if err != nil {
 			return nil, false, err
 		}
 		if len(p.GetSite().GetId()) == 0 {
-			e.all = true
-		} else {
-			e.ids = []pdid.Id{mustId(p.GetSite().GetId())}
+			return nil, true, nil
 		}
+
+		return []uuid.UUID{mustId(p.GetSite().GetId()).Uuid()}, false, nil
 	default:
 		e.all = true
 	}
@@ -746,20 +754,7 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 // no, as everywhere), and nobody by their row; where it does not, whoever's
 // row has all_sites, from the frame or else read.
 func (s *Sites) everySite(ctx context.Context, f *frame.Frame) (bool, error) {
-	if s.Operators != nil {
-		is, err := s.Operators.Administers(ctx, f.Tenant, f.Actor)
-
-		return is && err == nil, nil
-	}
-	if row, ok := f.Row.(*api.Holder); ok {
-		return row.GetAllSites(), nil
-	}
-	h, err := s.d.Own.Holder().Get(ctx, api.HolderGetRequest_builder{Ref: api.HolderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
-	if err != nil {
-		return false, err
-	}
-
-	return h.GetAllSites(), nil
+	return everySite(ctx, s.Operators, s.d.Own, f)
 }
 
 // ofPerson is the sites of a person who does not see every site: the

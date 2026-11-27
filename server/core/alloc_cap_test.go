@@ -51,8 +51,12 @@ type capFixture struct {
 const capSegment = 66 * time.Second
 
 func newCapFixture(t *testing.T) *capFixture {
+	return newCapFixtureOn(t, config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "shale.db") + "?_pragma=foreign_keys(1)"})
+}
+
+// newCapFixtureOn is the fixture over the database cfg names.
+func newCapFixtureOn(t *testing.T, cfg config.DbConfig) *capFixture {
 	ctx := t.Context()
-	cfg := config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "shale.db") + "?_pragma=foreign_keys(1)"}
 	db, dialect, err := cfg.Open(ctx)
 	require.NoError(t, err)
 	driver := sql.OpenDB(dialect, db)

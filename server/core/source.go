@@ -56,6 +56,12 @@ func (s coreSource) Add(ctx context.Context, req *api.SourceAddRequest) (*api.So
 
 	var out *api.Source
 	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		// The set's site as it is now, held: a set placed in a site
+		// meanwhile has this source placed with it (§7).
+		site, err := s.heldSite(ctx, set.GetId())
+		if err != nil {
+			return err
+		}
 		last, err := s.ent(ctx).Source.Query().
 			Where(source.SetIdEQ(mustId(set.GetId()).Uuid())).
 			Order(ent.Desc(source.FieldOrdinal)).
@@ -79,9 +85,7 @@ func (s coreSource) Add(ctx context.Context, req *api.SourceAddRequest) (*api.So
 			Zone:        req.GetZone(),
 			Profile:     req.GetProfile(),
 			DateCreated: req.GetDateCreated(),
-		}
-		if len(set.GetSite().GetId()) > 0 {
-			r.Site = api.SiteRef_builder{Id: set.GetSite().GetId()}.Build()
+			Site:        siteRefOf(site),
 		}
 		v, err := nx.Source().Add(ctx, r.Build())
 		out = v

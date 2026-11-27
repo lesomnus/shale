@@ -28,6 +28,7 @@ const (
 	SetService_Negotiate_FullMethodName = "/shale.SetService/Negotiate"
 	SetService_Allocate_FullMethodName  = "/shale.SetService/Allocate"
 	SetService_Live_FullMethodName      = "/shale.SetService/Live"
+	SetService_Place_FullMethodName     = "/shale.SetService/Place"
 )
 
 // SetServiceClient is the client API for SetService service.
@@ -73,6 +74,13 @@ type SetServiceClient interface {
 	// Live viewing: per member, the relay's endpoints, a view token, and the
 	// WHEP URL (§39.4).
 	Live(ctx context.Context, in *SetLiveRequest, opts ...grpc.CallOption) (*SetLiveResponse, error)
+	// Puts a set that exists into a site, or moves it from one to another
+	// (§7): the set, its sources, their laminae and attempts and its
+	// producer, and for a set whose cameras Shale manages its camera network
+	// with everything of it, in one transaction. Whoever sees every site
+	// may; no site at all is refused, and so is a camera network or a row of
+	// it that something else shares.
+	Place(ctx context.Context, in *SetPlaceRequest, opts ...grpc.CallOption) (*SetPlaceResponse, error)
 }
 
 type setServiceClient struct {
@@ -182,6 +190,16 @@ func (c *setServiceClient) Live(ctx context.Context, in *SetLiveRequest, opts ..
 	return out, nil
 }
 
+func (c *setServiceClient) Place(ctx context.Context, in *SetPlaceRequest, opts ...grpc.CallOption) (*SetPlaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetPlaceResponse)
+	err := c.cc.Invoke(ctx, SetService_Place_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SetServiceServer is the server API for SetService service.
 // All implementations must embed UnimplementedSetServiceServer
 // for forward compatibility.
@@ -225,6 +243,13 @@ type SetServiceServer interface {
 	// Live viewing: per member, the relay's endpoints, a view token, and the
 	// WHEP URL (§39.4).
 	Live(context.Context, *SetLiveRequest) (*SetLiveResponse, error)
+	// Puts a set that exists into a site, or moves it from one to another
+	// (§7): the set, its sources, their laminae and attempts and its
+	// producer, and for a set whose cameras Shale manages its camera network
+	// with everything of it, in one transaction. Whoever sees every site
+	// may; no site at all is refused, and so is a camera network or a row of
+	// it that something else shares.
+	Place(context.Context, *SetPlaceRequest) (*SetPlaceResponse, error)
 	mustEmbedUnimplementedSetServiceServer()
 }
 
@@ -261,6 +286,9 @@ func (UnimplementedSetServiceServer) Allocate(context.Context, *SetAllocateReque
 }
 func (UnimplementedSetServiceServer) Live(context.Context, *SetLiveRequest) (*SetLiveResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Live not implemented")
+}
+func (UnimplementedSetServiceServer) Place(context.Context, *SetPlaceRequest) (*SetPlaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Place not implemented")
 }
 func (UnimplementedSetServiceServer) mustEmbedUnimplementedSetServiceServer() {}
 func (UnimplementedSetServiceServer) testEmbeddedByValue()                    {}
@@ -438,6 +466,24 @@ func _SetService_Live_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SetService_Place_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetPlaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SetServiceServer).Place(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SetService_Place_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SetServiceServer).Place(ctx, req.(*SetPlaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SetService_ServiceDesc is the grpc.ServiceDesc for SetService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -476,6 +522,10 @@ var SetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Live",
 			Handler:    _SetService_Live_Handler,
+		},
+		{
+			MethodName: "Place",
+			Handler:    _SetService_Place_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

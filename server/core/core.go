@@ -30,6 +30,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
+	"github.com/lesomnus/shale/server/bare"
 )
 
 // Domains of the entities, as declared in the schema (§35.3). They are read
@@ -161,6 +162,11 @@ type Deps struct {
 	// its scope; nil is a layer built without it (a test), where nothing
 	// is remembered to drop.
 	Reaches *Reaches
+	// Recorder is what the servers below are told every write with, the
+	// trail first (cmd/serve.go): a write this layer makes below the
+	// generated servers -- a set placed in a site -- is told to it the same
+	// way (Place). Nil records nothing, as a server built without one.
+	Recorder bare.Recorder
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger
@@ -174,6 +180,11 @@ type Deps struct {
 	PrepareCameraEnrollment func(context.Context, CameraEnrollmentPreparation) (CameraEnrollmentCredentials, error)
 
 	pol policies
+
+	// placeHeld, set by a test, runs inside Place's transaction once every
+	// row is written and before it commits, so that a test can hold a move
+	// open and allocate meanwhile.
+	placeHeld func(context.Context)
 
 	// cas is the CA set as this process read it (§33.5).
 	casOnce sync.Once

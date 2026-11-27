@@ -640,13 +640,21 @@ What to do, so that nobody loses a camera they should keep:
   log says which methods are missing. Where roster runs inside Shale,
   everybody of the tenant is of the company and nothing is added.
 - **Cameras in no site** are not shown to anybody else by any kind. A
-  set's site is said when the set is added; a set that exists cannot yet
-  be moved into one.
+  deployment that added its cameras before it used sites has every set in
+  no site, so after the upgrade: **make the sites** (`site add`), **say
+  each one's kind**, add the people a `MEMBERS` one names, and **place the
+  sets** in them (`set place`, [§32.4](#324-placing-a-set-in-a-site)),
+  each with everything it ever recorded. A set whose cameras Shale manages
+  moves with its camera network, and its producer is restarted after it
+  ([§32.4](#324-placing-a-set-in-a-site)).
 
 ```sh
 shale set ls                     # a set with no site is seen by whoever is granted all of Shale alone
+shale site add '{"tenant":{"alias":"acme"},"alias":"hall","visibility":"SITE_VISIBILITY_EVERYBODY"}'
 shale site-member add '{"tenant":{"alias":"acme"},"site":{"id":"<site>"},"holder":{"id":"<person>"}}'
 shale site patch <site> '{"visibility":"SITE_VISIBILITY_EVERYBODY","date_updated_force":true}'
+shale set place --dry-run @acme/yard @acme/hall   # what would move
+shale set place @acme/yard @acme/hall
 ```
 
 **Everybody holds the basics, at roster too, where `auth.operators` is
@@ -701,3 +709,112 @@ upgrade:
 ```sh
 roster --as <operator> holder reaches @acme/vic '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}}'   # the basics, once vic has called Shale
 ```
+
+### 32.4 Placing a set in a site
+
+`shale set place <set> <site>` (`SetService/Place`) puts a set that exists
+into a site, or moves it from one to another, with every row that carries
+its site because of it: its sources, its laminae, their attempts, its
+producer ([§7](02-data-model.md#7-source-set-zone-epoch)). It prints where
+the set was and is, and how many rows of each kind moved; `--dry-run`
+counts them and moves nothing. Only whoever sees every site may (where
+roster says what people may change, whoever it grants all of Shale; else
+whoever's row has `all_sites`); for a set already in the site nothing is
+written; no site, another tenant's and an erased one are refused. A set
+whose cameras Shale manages moves with its camera network and everything
+of it, or not at all: what is refused, and why, is in
+[§7](02-data-model.md#7-source-set-zone-epoch), and `--dry-run` prints it.
+
+```text
+$ shale set place @acme/yard @acme/hall
+yard: in no site, now in hall
+moved 4 source(s), 2161 lamina(s), 2290 attempt(s), 1 producer(s)
+```
+
+**What it locks.** One transaction, five statements, the set's row first:
+
+| rows | statement | index |
+|---|---|---|
+| the set | `UPDATE set SET site_id, date_updated WHERE id = ? AND site_id` is what it was | the key |
+| its sources | `UPDATE source SET site_id WHERE set_id = ?` | `source_member` (`set_id`, `ordinal`) |
+| its laminae | `UPDATE lamina SET site_id WHERE set_id = ?` | `lamina_set_time` (`set_id`, `date_started`) |
+| their attempts | `UPDATE attempt SET site_id WHERE lamina_id IN (SELECT id FROM lamina WHERE set_id = ?)` | `attempt_lamina` (`lamina_id`, `date_created`), the laminae by `lamina_set_time` |
+| its producer | `UPDATE producer SET site_id, date_updated WHERE tenant_id = ? AND set_id = ?` | `producer_page` (`tenant_id`, …) for the tenant: `producer` has no index on `set_id`, so this reads the tenant's producers, one row per host |
+
+For a set whose cameras Shale manages, after the set's row and before the
+rest: its networks' rows held (`FOR UPDATE`), the plan read again under
+the hold, then one statement a kind, each `WHERE tenant_id = ? AND` the tie
+of [§7](02-data-model.md#7-source-set-zone-epoch), on each kind's
+`*_page` index for the tenant (these are rows per camera, not per
+recording): networks by id, devices by `network_id`, credentials by their
+device's network, credential versions by their credential's, assignments
+by id, bindings and jobs by `assignment_id`, policies by `network_id`,
+presets and the worker by id. Only `site_id` is written: no version
+moves, so no camera operation under way is refused for a row changed
+under it. The plan reads the tenant's camera jobs, to find the presets
+they name. Every camera operation on an assignment holds the set's row and
+then the network's, adding a device or a policy holds the network's, and
+a credential's store holds its device's: each waits for a placing, then
+reads the site it gave.
+
+A dry run is the same filters counted, a read that writes nothing. On
+PostgreSQL the move holds the set's row and every row it rewrites until it
+commits: an allocation, a source added, a producer adopted and a node's
+report for **that set** wait for it, then write the site the set is in;
+other sets go on. On SQLite every write of the control plane waits for
+it, as for any write (each transaction takes the database at its
+`BEGIN`).
+
+**How long it takes.** As long as rewriting that many rows: no index is
+on `site_id`, so none is rewritten, and the cost is the rows themselves.
+Measured on SQLite, on a small machine (4 CPUs), two attempts a lamina:
+
+| laminae | attempts | dry run | placing |
+|---|---|---|---|
+| 200,000 | 400,000 | 2 s | 8 s |
+| 1,000,000 | 2,000,000 | 28 s | 62 s |
+
+PostgreSQL was not measured. A set that has recorded for months is
+millions of laminae. On SQLite that is every write of the control plane
+waiting a minute or more, and a write that waits longer than the busy
+timeout (a minute unless the DSN says `busy_timeout`) is refused
+`database is locked`: producers ask for their allocations again and hold
+what they record as their upload mode holds it
+([§12.2](04-write-path.md#122-resumable-part-uploads)), nodes push their
+events again. Place such a set when that is acceptable, with a longer
+`busy_timeout` for it, or run the control plane on PostgreSQL, where only
+that set's writes wait. On SQLite's default journal a dry run, a long
+read, holds other writes' commits for as long as it reads.
+
+**What is seen meanwhile.** Until it commits, nothing has moved: a viewer
+sees the set where it was, its producer goes on uploading what it has
+been allocated, and its next allocation waits. Once it commits, a person's
+sight follows within the ten seconds Shale keeps a person's sites; a
+producer's at once (its sites are read at each call). A key's list that
+named one of the set's sources still reaches it; one that named the site
+it left no longer does ([§7](02-data-model.md#7-source-set-zone-epoch)).
+The tokens of the relay and the nodes carry the source, not the site, and
+are unchanged. A producer's certificate names its row and nothing of a
+site, and its relay and satellite are kept while they are up; when one is
+assigned anew it is by the new site's selectors
+([§39.2](16-relay.md#392-assignment), [§41.2](18-satellite.md#412-assignment)).
+What a sink holds beside a lamina's bytes (its record,
+[§23.1](07-storage-node.md#231-self-describing-laminae)) says the site the
+set had when it was written: it is not rewritten, and a lamina rebuilt
+from it takes the set's site of the moment instead.
+**A set whose cameras Shale manages: restart its producer.** A producer
+reads the site its set is in once, when it starts, and its cameras'
+credentials are asked for in that site; Shale delivers one in the site the
+assignment is in. After the move, the producer is refused its cameras'
+next credential (a credential's lease lasts at most five minutes) until it
+is restarted, and a camera that needs one does not record meanwhile.
+Restart it right after the move. Its certificate names its row and nothing
+of a site, and is unchanged. The camera worker's certificate names its row
+alone too; it reads its site and its assignments at each call and goes on
+without a restart.
+A credential's sealed payload is bound to its tenant, device, binding,
+credential, purpose and version, not to a site.
+
+The trail has one line, the set's, with who placed it and the site it was
+in and is in; the counts are in the answer and the log.
+

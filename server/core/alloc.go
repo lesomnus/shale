@@ -304,7 +304,15 @@ func LaminaKey(started time.Time, lamina, attempt pdid.Id) string {
 // allocateSlot is one allocation: idempotent per (source, segment). `after`
 // is the lamina of the segment the producer says ended before this one,
 // or Nil.
+//
+// The rows it writes carry the set's site as the transaction reads it now
+// and holds it (heldSite), not as the set was read before the transaction:
+// a set placed in a site meanwhile is placed with what it records (§7).
 func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, src *api.Source, started time.Time, after pdid.Id, actor pdid.Id, tenant pdid.Id, captureEpoch string, prefetch bool) (*api.Allocation, error) {
+	siteId, err := s.heldSite(ctx, a.set.GetId())
+	if err != nil {
+		return nil, err
+	}
 	prof := segmentOf(src, a.set, a.bounds)
 	frozen, epochValue, managed, err := New(next, s.d).cameraAllocationProfile(ctx, src, captureEpoch, started, prefetch, actor, tenant)
 	if err != nil {
@@ -440,14 +448,10 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 
 		if existing == nil {
 			objId = pdid.New(DomLamina)
-			var siteRef *api.SiteRef
-			if len(a.set.GetSite().GetId()) > 0 {
-				siteRef = api.SiteRef_builder{Id: a.set.GetSite().GetId()}.Build()
-			}
 			add := api.LaminaAddRequest_builder{
 				Id:               objId.Bytes(),
 				Tenant:           tenantRef(tenant),
-				Site:             siteRef,
+				Site:             siteRefOf(siteId),
 				Set:              api.SetRef_builder{Id: a.set.GetId()}.Build(),
 				Source:           api.SourceRef_builder{Id: src.GetId()}.Build(),
 				State:            api.LaminaState_LAMINA_STATE_PENDING,
@@ -468,14 +472,10 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 
 		for i, target := range ranked {
 			at := pdid.New(DomAttempt)
-			var siteRef *api.SiteRef
-			if len(a.set.GetSite().GetId()) > 0 {
-				siteRef = api.SiteRef_builder{Id: a.set.GetSite().GetId()}.Build()
-			}
 			_, err := next.Attempt().Add(ctx, api.AttemptAddRequest_builder{
 				Id:          at.Bytes(),
 				Tenant:      tenantRef(tenant),
-				Site:        siteRef,
+				Site:        siteRefOf(siteId),
 				Lamina:      api.LaminaRef_builder{Id: objId.Bytes()}.Build(),
 				Sink:        api.SinkRef_builder{Id: target.Id.Bytes()}.Build(),
 				Node:        api.NodeRef_builder{Id: target.Node.Bytes()}.Build(),
@@ -492,10 +492,6 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 
 	// Tokens and endpoints for every candidate (§33.2).
 	maxLen := MaxLength(prof)
-	var siteId []byte
-	if len(a.set.GetSite().GetId()) > 0 {
-		siteId = a.set.GetSite().GetId()
-	}
 	var expiredMs, deletedMs int64
 	expiredMs = started.Add(expire).UnixMilli()
 	if !none {
@@ -720,6 +716,11 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 		transaction = s.ownTx
 	}
 	err = transaction(ctx, func(ctx context.Context, next api.Server) error {
+		// The set's row is held before anything else is written, as each
+		// slot's allocation holds it (allocateSlot).
+		if _, err := s.heldSite(ctx, set.GetId()); err != nil {
+			return err
+		}
 		for _, m := range a.members {
 			frozen, sourceEpoch, managed, err := New(next, s.d).cameraAllocationProfile(ctx, m, "", now, true, f.Actor, f.Tenant)
 			if err != nil {

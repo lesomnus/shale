@@ -97,6 +97,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 	addCustom(t, c, false)
 	addCameraPresetCommands(t, c)
 	addLaminaCommands(t, c)
+	addSetCommands(t, c)
 	addStateCommands(t, c, false)
 	addProducerCommands(t, c, l)
 	root.Commands = append(root.Commands, t.Commands()...)

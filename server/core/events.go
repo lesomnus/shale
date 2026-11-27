@@ -111,9 +111,26 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	}
+	// The set's site as it is now, and its row held before anything is
+	// written: a lamina recreated and an attempt the CP did not know carry
+	// it, and not the site a record or a row read before said, since a set
+	// placed in a site since moved every row it had (§7).
+	var setId []byte
+	if obj != nil {
+		setId = obj.SetId[:]
+	} else if rec := ev.GetRecord(); rec != nil {
+		setId = rec.GetSetId()
+	}
+	var siteId []byte
+	if len(setId) > 0 {
+		if siteId, err = s.heldSite(ctx, setId); err != nil && !ent.IsNotFound(err) {
+			return err
+		}
+	}
 
 	// A row that was removed, or never known (a lost DB, reconciliation):
-	// recreated from the record (§14, §29).
+	// recreated from the record (§14, §29). Its site is the set's now: the
+	// record's is the site the set had when the bytes were written.
 	if obj == nil {
 		rec := ev.GetRecord()
 		if rec == nil || len(rec.GetTenantId()) == 0 || len(rec.GetSetId()) == 0 || len(rec.GetSourceId()) == 0 {
@@ -136,9 +153,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 			Epoch:            placement.Epoch(rec.GetDateStartedMs()/1000, int64(epochOf(set).Seconds())),
 			CaptureEpoch:     z.Ptr(rec.GetCaptureEpoch()),
 		}
-		if len(rec.GetSiteId()) > 0 {
-			add.Site = api.SiteRef_builder{Id: rec.GetSiteId()}.Build()
-		}
+		add.Site = siteRefOf(siteId)
 		if rec.GetDateDeletedMs() > 0 {
 			add.DateDeleted = timestamppb.New(time.UnixMilli(rec.GetDateDeletedMs()).UTC())
 		}
@@ -151,8 +166,8 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 			Id: objId.Uuid(), TenantId: mustId(rec.GetTenantId()).Uuid(), SetId: mustId(rec.GetSetId()).Uuid(), SourceId: mustId(rec.GetSourceId()).Uuid(),
 			State: int32(api.LaminaState_LAMINA_STATE_PENDING), CaptureEpoch: rec.GetCaptureEpoch(), DateStarted: add.DateStarted.AsTime(), DateExpired: add.DateExpired.AsTime(), DatesSynced: true,
 		}
-		if len(rec.GetSiteId()) > 0 {
-			obj.SiteId = mustId(rec.GetSiteId()).Uuid()
+		if len(siteId) > 0 {
+			obj.SiteId = mustId(siteId).Uuid()
 		}
 	}
 
@@ -162,14 +177,10 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 
 	// And the attempt, when the node knows one the CP does not.
 	if at == nil {
-		var siteRef *api.SiteRef
-		if !isZero(obj.SiteId) {
-			siteRef = api.SiteRef_builder{Id: obj.SiteId[:]}.Build()
-		}
 		if _, err := own.Attempt().Add(ctx, api.AttemptAddRequest_builder{
 			Id:          atId.Bytes(),
 			Tenant:      api.TenantRef_builder{Id: obj.TenantId[:]}.Build(),
-			Site:        siteRef,
+			Site:        siteRefOf(siteId),
 			Lamina:      api.LaminaRef_builder{Id: objId.Bytes()}.Build(),
 			Sink:        api.SinkRef_builder{Id: ev.GetSinkId()}.Build(),
 			Node:        api.NodeRef_builder{Id: nodeId.Bytes()}.Build(),
@@ -179,7 +190,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 			return err
 		}
 		at = &ent.Attempt{
-			Id: atId.Uuid(), TenantId: obj.TenantId, SiteId: obj.SiteId, LaminaId: objId.Uuid(), SinkId: mustId(ev.GetSinkId()).Uuid(), NodeId: nodeId.Uuid(),
+			Id: atId.Uuid(), TenantId: obj.TenantId, LaminaId: objId.Uuid(), SinkId: mustId(ev.GetSinkId()).Uuid(), NodeId: nodeId.Uuid(),
 			State: int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED), DateExpires: now,
 		}
 	}

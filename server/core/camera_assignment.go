@@ -52,6 +52,12 @@ func (s Core) cameraAssignmentRowChecked(ctx context.Context, r *api.CameraAssig
 	if err := cameraSameScope(a.GetTenant().GetId(), a.GetSite().GetId(), n.GetTenant().GetId(), n.GetSite().GetId()); err != nil {
 		return nil, err
 	}
+	// The set's row first, then the network's, as a placing takes them
+	// (§7): an operation on the assignment waits for a placing under way
+	// and reads every row again once it is over.
+	if _, err := s.heldSite(ctx, a.GetSet().GetId()); err != nil {
+		return nil, err
+	}
 	if err := s.cameraLockNetwork(ctx, a.GetNetwork().GetId()); err != nil {
 		return nil, err
 	}
@@ -90,6 +96,19 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 			}
 		}()
 
+		p, err := nx.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: r.GetProducer()}.Build())
+		if err != nil {
+			return err
+		}
+		if p.GetState() != api.HostState_HOST_STATE_ADOPTED || len(p.GetSet().GetId()) == 0 {
+			return failed("producer must already be adopted for a set")
+		}
+		// The set's row held first, then the network's, as a placing takes
+		// them (§7): a set being placed is read as it is once placed, and
+		// one placed after waits for this assignment and moves it.
+		if _, err := New(nx, s.d).heldSite(ctx, p.GetSet().GetId()); err != nil {
+			return err
+		}
 		n, err := nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: r.GetNetwork()}.Build())
 		if err != nil {
 			return err
@@ -100,13 +119,6 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 		n, err = nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: n.GetId()}.Build()}.Build())
 		if err != nil {
 			return err
-		}
-		p, err := nx.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: r.GetProducer()}.Build())
-		if err != nil {
-			return err
-		}
-		if p.GetState() != api.HostState_HOST_STATE_ADOPTED || len(p.GetSet().GetId()) == 0 {
-			return failed("producer must already be adopted for a set")
 		}
 		set, err := nx.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build())
 		if err != nil {

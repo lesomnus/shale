@@ -149,7 +149,10 @@ never reused.
 - **Field 3 is `site`**, payday's second permission axis
   ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
   nullable and immutable. `Source`, `Lamina`, `Attempt`, and `Producer` carry
-  a copy, because payday narrows each row by its own field 3. A reader may see
+  a copy, because payday narrows each row by its own field 3. Immutable is
+  the generated contract's: `SetService/Place` is the one road that rewrites
+  a set's site and its copies, below the generated layer, in one
+  transaction. A reader may see
   several sites, so its sites are `SiteMember` rows, or all of them
   (`all_sites`) when it was adopted with none. A person sees the sites a
   site's `visibility` and its `SiteMember` rows give them, or every site
@@ -243,6 +246,18 @@ service SetService {
   // Live viewing: per member, the relay's endpoints, a view token, and the
   // WHEP URL (§39.4).
   rpc Live(SetLiveRequest) returns (SetLiveResponse);
+  // Puts a set that exists into a site, or moves it to another (§7): the
+  // set, its sources, their laminae and attempts and its producer, and for
+  // a set whose cameras Shale manages its camera network with everything
+  // of it, in one transaction, answered with the set as it is now, the
+  // site it was in, and how many rows of each kind moved. `dry_run` counts
+  // and writes nothing, and says in `refused` what would be refused and
+  // why; a set already there is answered and nothing is written. Whoever
+  // sees every site may; no site (INVALID_ARGUMENT), another tenant's
+  // (NOT_FOUND), an erased one and a camera row shared with what does not
+  // move (FAILED_PRECONDITION) are refused, and so is anybody else
+  // (PERMISSION_DENIED).
+  rpc Place(SetPlaceRequest) returns (SetPlaceResponse);
 }
 
 service SourceService {

@@ -4148,6 +4148,507 @@ func (b0 LiveSource_builder) Build() *LiveSource {
 	return m0
 }
 
+type SetPlaceRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Set    *SetRef                `protobuf:"bytes,1,opt,name=set"`
+	xxx_hidden_Site   *SiteRef               `protobuf:"bytes,2,opt,name=site"`
+	xxx_hidden_DryRun bool                   `protobuf:"varint,3,opt,name=dry_run,json=dryRun"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SetPlaceRequest) Reset() {
+	*x = SetPlaceRequest{}
+	mi := &file_shale_set_svc_g_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetPlaceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetPlaceRequest) ProtoMessage() {}
+
+func (x *SetPlaceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_set_svc_g_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetPlaceRequest) GetSet() *SetRef {
+	if x != nil {
+		return x.xxx_hidden_Set
+	}
+	return nil
+}
+
+func (x *SetPlaceRequest) GetSite() *SiteRef {
+	if x != nil {
+		return x.xxx_hidden_Site
+	}
+	return nil
+}
+
+func (x *SetPlaceRequest) GetDryRun() bool {
+	if x != nil {
+		return x.xxx_hidden_DryRun
+	}
+	return false
+}
+
+func (x *SetPlaceRequest) SetSet(v *SetRef) {
+	x.xxx_hidden_Set = v
+}
+
+func (x *SetPlaceRequest) SetSite(v *SiteRef) {
+	x.xxx_hidden_Site = v
+}
+
+func (x *SetPlaceRequest) SetDryRun(v bool) {
+	x.xxx_hidden_DryRun = v
+}
+
+func (x *SetPlaceRequest) HasSet() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Set != nil
+}
+
+func (x *SetPlaceRequest) HasSite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Site != nil
+}
+
+func (x *SetPlaceRequest) ClearSet() {
+	x.xxx_hidden_Set = nil
+}
+
+func (x *SetPlaceRequest) ClearSite() {
+	x.xxx_hidden_Site = nil
+}
+
+type SetPlaceRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Set *SetRef
+	// Where the set goes. Required: out of a site into none is not offered.
+	Site *SiteRef
+	// Count what would move and write nothing.
+	DryRun bool
+}
+
+func (b0 SetPlaceRequest_builder) Build() *SetPlaceRequest {
+	m0 := &SetPlaceRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Set = b.Set
+	x.xxx_hidden_Site = b.Site
+	x.xxx_hidden_DryRun = b.DryRun
+	return m0
+}
+
+type SetPlaceResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Set        *Set                   `protobuf:"bytes,1,opt,name=set"`
+	xxx_hidden_FromSiteId []byte                 `protobuf:"bytes,2,opt,name=from_site_id,json=fromSiteId"`
+	xxx_hidden_Moved      *SetPlaced             `protobuf:"bytes,3,opt,name=moved"`
+	xxx_hidden_DryRun     bool                   `protobuf:"varint,4,opt,name=dry_run,json=dryRun"`
+	xxx_hidden_Refused    []string               `protobuf:"bytes,5,rep,name=refused"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *SetPlaceResponse) Reset() {
+	*x = SetPlaceResponse{}
+	mi := &file_shale_set_svc_g_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetPlaceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetPlaceResponse) ProtoMessage() {}
+
+func (x *SetPlaceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_set_svc_g_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetPlaceResponse) GetSet() *Set {
+	if x != nil {
+		return x.xxx_hidden_Set
+	}
+	return nil
+}
+
+func (x *SetPlaceResponse) GetFromSiteId() []byte {
+	if x != nil {
+		return x.xxx_hidden_FromSiteId
+	}
+	return nil
+}
+
+func (x *SetPlaceResponse) GetMoved() *SetPlaced {
+	if x != nil {
+		return x.xxx_hidden_Moved
+	}
+	return nil
+}
+
+func (x *SetPlaceResponse) GetDryRun() bool {
+	if x != nil {
+		return x.xxx_hidden_DryRun
+	}
+	return false
+}
+
+func (x *SetPlaceResponse) GetRefused() []string {
+	if x != nil {
+		return x.xxx_hidden_Refused
+	}
+	return nil
+}
+
+func (x *SetPlaceResponse) SetSet(v *Set) {
+	x.xxx_hidden_Set = v
+}
+
+func (x *SetPlaceResponse) SetFromSiteId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_FromSiteId = v
+}
+
+func (x *SetPlaceResponse) SetMoved(v *SetPlaced) {
+	x.xxx_hidden_Moved = v
+}
+
+func (x *SetPlaceResponse) SetDryRun(v bool) {
+	x.xxx_hidden_DryRun = v
+}
+
+func (x *SetPlaceResponse) SetRefused(v []string) {
+	x.xxx_hidden_Refused = v
+}
+
+func (x *SetPlaceResponse) HasSet() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Set != nil
+}
+
+func (x *SetPlaceResponse) HasMoved() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Moved != nil
+}
+
+func (x *SetPlaceResponse) ClearSet() {
+	x.xxx_hidden_Set = nil
+}
+
+func (x *SetPlaceResponse) ClearMoved() {
+	x.xxx_hidden_Moved = nil
+}
+
+type SetPlaceResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The set as it is now: in the site, or, for a dry run or a set already
+	// there, as it was.
+	Set *Set
+	// The site it was in; empty for none.
+	FromSiteId []byte
+	// The rows rewritten, or for a dry run the rows that would be; all zero
+	// for a set already in the site.
+	Moved  *SetPlaced
+	DryRun bool
+	// For a dry run, why the placing would be refused, each in a sentence
+	// that names what is shared and what an operator would do; empty when it
+	// would not be. A placing that is refused writes nothing and answers
+	// FAILED_PRECONDITION with the same sentences.
+	Refused []string
+}
+
+func (b0 SetPlaceResponse_builder) Build() *SetPlaceResponse {
+	m0 := &SetPlaceResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Set = b.Set
+	x.xxx_hidden_FromSiteId = b.FromSiteId
+	x.xxx_hidden_Moved = b.Moved
+	x.xxx_hidden_DryRun = b.DryRun
+	x.xxx_hidden_Refused = b.Refused
+	return m0
+}
+
+// SetPlaced is how many rows of each kind carry the set's site because of
+// the set, which a placing rewrites (§7).
+type SetPlaced struct {
+	state                               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Sources                  int64                  `protobuf:"varint,1,opt,name=sources"`
+	xxx_hidden_Laminae                  int64                  `protobuf:"varint,2,opt,name=laminae"`
+	xxx_hidden_Attempts                 int64                  `protobuf:"varint,3,opt,name=attempts"`
+	xxx_hidden_Producers                int64                  `protobuf:"varint,4,opt,name=producers"`
+	xxx_hidden_CameraAssignments        int64                  `protobuf:"varint,5,opt,name=camera_assignments,json=cameraAssignments"`
+	xxx_hidden_CameraBindings           int64                  `protobuf:"varint,6,opt,name=camera_bindings,json=cameraBindings"`
+	xxx_hidden_CameraJobs               int64                  `protobuf:"varint,7,opt,name=camera_jobs,json=cameraJobs"`
+	xxx_hidden_CameraNetworks           int64                  `protobuf:"varint,8,opt,name=camera_networks,json=cameraNetworks"`
+	xxx_hidden_CameraDevices            int64                  `protobuf:"varint,9,opt,name=camera_devices,json=cameraDevices"`
+	xxx_hidden_CameraCredentials        int64                  `protobuf:"varint,10,opt,name=camera_credentials,json=cameraCredentials"`
+	xxx_hidden_CameraCredentialVersions int64                  `protobuf:"varint,11,opt,name=camera_credential_versions,json=cameraCredentialVersions"`
+	xxx_hidden_CameraPolicies           int64                  `protobuf:"varint,12,opt,name=camera_policies,json=cameraPolicies"`
+	xxx_hidden_CameraPresets            int64                  `protobuf:"varint,13,opt,name=camera_presets,json=cameraPresets"`
+	xxx_hidden_CameraWorkers            int64                  `protobuf:"varint,14,opt,name=camera_workers,json=cameraWorkers"`
+	unknownFields                       protoimpl.UnknownFields
+	sizeCache                           protoimpl.SizeCache
+}
+
+func (x *SetPlaced) Reset() {
+	*x = SetPlaced{}
+	mi := &file_shale_set_svc_g_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetPlaced) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetPlaced) ProtoMessage() {}
+
+func (x *SetPlaced) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_set_svc_g_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetPlaced) GetSources() int64 {
+	if x != nil {
+		return x.xxx_hidden_Sources
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetLaminae() int64 {
+	if x != nil {
+		return x.xxx_hidden_Laminae
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetAttempts() int64 {
+	if x != nil {
+		return x.xxx_hidden_Attempts
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetProducers() int64 {
+	if x != nil {
+		return x.xxx_hidden_Producers
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraAssignments() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraAssignments
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraBindings() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraBindings
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraJobs() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraJobs
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraNetworks() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraNetworks
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraDevices() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraDevices
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraCredentials() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraCredentials
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraCredentialVersions() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraCredentialVersions
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraPolicies() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraPolicies
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraPresets() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraPresets
+	}
+	return 0
+}
+
+func (x *SetPlaced) GetCameraWorkers() int64 {
+	if x != nil {
+		return x.xxx_hidden_CameraWorkers
+	}
+	return 0
+}
+
+func (x *SetPlaced) SetSources(v int64) {
+	x.xxx_hidden_Sources = v
+}
+
+func (x *SetPlaced) SetLaminae(v int64) {
+	x.xxx_hidden_Laminae = v
+}
+
+func (x *SetPlaced) SetAttempts(v int64) {
+	x.xxx_hidden_Attempts = v
+}
+
+func (x *SetPlaced) SetProducers(v int64) {
+	x.xxx_hidden_Producers = v
+}
+
+func (x *SetPlaced) SetCameraAssignments(v int64) {
+	x.xxx_hidden_CameraAssignments = v
+}
+
+func (x *SetPlaced) SetCameraBindings(v int64) {
+	x.xxx_hidden_CameraBindings = v
+}
+
+func (x *SetPlaced) SetCameraJobs(v int64) {
+	x.xxx_hidden_CameraJobs = v
+}
+
+func (x *SetPlaced) SetCameraNetworks(v int64) {
+	x.xxx_hidden_CameraNetworks = v
+}
+
+func (x *SetPlaced) SetCameraDevices(v int64) {
+	x.xxx_hidden_CameraDevices = v
+}
+
+func (x *SetPlaced) SetCameraCredentials(v int64) {
+	x.xxx_hidden_CameraCredentials = v
+}
+
+func (x *SetPlaced) SetCameraCredentialVersions(v int64) {
+	x.xxx_hidden_CameraCredentialVersions = v
+}
+
+func (x *SetPlaced) SetCameraPolicies(v int64) {
+	x.xxx_hidden_CameraPolicies = v
+}
+
+func (x *SetPlaced) SetCameraPresets(v int64) {
+	x.xxx_hidden_CameraPresets = v
+}
+
+func (x *SetPlaced) SetCameraWorkers(v int64) {
+	x.xxx_hidden_CameraWorkers = v
+}
+
+type SetPlaced_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Sources   int64
+	Laminae   int64
+	Attempts  int64
+	Producers int64
+	// For a set whose cameras Shale manages, its camera rows: its
+	// assignments, their bindings and jobs; the network they are on, its
+	// devices, the devices' credentials and their versions, the network's
+	// policies, the presets only they use; and the camera worker.
+	CameraAssignments        int64
+	CameraBindings           int64
+	CameraJobs               int64
+	CameraNetworks           int64
+	CameraDevices            int64
+	CameraCredentials        int64
+	CameraCredentialVersions int64
+	CameraPolicies           int64
+	CameraPresets            int64
+	CameraWorkers            int64
+}
+
+func (b0 SetPlaced_builder) Build() *SetPlaced {
+	m0 := &SetPlaced{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Sources = b.Sources
+	x.xxx_hidden_Laminae = b.Laminae
+	x.xxx_hidden_Attempts = b.Attempts
+	x.xxx_hidden_Producers = b.Producers
+	x.xxx_hidden_CameraAssignments = b.CameraAssignments
+	x.xxx_hidden_CameraBindings = b.CameraBindings
+	x.xxx_hidden_CameraJobs = b.CameraJobs
+	x.xxx_hidden_CameraNetworks = b.CameraNetworks
+	x.xxx_hidden_CameraDevices = b.CameraDevices
+	x.xxx_hidden_CameraCredentials = b.CameraCredentials
+	x.xxx_hidden_CameraCredentialVersions = b.CameraCredentialVersions
+	x.xxx_hidden_CameraPolicies = b.CameraPolicies
+	x.xxx_hidden_CameraPresets = b.CameraPresets
+	x.xxx_hidden_CameraWorkers = b.CameraWorkers
+	return m0
+}
+
 type SourceAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -4174,7 +4675,7 @@ type SourceAddRequest struct {
 
 func (x *SourceAddRequest) Reset() {
 	*x = SourceAddRequest{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[26]
+	mi := &file_shale_set_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4186,7 +4687,7 @@ func (x *SourceAddRequest) String() string {
 func (*SourceAddRequest) ProtoMessage() {}
 
 func (x *SourceAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[26]
+	mi := &file_shale_set_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4539,7 +5040,7 @@ type SourceGetRequest struct {
 
 func (x *SourceGetRequest) Reset() {
 	*x = SourceGetRequest{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[27]
+	mi := &file_shale_set_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4551,7 +5052,7 @@ func (x *SourceGetRequest) String() string {
 func (*SourceGetRequest) ProtoMessage() {}
 
 func (x *SourceGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[27]
+	mi := &file_shale_set_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4650,7 +5151,7 @@ type SourceSelect struct {
 
 func (x *SourceSelect) Reset() {
 	*x = SourceSelect{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[28]
+	mi := &file_shale_set_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4662,7 +5163,7 @@ func (x *SourceSelect) String() string {
 func (*SourceSelect) ProtoMessage() {}
 
 func (x *SourceSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[28]
+	mi := &file_shale_set_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5218,7 +5719,7 @@ type SourcePatchRequest struct {
 
 func (x *SourcePatchRequest) Reset() {
 	*x = SourcePatchRequest{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[29]
+	mi := &file_shale_set_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5230,7 +5731,7 @@ func (x *SourcePatchRequest) String() string {
 func (*SourcePatchRequest) ProtoMessage() {}
 
 func (x *SourcePatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[29]
+	mi := &file_shale_set_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5726,7 +6227,7 @@ type SourceEraseResponse struct {
 
 func (x *SourceEraseResponse) Reset() {
 	*x = SourceEraseResponse{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[30]
+	mi := &file_shale_set_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5738,7 +6239,7 @@ func (x *SourceEraseResponse) String() string {
 func (*SourceEraseResponse) ProtoMessage() {}
 
 func (x *SourceEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[30]
+	mi := &file_shale_set_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5808,7 +6309,7 @@ type SourceListRequest struct {
 
 func (x *SourceListRequest) Reset() {
 	*x = SourceListRequest{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[31]
+	mi := &file_shale_set_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5820,7 +6321,7 @@ func (x *SourceListRequest) String() string {
 func (*SourceListRequest) ProtoMessage() {}
 
 func (x *SourceListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[31]
+	mi := &file_shale_set_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5952,7 +6453,7 @@ type SourceListResponse struct {
 
 func (x *SourceListResponse) Reset() {
 	*x = SourceListResponse{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[32]
+	mi := &file_shale_set_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5964,7 +6465,7 @@ func (x *SourceListResponse) String() string {
 func (*SourceListResponse) ProtoMessage() {}
 
 func (x *SourceListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[32]
+	mi := &file_shale_set_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6035,7 +6536,7 @@ type SourceFilter struct {
 
 func (x *SourceFilter) Reset() {
 	*x = SourceFilter{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[33]
+	mi := &file_shale_set_svc_g_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6047,7 +6548,7 @@ func (x *SourceFilter) String() string {
 func (*SourceFilter) ProtoMessage() {}
 
 func (x *SourceFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[33]
+	mi := &file_shale_set_svc_g_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6189,7 +6690,7 @@ type SourceWatchRequest struct {
 
 func (x *SourceWatchRequest) Reset() {
 	*x = SourceWatchRequest{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[34]
+	mi := &file_shale_set_svc_g_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6201,7 +6702,7 @@ func (x *SourceWatchRequest) String() string {
 func (*SourceWatchRequest) ProtoMessage() {}
 
 func (x *SourceWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[34]
+	mi := &file_shale_set_svc_g_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6275,7 +6776,7 @@ type SourceWatchResponse struct {
 
 func (x *SourceWatchResponse) Reset() {
 	*x = SourceWatchResponse{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[35]
+	mi := &file_shale_set_svc_g_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6287,7 +6788,7 @@ func (x *SourceWatchResponse) String() string {
 func (*SourceWatchResponse) ProtoMessage() {}
 
 func (x *SourceWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[35]
+	mi := &file_shale_set_svc_g_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6339,7 +6840,7 @@ type SourceWatchItem struct {
 
 func (x *SourceWatchItem) Reset() {
 	*x = SourceWatchItem{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[36]
+	mi := &file_shale_set_svc_g_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6351,7 +6852,7 @@ func (x *SourceWatchItem) String() string {
 func (*SourceWatchItem) ProtoMessage() {}
 
 func (x *SourceWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[36]
+	mi := &file_shale_set_svc_g_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6470,7 +6971,7 @@ type SourceLiveRequest struct {
 
 func (x *SourceLiveRequest) Reset() {
 	*x = SourceLiveRequest{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[37]
+	mi := &file_shale_set_svc_g_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6482,7 +6983,7 @@ func (x *SourceLiveRequest) String() string {
 func (*SourceLiveRequest) ProtoMessage() {}
 
 func (x *SourceLiveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[37]
+	mi := &file_shale_set_svc_g_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6538,7 +7039,7 @@ type SourceLiveResponse struct {
 
 func (x *SourceLiveResponse) Reset() {
 	*x = SourceLiveResponse{}
-	mi := &file_shale_set_svc_g_proto_msgTypes[38]
+	mi := &file_shale_set_svc_g_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6550,7 +7051,7 @@ func (x *SourceLiveResponse) String() string {
 func (*SourceLiveResponse) ProtoMessage() {}
 
 func (x *SourceLiveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_set_svc_g_proto_msgTypes[38]
+	mi := &file_shale_set_svc_g_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6773,7 +7274,36 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\fdate_expires\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12$\n" +
 	"\n" +
 	"recent_url\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\trecentUrl\x12*\n" +
-	"\rcapture_epoch\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\fcaptureEpoch\"\xc1\x05\n" +
+	"\rcapture_epoch\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\fcaptureEpoch\"v\n" +
+	"\x0fSetPlaceRequest\x12\x1f\n" +
+	"\x03set\x18\x01 \x01(\v2\r.shale.SetRefR\x03set\x12\"\n" +
+	"\x04site\x18\x02 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1e\n" +
+	"\adry_run\x18\x03 \x01(\bB\x05\xaa\x01\x02\b\x02R\x06dryRun\"\xbb\x01\n" +
+	"\x10SetPlaceResponse\x12\x1c\n" +
+	"\x03set\x18\x01 \x01(\v2\n" +
+	".shale.SetR\x03set\x12'\n" +
+	"\ffrom_site_id\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
+	"fromSiteId\x12&\n" +
+	"\x05moved\x18\x03 \x01(\v2\x10.shale.SetPlacedR\x05moved\x12\x1e\n" +
+	"\adry_run\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x06dryRun\x12\x18\n" +
+	"\arefused\x18\x05 \x03(\tR\arefused\"\x88\x05\n" +
+	"\tSetPlaced\x12\x1f\n" +
+	"\asources\x18\x01 \x01(\x03B\x05\xaa\x01\x02\b\x02R\asources\x12\x1f\n" +
+	"\alaminae\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\alaminae\x12!\n" +
+	"\battempts\x18\x03 \x01(\x03B\x05\xaa\x01\x02\b\x02R\battempts\x12#\n" +
+	"\tproducers\x18\x04 \x01(\x03B\x05\xaa\x01\x02\b\x02R\tproducers\x124\n" +
+	"\x12camera_assignments\x18\x05 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x11cameraAssignments\x12.\n" +
+	"\x0fcamera_bindings\x18\x06 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0ecameraBindings\x12&\n" +
+	"\vcamera_jobs\x18\a \x01(\x03B\x05\xaa\x01\x02\b\x02R\n" +
+	"cameraJobs\x12.\n" +
+	"\x0fcamera_networks\x18\b \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0ecameraNetworks\x12,\n" +
+	"\x0ecamera_devices\x18\t \x01(\x03B\x05\xaa\x01\x02\b\x02R\rcameraDevices\x124\n" +
+	"\x12camera_credentials\x18\n" +
+	" \x01(\x03B\x05\xaa\x01\x02\b\x02R\x11cameraCredentials\x12C\n" +
+	"\x1acamera_credential_versions\x18\v \x01(\x03B\x05\xaa\x01\x02\b\x02R\x18cameraCredentialVersions\x12.\n" +
+	"\x0fcamera_policies\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0ecameraPolicies\x12,\n" +
+	"\x0ecamera_presets\x18\r \x01(\x03B\x05\xaa\x01\x02\b\x02R\rcameraPresets\x12,\n" +
+	"\x0ecamera_workers\x18\x0e \x01(\x03B\x05\xaa\x01\x02\b\x02R\rcameraWorkers\"\xc1\x05\n" +
 	"\x10SourceAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -6878,7 +7408,7 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x11SourceLiveRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.SourceRefR\x03ref\"?\n" +
 	"\x12SourceLiveResponse\x12)\n" +
-	"\x06source\x18\x01 \x01(\v2\x11.shale.LiveSourceR\x06source2\xef\x03\n" +
+	"\x06source\x18\x01 \x01(\v2\x11.shale.LiveSourceR\x06source2\xa9\x04\n" +
 	"\n" +
 	"SetService\x12'\n" +
 	"\x03Add\x12\x14.shale.SetAddRequest\x1a\n" +
@@ -6892,7 +7422,8 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x05Watch\x12\x16.shale.SetWatchRequest\x1a\x17.shale.SetWatchResponse0\x01\x12D\n" +
 	"\tNegotiate\x12\x1a.shale.SetNegotiateRequest\x1a\x1b.shale.SetNegotiateResponse\x12A\n" +
 	"\bAllocate\x12\x19.shale.SetAllocateRequest\x1a\x1a.shale.SetAllocateResponse\x125\n" +
-	"\x04Live\x12\x15.shale.SetLiveRequest\x1a\x16.shale.SetLiveResponse2\x93\x03\n" +
+	"\x04Live\x12\x15.shale.SetLiveRequest\x1a\x16.shale.SetLiveResponse\x128\n" +
+	"\x05Place\x12\x16.shale.SetPlaceRequest\x1a\x17.shale.SetPlaceResponse2\x93\x03\n" +
 	"\rSourceService\x12-\n" +
 	"\x03Add\x12\x17.shale.SourceAddRequest\x1a\r.shale.Source\x12-\n" +
 	"\x03Get\x12\x17.shale.SourceGetRequest\x1a\r.shale.Source\x121\n" +
@@ -6902,7 +7433,7 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x05Watch\x12\x19.shale.SourceWatchRequest\x1a\x1a.shale.SourceWatchResponse0\x01\x12;\n" +
 	"\x04Live\x12\x18.shale.SourceLiveRequest\x1a\x19.shale.SourceLiveResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_set_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
+var file_shale_set_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 48)
 var file_shale_set_svc_g_proto_goTypes = []any{
 	(*SetAddRequest)(nil),         // 0: shale.SetAddRequest
 	(*SetGetRequest)(nil),         // 1: shale.SetGetRequest
@@ -6930,166 +7461,175 @@ var file_shale_set_svc_g_proto_goTypes = []any{
 	(*SetLiveRequest)(nil),        // 23: shale.SetLiveRequest
 	(*SetLiveResponse)(nil),       // 24: shale.SetLiveResponse
 	(*LiveSource)(nil),            // 25: shale.LiveSource
-	(*SourceAddRequest)(nil),      // 26: shale.SourceAddRequest
-	(*SourceGetRequest)(nil),      // 27: shale.SourceGetRequest
-	(*SourceSelect)(nil),          // 28: shale.SourceSelect
-	(*SourcePatchRequest)(nil),    // 29: shale.SourcePatchRequest
-	(*SourceEraseResponse)(nil),   // 30: shale.SourceEraseResponse
-	(*SourceListRequest)(nil),     // 31: shale.SourceListRequest
-	(*SourceListResponse)(nil),    // 32: shale.SourceListResponse
-	(*SourceFilter)(nil),          // 33: shale.SourceFilter
-	(*SourceWatchRequest)(nil),    // 34: shale.SourceWatchRequest
-	(*SourceWatchResponse)(nil),   // 35: shale.SourceWatchResponse
-	(*SourceWatchItem)(nil),       // 36: shale.SourceWatchItem
-	(*SourceLiveRequest)(nil),     // 37: shale.SourceLiveRequest
-	(*SourceLiveResponse)(nil),    // 38: shale.SourceLiveResponse
-	nil,                           // 39: shale.SetAddRequest.LabelsEntry
-	nil,                           // 40: shale.SetPatchRequest.LabelsEntry
-	nil,                           // 41: shale.SetFilter.LabelsEntry
-	nil,                           // 42: shale.SourceAddRequest.LabelsEntry
-	nil,                           // 43: shale.SourcePatchRequest.LabelsEntry
-	nil,                           // 44: shale.SourceFilter.LabelsEntry
-	(*TenantRef)(nil),             // 45: shale.TenantRef
-	(*SiteRef)(nil),               // 46: shale.SiteRef
-	(*SetPlacement)(nil),          // 47: shale.SetPlacement
-	(*SetRetention)(nil),          // 48: shale.SetRetention
-	(*LinkProfile)(nil),           // 49: shale.LinkProfile
-	(*timestamppb.Timestamp)(nil), // 50: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 51: shale.TenantSelect
-	(*SiteSelect)(nil),            // 52: shale.SiteSelect
-	(*Set)(nil),                   // 53: shale.Set
-	(*CameraApplyTarget)(nil),     // 54: shale.CameraApplyTarget
-	(*RelayAssignment)(nil),       // 55: shale.RelayAssignment
-	(*SatelliteAssignment)(nil),   // 56: shale.SatelliteAssignment
-	(*SegmentProfile)(nil),        // 57: shale.SegmentProfile
-	(*Allocation)(nil),            // 58: shale.Allocation
-	(*Endpoint)(nil),              // 59: shale.Endpoint
-	(*ObservedRate)(nil),          // 60: shale.ObservedRate
-	(*Starvation)(nil),            // 61: shale.Starvation
-	(*Source)(nil),                // 62: shale.Source
+	(*SetPlaceRequest)(nil),       // 26: shale.SetPlaceRequest
+	(*SetPlaceResponse)(nil),      // 27: shale.SetPlaceResponse
+	(*SetPlaced)(nil),             // 28: shale.SetPlaced
+	(*SourceAddRequest)(nil),      // 29: shale.SourceAddRequest
+	(*SourceGetRequest)(nil),      // 30: shale.SourceGetRequest
+	(*SourceSelect)(nil),          // 31: shale.SourceSelect
+	(*SourcePatchRequest)(nil),    // 32: shale.SourcePatchRequest
+	(*SourceEraseResponse)(nil),   // 33: shale.SourceEraseResponse
+	(*SourceListRequest)(nil),     // 34: shale.SourceListRequest
+	(*SourceListResponse)(nil),    // 35: shale.SourceListResponse
+	(*SourceFilter)(nil),          // 36: shale.SourceFilter
+	(*SourceWatchRequest)(nil),    // 37: shale.SourceWatchRequest
+	(*SourceWatchResponse)(nil),   // 38: shale.SourceWatchResponse
+	(*SourceWatchItem)(nil),       // 39: shale.SourceWatchItem
+	(*SourceLiveRequest)(nil),     // 40: shale.SourceLiveRequest
+	(*SourceLiveResponse)(nil),    // 41: shale.SourceLiveResponse
+	nil,                           // 42: shale.SetAddRequest.LabelsEntry
+	nil,                           // 43: shale.SetPatchRequest.LabelsEntry
+	nil,                           // 44: shale.SetFilter.LabelsEntry
+	nil,                           // 45: shale.SourceAddRequest.LabelsEntry
+	nil,                           // 46: shale.SourcePatchRequest.LabelsEntry
+	nil,                           // 47: shale.SourceFilter.LabelsEntry
+	(*TenantRef)(nil),             // 48: shale.TenantRef
+	(*SiteRef)(nil),               // 49: shale.SiteRef
+	(*SetPlacement)(nil),          // 50: shale.SetPlacement
+	(*SetRetention)(nil),          // 51: shale.SetRetention
+	(*LinkProfile)(nil),           // 52: shale.LinkProfile
+	(*timestamppb.Timestamp)(nil), // 53: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 54: shale.TenantSelect
+	(*SiteSelect)(nil),            // 55: shale.SiteSelect
+	(*Set)(nil),                   // 56: shale.Set
+	(*CameraApplyTarget)(nil),     // 57: shale.CameraApplyTarget
+	(*RelayAssignment)(nil),       // 58: shale.RelayAssignment
+	(*SatelliteAssignment)(nil),   // 59: shale.SatelliteAssignment
+	(*SegmentProfile)(nil),        // 60: shale.SegmentProfile
+	(*Allocation)(nil),            // 61: shale.Allocation
+	(*Endpoint)(nil),              // 62: shale.Endpoint
+	(*ObservedRate)(nil),          // 63: shale.ObservedRate
+	(*Starvation)(nil),            // 64: shale.Starvation
+	(*Source)(nil),                // 65: shale.Source
 }
 var file_shale_set_svc_g_proto_depIdxs = []int32{
-	45,  // 0: shale.SetAddRequest.tenant:type_name -> shale.TenantRef
-	46,  // 1: shale.SetAddRequest.site:type_name -> shale.SiteRef
-	39,  // 2: shale.SetAddRequest.labels:type_name -> shale.SetAddRequest.LabelsEntry
-	47,  // 3: shale.SetAddRequest.placement:type_name -> shale.SetPlacement
-	48,  // 4: shale.SetAddRequest.retention:type_name -> shale.SetRetention
-	49,  // 5: shale.SetAddRequest.link:type_name -> shale.LinkProfile
-	50,  // 6: shale.SetAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	48,  // 0: shale.SetAddRequest.tenant:type_name -> shale.TenantRef
+	49,  // 1: shale.SetAddRequest.site:type_name -> shale.SiteRef
+	42,  // 2: shale.SetAddRequest.labels:type_name -> shale.SetAddRequest.LabelsEntry
+	50,  // 3: shale.SetAddRequest.placement:type_name -> shale.SetPlacement
+	51,  // 4: shale.SetAddRequest.retention:type_name -> shale.SetRetention
+	52,  // 5: shale.SetAddRequest.link:type_name -> shale.LinkProfile
+	53,  // 6: shale.SetAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,   // 7: shale.SetGetRequest.ref:type_name -> shale.SetRef
 	4,   // 8: shale.SetGetRequest.select:type_name -> shale.SetSelect
 	3,   // 9: shale.SetRef.slug:type_name -> shale.SetRefBySlug
-	45,  // 10: shale.SetRefBySlug.tenant:type_name -> shale.TenantRef
-	51,  // 11: shale.SetSelect.tenant:type_name -> shale.TenantSelect
-	52,  // 12: shale.SetSelect.site:type_name -> shale.SiteSelect
+	48,  // 10: shale.SetRefBySlug.tenant:type_name -> shale.TenantRef
+	54,  // 11: shale.SetSelect.tenant:type_name -> shale.TenantSelect
+	55,  // 12: shale.SetSelect.site:type_name -> shale.SiteSelect
 	2,   // 13: shale.SetPatchRequest.ref:type_name -> shale.SetRef
-	40,  // 14: shale.SetPatchRequest.labels:type_name -> shale.SetPatchRequest.LabelsEntry
-	47,  // 15: shale.SetPatchRequest.placement:type_name -> shale.SetPlacement
-	48,  // 16: shale.SetPatchRequest.retention:type_name -> shale.SetRetention
-	49,  // 17: shale.SetPatchRequest.link:type_name -> shale.LinkProfile
-	50,  // 18: shale.SetPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	43,  // 14: shale.SetPatchRequest.labels:type_name -> shale.SetPatchRequest.LabelsEntry
+	50,  // 15: shale.SetPatchRequest.placement:type_name -> shale.SetPlacement
+	51,  // 16: shale.SetPatchRequest.retention:type_name -> shale.SetRetention
+	52,  // 17: shale.SetPatchRequest.link:type_name -> shale.LinkProfile
+	53,  // 18: shale.SetPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	9,   // 19: shale.SetListRequest.filters:type_name -> shale.SetFilter
 	4,   // 20: shale.SetListRequest.select:type_name -> shale.SetSelect
-	53,  // 21: shale.SetListResponse.items:type_name -> shale.Set
+	56,  // 21: shale.SetListResponse.items:type_name -> shale.Set
 	2,   // 22: shale.SetFilter.ref:type_name -> shale.SetRef
-	45,  // 23: shale.SetFilter.tenant:type_name -> shale.TenantRef
-	46,  // 24: shale.SetFilter.site:type_name -> shale.SiteRef
-	41,  // 25: shale.SetFilter.labels:type_name -> shale.SetFilter.LabelsEntry
+	48,  // 23: shale.SetFilter.tenant:type_name -> shale.TenantRef
+	49,  // 24: shale.SetFilter.site:type_name -> shale.SiteRef
+	44,  // 25: shale.SetFilter.labels:type_name -> shale.SetFilter.LabelsEntry
 	9,   // 26: shale.SetWatchRequest.filters:type_name -> shale.SetFilter
 	12,  // 27: shale.SetWatchResponse.items:type_name -> shale.SetWatchItem
-	53,  // 28: shale.SetWatchItem.value:type_name -> shale.Set
+	56,  // 28: shale.SetWatchItem.value:type_name -> shale.Set
 	2,   // 29: shale.SetNegotiateRequest.ref:type_name -> shale.SetRef
-	49,  // 30: shale.SetNegotiateRequest.link:type_name -> shale.LinkProfile
+	52,  // 30: shale.SetNegotiateRequest.link:type_name -> shale.LinkProfile
 	15,  // 31: shale.SetNegotiateRequest.sources:type_name -> shale.SourceProposal
-	54,  // 32: shale.SetNegotiateRequest.catalog:type_name -> shale.CameraApplyTarget
-	49,  // 33: shale.SetNegotiateResponse.link:type_name -> shale.LinkProfile
+	57,  // 32: shale.SetNegotiateRequest.catalog:type_name -> shale.CameraApplyTarget
+	52,  // 33: shale.SetNegotiateResponse.link:type_name -> shale.LinkProfile
 	19,  // 34: shale.SetNegotiateResponse.sources:type_name -> shale.SourceAgreed
 	20,  // 35: shale.SetNegotiateResponse.adjustments:type_name -> shale.Adjustment
-	55,  // 36: shale.SetNegotiateResponse.relay:type_name -> shale.RelayAssignment
-	56,  // 37: shale.SetNegotiateResponse.satellite:type_name -> shale.SatelliteAssignment
+	58,  // 36: shale.SetNegotiateResponse.relay:type_name -> shale.RelayAssignment
+	59,  // 37: shale.SetNegotiateResponse.satellite:type_name -> shale.SatelliteAssignment
 	16,  // 38: shale.SourceProposal.source:type_name -> shale.SourceRef
-	57,  // 39: shale.SourceProposal.profile:type_name -> shale.SegmentProfile
+	60,  // 39: shale.SourceProposal.profile:type_name -> shale.SegmentProfile
 	17,  // 40: shale.SourceRef.slug:type_name -> shale.SourceRefBySlug
 	18,  // 41: shale.SourceRef.member:type_name -> shale.SourceRefByMember
-	45,  // 42: shale.SourceRefBySlug.tenant:type_name -> shale.TenantRef
+	48,  // 42: shale.SourceRefBySlug.tenant:type_name -> shale.TenantRef
 	2,   // 43: shale.SourceRefByMember.set:type_name -> shale.SetRef
-	57,  // 44: shale.SourceAgreed.profile:type_name -> shale.SegmentProfile
+	60,  // 44: shale.SourceAgreed.profile:type_name -> shale.SegmentProfile
 	2,   // 45: shale.SetAllocateRequest.ref:type_name -> shale.SetRef
-	50,  // 46: shale.SetAllocateRequest.now:type_name -> google.protobuf.Timestamp
-	58,  // 47: shale.SetAllocateResponse.allocations:type_name -> shale.Allocation
+	53,  // 46: shale.SetAllocateRequest.now:type_name -> google.protobuf.Timestamp
+	61,  // 47: shale.SetAllocateResponse.allocations:type_name -> shale.Allocation
 	2,   // 48: shale.SetLiveRequest.ref:type_name -> shale.SetRef
 	25,  // 49: shale.SetLiveResponse.sources:type_name -> shale.LiveSource
-	59,  // 50: shale.LiveSource.endpoints:type_name -> shale.Endpoint
-	50,  // 51: shale.LiveSource.date_expires:type_name -> google.protobuf.Timestamp
-	45,  // 52: shale.SourceAddRequest.tenant:type_name -> shale.TenantRef
-	46,  // 53: shale.SourceAddRequest.site:type_name -> shale.SiteRef
-	42,  // 54: shale.SourceAddRequest.labels:type_name -> shale.SourceAddRequest.LabelsEntry
-	2,   // 55: shale.SourceAddRequest.set:type_name -> shale.SetRef
-	57,  // 56: shale.SourceAddRequest.profile:type_name -> shale.SegmentProfile
-	60,  // 57: shale.SourceAddRequest.observed:type_name -> shale.ObservedRate
-	50,  // 58: shale.SourceAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	61,  // 59: shale.SourceAddRequest.starvation:type_name -> shale.Starvation
-	16,  // 60: shale.SourceGetRequest.ref:type_name -> shale.SourceRef
-	28,  // 61: shale.SourceGetRequest.select:type_name -> shale.SourceSelect
-	51,  // 62: shale.SourceSelect.tenant:type_name -> shale.TenantSelect
-	52,  // 63: shale.SourceSelect.site:type_name -> shale.SiteSelect
-	4,   // 64: shale.SourceSelect.set:type_name -> shale.SetSelect
-	16,  // 65: shale.SourcePatchRequest.ref:type_name -> shale.SourceRef
-	43,  // 66: shale.SourcePatchRequest.labels:type_name -> shale.SourcePatchRequest.LabelsEntry
-	57,  // 67: shale.SourcePatchRequest.profile:type_name -> shale.SegmentProfile
-	60,  // 68: shale.SourcePatchRequest.observed:type_name -> shale.ObservedRate
-	50,  // 69: shale.SourcePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	61,  // 70: shale.SourcePatchRequest.starvation:type_name -> shale.Starvation
-	33,  // 71: shale.SourceListRequest.filters:type_name -> shale.SourceFilter
-	28,  // 72: shale.SourceListRequest.select:type_name -> shale.SourceSelect
-	62,  // 73: shale.SourceListResponse.items:type_name -> shale.Source
-	16,  // 74: shale.SourceFilter.ref:type_name -> shale.SourceRef
-	45,  // 75: shale.SourceFilter.tenant:type_name -> shale.TenantRef
-	2,   // 76: shale.SourceFilter.set:type_name -> shale.SetRef
-	46,  // 77: shale.SourceFilter.site:type_name -> shale.SiteRef
-	44,  // 78: shale.SourceFilter.labels:type_name -> shale.SourceFilter.LabelsEntry
-	33,  // 79: shale.SourceWatchRequest.filters:type_name -> shale.SourceFilter
-	36,  // 80: shale.SourceWatchResponse.items:type_name -> shale.SourceWatchItem
-	62,  // 81: shale.SourceWatchItem.value:type_name -> shale.Source
-	16,  // 82: shale.SourceLiveRequest.ref:type_name -> shale.SourceRef
-	25,  // 83: shale.SourceLiveResponse.source:type_name -> shale.LiveSource
-	0,   // 84: shale.SetService.Add:input_type -> shale.SetAddRequest
-	1,   // 85: shale.SetService.Get:input_type -> shale.SetGetRequest
-	5,   // 86: shale.SetService.Patch:input_type -> shale.SetPatchRequest
-	2,   // 87: shale.SetService.Erase:input_type -> shale.SetRef
-	7,   // 88: shale.SetService.List:input_type -> shale.SetListRequest
-	10,  // 89: shale.SetService.Watch:input_type -> shale.SetWatchRequest
-	13,  // 90: shale.SetService.Negotiate:input_type -> shale.SetNegotiateRequest
-	21,  // 91: shale.SetService.Allocate:input_type -> shale.SetAllocateRequest
-	23,  // 92: shale.SetService.Live:input_type -> shale.SetLiveRequest
-	26,  // 93: shale.SourceService.Add:input_type -> shale.SourceAddRequest
-	27,  // 94: shale.SourceService.Get:input_type -> shale.SourceGetRequest
-	29,  // 95: shale.SourceService.Patch:input_type -> shale.SourcePatchRequest
-	16,  // 96: shale.SourceService.Erase:input_type -> shale.SourceRef
-	31,  // 97: shale.SourceService.List:input_type -> shale.SourceListRequest
-	34,  // 98: shale.SourceService.Watch:input_type -> shale.SourceWatchRequest
-	37,  // 99: shale.SourceService.Live:input_type -> shale.SourceLiveRequest
-	53,  // 100: shale.SetService.Add:output_type -> shale.Set
-	53,  // 101: shale.SetService.Get:output_type -> shale.Set
-	53,  // 102: shale.SetService.Patch:output_type -> shale.Set
-	6,   // 103: shale.SetService.Erase:output_type -> shale.SetEraseResponse
-	8,   // 104: shale.SetService.List:output_type -> shale.SetListResponse
-	11,  // 105: shale.SetService.Watch:output_type -> shale.SetWatchResponse
-	14,  // 106: shale.SetService.Negotiate:output_type -> shale.SetNegotiateResponse
-	22,  // 107: shale.SetService.Allocate:output_type -> shale.SetAllocateResponse
-	24,  // 108: shale.SetService.Live:output_type -> shale.SetLiveResponse
-	62,  // 109: shale.SourceService.Add:output_type -> shale.Source
-	62,  // 110: shale.SourceService.Get:output_type -> shale.Source
-	62,  // 111: shale.SourceService.Patch:output_type -> shale.Source
-	30,  // 112: shale.SourceService.Erase:output_type -> shale.SourceEraseResponse
-	32,  // 113: shale.SourceService.List:output_type -> shale.SourceListResponse
-	35,  // 114: shale.SourceService.Watch:output_type -> shale.SourceWatchResponse
-	38,  // 115: shale.SourceService.Live:output_type -> shale.SourceLiveResponse
-	100, // [100:116] is the sub-list for method output_type
-	84,  // [84:100] is the sub-list for method input_type
-	84,  // [84:84] is the sub-list for extension type_name
-	84,  // [84:84] is the sub-list for extension extendee
-	0,   // [0:84] is the sub-list for field type_name
+	62,  // 50: shale.LiveSource.endpoints:type_name -> shale.Endpoint
+	53,  // 51: shale.LiveSource.date_expires:type_name -> google.protobuf.Timestamp
+	2,   // 52: shale.SetPlaceRequest.set:type_name -> shale.SetRef
+	49,  // 53: shale.SetPlaceRequest.site:type_name -> shale.SiteRef
+	56,  // 54: shale.SetPlaceResponse.set:type_name -> shale.Set
+	28,  // 55: shale.SetPlaceResponse.moved:type_name -> shale.SetPlaced
+	48,  // 56: shale.SourceAddRequest.tenant:type_name -> shale.TenantRef
+	49,  // 57: shale.SourceAddRequest.site:type_name -> shale.SiteRef
+	45,  // 58: shale.SourceAddRequest.labels:type_name -> shale.SourceAddRequest.LabelsEntry
+	2,   // 59: shale.SourceAddRequest.set:type_name -> shale.SetRef
+	60,  // 60: shale.SourceAddRequest.profile:type_name -> shale.SegmentProfile
+	63,  // 61: shale.SourceAddRequest.observed:type_name -> shale.ObservedRate
+	53,  // 62: shale.SourceAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	64,  // 63: shale.SourceAddRequest.starvation:type_name -> shale.Starvation
+	16,  // 64: shale.SourceGetRequest.ref:type_name -> shale.SourceRef
+	31,  // 65: shale.SourceGetRequest.select:type_name -> shale.SourceSelect
+	54,  // 66: shale.SourceSelect.tenant:type_name -> shale.TenantSelect
+	55,  // 67: shale.SourceSelect.site:type_name -> shale.SiteSelect
+	4,   // 68: shale.SourceSelect.set:type_name -> shale.SetSelect
+	16,  // 69: shale.SourcePatchRequest.ref:type_name -> shale.SourceRef
+	46,  // 70: shale.SourcePatchRequest.labels:type_name -> shale.SourcePatchRequest.LabelsEntry
+	60,  // 71: shale.SourcePatchRequest.profile:type_name -> shale.SegmentProfile
+	63,  // 72: shale.SourcePatchRequest.observed:type_name -> shale.ObservedRate
+	53,  // 73: shale.SourcePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	64,  // 74: shale.SourcePatchRequest.starvation:type_name -> shale.Starvation
+	36,  // 75: shale.SourceListRequest.filters:type_name -> shale.SourceFilter
+	31,  // 76: shale.SourceListRequest.select:type_name -> shale.SourceSelect
+	65,  // 77: shale.SourceListResponse.items:type_name -> shale.Source
+	16,  // 78: shale.SourceFilter.ref:type_name -> shale.SourceRef
+	48,  // 79: shale.SourceFilter.tenant:type_name -> shale.TenantRef
+	2,   // 80: shale.SourceFilter.set:type_name -> shale.SetRef
+	49,  // 81: shale.SourceFilter.site:type_name -> shale.SiteRef
+	47,  // 82: shale.SourceFilter.labels:type_name -> shale.SourceFilter.LabelsEntry
+	36,  // 83: shale.SourceWatchRequest.filters:type_name -> shale.SourceFilter
+	39,  // 84: shale.SourceWatchResponse.items:type_name -> shale.SourceWatchItem
+	65,  // 85: shale.SourceWatchItem.value:type_name -> shale.Source
+	16,  // 86: shale.SourceLiveRequest.ref:type_name -> shale.SourceRef
+	25,  // 87: shale.SourceLiveResponse.source:type_name -> shale.LiveSource
+	0,   // 88: shale.SetService.Add:input_type -> shale.SetAddRequest
+	1,   // 89: shale.SetService.Get:input_type -> shale.SetGetRequest
+	5,   // 90: shale.SetService.Patch:input_type -> shale.SetPatchRequest
+	2,   // 91: shale.SetService.Erase:input_type -> shale.SetRef
+	7,   // 92: shale.SetService.List:input_type -> shale.SetListRequest
+	10,  // 93: shale.SetService.Watch:input_type -> shale.SetWatchRequest
+	13,  // 94: shale.SetService.Negotiate:input_type -> shale.SetNegotiateRequest
+	21,  // 95: shale.SetService.Allocate:input_type -> shale.SetAllocateRequest
+	23,  // 96: shale.SetService.Live:input_type -> shale.SetLiveRequest
+	26,  // 97: shale.SetService.Place:input_type -> shale.SetPlaceRequest
+	29,  // 98: shale.SourceService.Add:input_type -> shale.SourceAddRequest
+	30,  // 99: shale.SourceService.Get:input_type -> shale.SourceGetRequest
+	32,  // 100: shale.SourceService.Patch:input_type -> shale.SourcePatchRequest
+	16,  // 101: shale.SourceService.Erase:input_type -> shale.SourceRef
+	34,  // 102: shale.SourceService.List:input_type -> shale.SourceListRequest
+	37,  // 103: shale.SourceService.Watch:input_type -> shale.SourceWatchRequest
+	40,  // 104: shale.SourceService.Live:input_type -> shale.SourceLiveRequest
+	56,  // 105: shale.SetService.Add:output_type -> shale.Set
+	56,  // 106: shale.SetService.Get:output_type -> shale.Set
+	56,  // 107: shale.SetService.Patch:output_type -> shale.Set
+	6,   // 108: shale.SetService.Erase:output_type -> shale.SetEraseResponse
+	8,   // 109: shale.SetService.List:output_type -> shale.SetListResponse
+	11,  // 110: shale.SetService.Watch:output_type -> shale.SetWatchResponse
+	14,  // 111: shale.SetService.Negotiate:output_type -> shale.SetNegotiateResponse
+	22,  // 112: shale.SetService.Allocate:output_type -> shale.SetAllocateResponse
+	24,  // 113: shale.SetService.Live:output_type -> shale.SetLiveResponse
+	27,  // 114: shale.SetService.Place:output_type -> shale.SetPlaceResponse
+	65,  // 115: shale.SourceService.Add:output_type -> shale.Source
+	65,  // 116: shale.SourceService.Get:output_type -> shale.Source
+	65,  // 117: shale.SourceService.Patch:output_type -> shale.Source
+	33,  // 118: shale.SourceService.Erase:output_type -> shale.SourceEraseResponse
+	35,  // 119: shale.SourceService.List:output_type -> shale.SourceListResponse
+	38,  // 120: shale.SourceService.Watch:output_type -> shale.SourceWatchResponse
+	41,  // 121: shale.SourceService.Live:output_type -> shale.SourceLiveResponse
+	105, // [105:122] is the sub-list for method output_type
+	88,  // [88:105] is the sub-list for method input_type
+	88,  // [88:88] is the sub-list for extension type_name
+	88,  // [88:88] is the sub-list for extension extendee
+	0,   // [0:88] is the sub-list for field type_name
 }
 
 func init() { file_shale_set_svc_g_proto_init() }
@@ -7117,7 +7657,7 @@ func file_shale_set_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_set_svc_g_proto_rawDesc), len(file_shale_set_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   45,
+			NumMessages:   48,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

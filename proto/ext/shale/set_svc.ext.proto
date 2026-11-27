@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "shale/common.proto";
 import "shale/camera.proto";
 import "shale/set.proto";
+import "shale/site_svc.g.proto";
 
 option go_package = "github.com/lesomnus/shale/api";
 
@@ -21,6 +22,13 @@ service SetService {
   // Live viewing: per member, the relay's endpoints, a view token, and the
   // WHEP URL (§39.4).
   rpc Live(SetLiveRequest) returns (SetLiveResponse);
+  // Puts a set that exists into a site, or moves it from one to another
+  // (§7): the set, its sources, their laminae and attempts and its
+  // producer, and for a set whose cameras Shale manages its camera network
+  // with everything of it, in one transaction. Whoever sees every site
+  // may; no site at all is refused, and so is a camera network or a row of
+  // it that something else shares.
+  rpc Place(SetPlaceRequest) returns (SetPlaceResponse);
 }
 
 service SourceService {
@@ -124,4 +132,52 @@ message SourceLiveRequest {
 
 message SourceLiveResponse {
   LiveSource source = 1;
+}
+
+message SetPlaceRequest {
+  SetRef set = 1;
+  // Where the set goes. Required: out of a site into none is not offered.
+  SiteRef site = 2;
+  // Count what would move and write nothing.
+  bool dry_run = 3 [features.field_presence = IMPLICIT];
+}
+
+// SetPlaced is how many rows of each kind carry the set's site because of
+// the set, which a placing rewrites (§7).
+message SetPlaced {
+  int64 sources = 1 [features.field_presence = IMPLICIT];
+  int64 laminae = 2 [features.field_presence = IMPLICIT];
+  int64 attempts = 3 [features.field_presence = IMPLICIT];
+  int64 producers = 4 [features.field_presence = IMPLICIT];
+  // For a set whose cameras Shale manages, its camera rows: its
+  // assignments, their bindings and jobs; the network they are on, its
+  // devices, the devices' credentials and their versions, the network's
+  // policies, the presets only they use; and the camera worker.
+  int64 camera_assignments = 5 [features.field_presence = IMPLICIT];
+  int64 camera_bindings = 6 [features.field_presence = IMPLICIT];
+  int64 camera_jobs = 7 [features.field_presence = IMPLICIT];
+  int64 camera_networks = 8 [features.field_presence = IMPLICIT];
+  int64 camera_devices = 9 [features.field_presence = IMPLICIT];
+  int64 camera_credentials = 10 [features.field_presence = IMPLICIT];
+  int64 camera_credential_versions = 11 [features.field_presence = IMPLICIT];
+  int64 camera_policies = 12 [features.field_presence = IMPLICIT];
+  int64 camera_presets = 13 [features.field_presence = IMPLICIT];
+  int64 camera_workers = 14 [features.field_presence = IMPLICIT];
+}
+
+message SetPlaceResponse {
+  // The set as it is now: in the site, or, for a dry run or a set already
+  // there, as it was.
+  Set set = 1;
+  // The site it was in; empty for none.
+  bytes from_site_id = 2 [features.field_presence = IMPLICIT];
+  // The rows rewritten, or for a dry run the rows that would be; all zero
+  // for a set already in the site.
+  SetPlaced moved = 3;
+  bool dry_run = 4 [features.field_presence = IMPLICIT];
+  // For a dry run, why the placing would be refused, each in a sentence
+  // that names what is shared and what an operator would do; empty when it
+  // would not be. A placing that is refused writes nothing and answers
+  // FAILED_PRECONDITION with the same sentences.
+  repeated string refused = 5;
 }
