@@ -81,7 +81,9 @@ func (c *ONVIFCamera) AuthAttempts() []AuthAttempt {
 	return append([]AuthAttempt(nil), c.attempts...)
 }
 
-// WebHandshakes counts completed TLS handshakes on the HTTPS web port.
+// WebHandshakes counts completed TLS handshakes on the HTTPS web port. The
+// camera counts one when its own side is done, which under TLS 1.3 may be a
+// moment after the client's: whoever has only just shaken hands waits for it.
 func (c *ONVIFCamera) WebHandshakes() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
