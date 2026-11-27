@@ -13,6 +13,14 @@
  * by the alias they are known by, since a person cannot list people
  * without a grant to; somebody Shale has never seen sign in is not found.
  *
+ * A set is put into a site, or moved to another, with `SetService.Place`
+ * (§7): the sets in no site under their own heading, which only whoever
+ * sees every site sees, and on each site's row its sets. Only whoever sees
+ * every site may; the console shows the controls to whoever holds the
+ * method and says the server's refusal in its words. The confirmation
+ * says who will see the set and how many recordings move with it, counted
+ * first with a dry run.
+ *
  * @module
  */
 
@@ -25,7 +33,8 @@ import { ReaderService } from '../gen/shale/host_svc_pb.js'
 import type { SiteMember } from '../gen/shale/member_pb.js'
 import { SiteMemberService } from '../gen/shale/member_svc_pb.js'
 import { HolderService, type HolderListKeysResponse } from '../gen/shale/payday/holder_svc_pb.js'
-import { SetService } from '../gen/shale/set_svc_pb.js'
+import type { Set } from '../gen/shale/set_pb.js'
+import { SetService, type SetPlaced } from '../gen/shale/set_svc_pb.js'
 import { SiteVisibility, type Site } from '../gen/shale/site_pb.js'
 import { SiteService } from '../gen/shale/site_svc_pb.js'
 
@@ -84,9 +93,14 @@ function siteName(v: Site): string {
 const PATCH = '/shale.SiteService/Patch'
 const MEMBER_ADD = '/shale.SiteMemberService/Add'
 const MEMBER_ERASE = '/shale.SiteMemberService/Erase'
+const PLACE = '/shale.SetService/Place'
 
-/** May is what the person may change here, and why not where they may not. */
-type May = { kind: boolean; members: boolean; why: string | null }
+/**
+ * May is what the person may change here, and why not where they may not.
+ * `place` is holding the method; the server also asks that they see every
+ * site, and says so when they do not.
+ */
+type May = { kind: boolean; members: boolean; place: boolean; why: string | null }
 
 /**
  * mayOf reads what the person holds at Shale: a method held, or nobody
@@ -95,11 +109,12 @@ type May = { kind: boolean; members: boolean; why: string | null }
  */
 function mayOf(v: HolderListKeysResponse | undefined, err: unknown): May {
 	if (v === undefined) {
-		return { kind: false, members: false, why: err === undefined ? null : `Shale could not say what you hold, so nothing here can be changed: ${said(err)}` }
+		return { kind: false, members: false, place: false, why: err === undefined ? null : `Shale could not say what you hold, so nothing here can be changed: ${said(err)}` }
 	}
 	const everybody = v.holds.length === 0 && v.noneHeld !== ''
 	const kind = everybody || v.holds.includes(PATCH)
 	const members = everybody || (v.holds.includes(MEMBER_ADD) && v.holds.includes(MEMBER_ERASE))
+	const place = everybody || v.holds.includes(PLACE)
 	const why =
 		kind && members
 			? null
@@ -109,7 +124,7 @@ function mayOf(v: HolderListKeysResponse | undefined, err: unknown): May {
 					? "You cannot change a site's kind: you hold no role of Shale's that writes a site. Ask an administrator for one."
 					: "You cannot change a site's members: you hold no role of Shale's that adds and removes them. Ask an administrator for one."
 
-	return { kind, members, why }
+	return { kind, members, place, why }
 }
 
 function Page(): ReactNode {
@@ -125,17 +140,35 @@ function Page(): ReactNode {
 		keys.call({}).catch(() => {})
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
-	const may = keys.state === 'pending' && keys.data === undefined ? { kind: false, members: false, why: null } : mayOf(keys.data, keys.error)
-	const count = (site: Site): number => (sets.data?.items ?? []).filter((v) => hex(v.site?.id) === hex(site.id)).length
+	const may = keys.state === 'pending' && keys.data === undefined ? { kind: false, members: false, place: false, why: null } : mayOf(keys.data, keys.error)
+	const reloadSets = (): void => {
+		sets.call({ size: 500 }).catch(() => {})
+	}
+	const of = (site: Site): Set[] => (sets.data?.items ?? []).filter((v) => hex(v.site?.id) === hex(site.id))
+	const loose = (sets.data?.items ?? []).filter((v) => v.site === undefined || v.site.id.length === 0)
 
 	if (sites.data === undefined) {
 		return sites.state === 'error' ? <p className="bad">{said(sites.error)}</p> : <Loading />
 	}
+	const all = sites.data.items
 
 	return (
 		<>
 			{may.why !== null && <p className="warn none-held">{may.why}</p>}
-			{sites.data.items.length === 0 ? (
+			{loose.length > 0 && (
+				<section className="loose">
+					<h2>Sets in no site</h2>
+					<p className="dim">Only whoever sees every site sees these sets and what they recorded. Put one in a site to show it to the people the site shows its cameras to.</p>
+					<ul className="sets">
+						{loose.map((v) => (
+							<li key={hex(v.id)}>
+								<Placing set={v} sites={all} may={may} moved={reloadSets} />
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+			{all.length === 0 ? (
 				<Empty>You see no site. A camera in no site is seen by whoever sees every site alone.</Empty>
 			) : (
 				<div className="wrap">
@@ -149,8 +182,8 @@ function Page(): ReactNode {
 							</tr>
 						</thead>
 						<tbody>
-							{sites.data.items.map((v) => (
-								<Row key={hex(v.id)} site={v} sets={count(v)} may={may} changed={reload} />
+							{all.map((v) => (
+								<Row key={hex(v.id)} site={v} sets={of(v)} sites={all} may={may} changed={reload} moved={reloadSets} />
 							))}
 						</tbody>
 					</table>
@@ -160,7 +193,7 @@ function Page(): ReactNode {
 	)
 }
 
-function Row(props: { site: Site; sets: number; may: May; changed: () => void }): ReactNode {
+function Row(props: { site: Site; sets: Set[]; sites: Site[]; may: May; changed: () => void; moved: () => void }): ReactNode {
 	const { site, may } = props
 	const patch = useCall(SiteService.method.patch)
 	const kind = kindOf(site.visibility)
@@ -181,7 +214,24 @@ function Row(props: { site: Site; sets: number; may: May; changed: () => void })
 			<td>
 				<b>{siteName(site)}</b> <span className="dim mono">{site.alias}</span>
 			</td>
-			<td className="num">{props.sets}</td>
+			<td>
+				<details>
+					<summary>
+						{props.sets.length} {props.sets.length === 1 ? 'set' : 'sets'}
+					</summary>
+					{props.sets.length === 0 ? (
+						<p className="dim">No set is in it.</p>
+					) : (
+						<ul className="sets">
+							{props.sets.map((v) => (
+								<li key={hex(v.id)}>
+									<Placing set={v} sites={props.sites} may={may} moved={props.moved} />
+								</li>
+							))}
+						</ul>
+					)}
+				</details>
+			</td>
 			<td>
 				{may.kind ? (
 					<fieldset className="kinds">
@@ -327,5 +377,93 @@ function Member(props: { m: SiteMember; site: Site; may: May; removed: () => voi
 			)}
 			{erase.state === 'error' && <span className="bad"> {said(erase.error)}</span>}
 		</li>
+	)
+}
+
+function setName(v: Set): string {
+	return v.name !== '' ? v.name : v.alias
+}
+
+/** counted is what a dry run said moves with a set, in words. */
+function counted(m: SetPlaced | undefined): string {
+	const n = (v: bigint | undefined, one: string, many: string): string => `${v ?? 0n} ${v === 1n ? one : many}`
+
+	const managed =
+		(m?.cameraAssignments ?? 0n) > 0n
+			? `, and the camera network it is on with ${n(m?.cameraDevices, 'device', 'devices')}, its credentials, policies and presets, and its worker`
+			: ''
+
+	return `${n(m?.laminae, 'recording', 'recordings')} (and ${n(m?.sources, 'camera', 'cameras')}, ${n(m?.attempts, 'upload attempt', 'upload attempts')}, ${n(m?.producers, 'producer', 'producers')}${managed})`
+}
+
+/**
+ * Placing is one set, with a choice of the sites it is not in and a button
+ * that puts it there, for who may: a dry run first, for the confirmation's
+ * count, then the move.
+ */
+function Placing(props: { set: Set; sites: Site[]; may: May; moved: () => void }): ReactNode {
+	const { set, may } = props
+	const place = useCall(SetService.method.place)
+	const here = hex(set.site?.id)
+	const others = props.sites.filter((v) => hex(v.id) !== here && v.dateErased === undefined)
+	const [to, setTo] = useState<string>('')
+	const [note, setNote] = useState<string | null>(null)
+	const target = others.find((v) => hex(v.id) === to)
+	const from = props.sites.find((v) => hex(v.id) === here)
+	const go = (): void => {
+		if (target === undefined) return
+		setNote(null)
+		place
+			.call({ set: byId(set.id), site: byId(target.id), dryRun: true })
+			.then((dry) => {
+				if (dry.refused.length > 0) {
+					setNote(`${setName(set)} cannot be put in ${siteName(target)}: ${dry.refused.join('; ')}`)
+					return
+				}
+				const kind = kindOf(target.visibility)
+				const left =
+					from === undefined
+						? 'Until now only whoever sees every site sees it.'
+						: `Whoever sees it through ${siteName(from)} alone no longer does.`
+				confirmThen(
+					`Put ${setName(set)} in ${siteName(target)}? ${kind.line} That is so for everything it ever recorded: ${counted(dry.moved)} move with it. ${left} It is so within ten seconds.` +
+						((dry.moved?.cameraAssignments ?? 0n) > 0n
+							? ' Restart its producer once it is moved: until then the producer is refused its cameras\' next credential, which names the site it started in.'
+							: ''),
+					() =>
+						place
+							.call({ set: byId(set.id), site: byId(target.id) })
+							.then((done) => {
+								setNote(`${setName(set)} is in ${siteName(target)}: ${counted(done.moved)} moved.`)
+								setTo('')
+								props.moved()
+							})
+							.catch(() => {}),
+				)
+			})
+			.catch(() => {})
+	}
+
+	return (
+		<>
+			<b>{setName(set)}</b> <span className="dim mono">{set.alias}</span>
+			{may.place && others.length > 0 && (
+				<span className="toolbar">
+					<select value={to} onChange={(e) => setTo(e.target.value)} aria-label={`a site for ${setName(set)}`}>
+						<option value="">{here === '' ? 'put in a site…' : 'move to a site…'}</option>
+						{others.map((v) => (
+							<option key={hex(v.id)} value={hex(v.id)}>
+								{siteName(v)} · {kindOf(v.visibility).name}
+							</option>
+						))}
+					</select>
+					<button type="button" disabled={target === undefined || place.state === 'pending'} onClick={go}>
+						{here === '' ? 'place' : 'move'}
+					</button>
+				</span>
+			)}
+			{place.state === 'error' && <p className="bad">{said(place.error)}</p>}
+			{note !== null && <p className="dim">{note}</p>}
+		</>
 	)
 }
