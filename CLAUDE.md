@@ -131,21 +131,21 @@ cd ts && npm install && npm run dev
 
 ## Testing on PostgreSQL
 
-CI's `postgres` job runs `internal/e2e` and `cli` on PostgreSQL 17, beside
-`test` and `race` on SQLite. A change that touches a query, a lock, a
-migration or the scopes passes it too; the same here, on a database that
-holds nothing else, one package at a time (each control plane the harness
-starts empties it first). The server needs `max_connections` of 1000: the
-postgres watch broker cannot be closed, so every control plane a test
-starts leaves two connections open until the test binary exits, and the
-default hundred runs out a third of the way through:
+CI's `postgres` job runs `cli`, `server/core` and `internal/e2e` on
+PostgreSQL 17, beside `test` and `race` on SQLite. A change that touches a
+query, a lock, a migration or the scopes passes it too; the same here, on a
+database that holds nothing else, one package at a time (each control plane
+the harness starts empties it first). The server's default hundred
+connections are enough, and are meant to be: a server a test builds gives
+back its pool and its watch broker's connections when it is closed, and
+"too many clients" part way through means one does not.
 
 ```sh
 docker run -d --rm --name shale-e2e-pg -p 5432:5432 -e POSTGRES_USER=shale \
   -e POSTGRES_PASSWORD=shale -e POSTGRES_DB=shale_e2e \
-  postgres:17-alpine -c max_connections=1000
+  postgres:17-alpine
 SHALE_E2E_DB_DSN='postgres://shale:shale@localhost:5432/shale_e2e?sslmode=disable' \
-  go test -p 1 -count=1 ./cli ./internal/e2e
+  go test -p 1 -count=1 ./cli ./server/core ./internal/e2e
 ```
 
 ## `auth.Plain` is not for production

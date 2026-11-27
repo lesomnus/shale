@@ -149,16 +149,18 @@ jobs:
   # kept apart by running one at a time, which they do, none being
   # parallel, and the two packages one after the other, never at once.
   #
-  # PostgreSQL is started here and not as a service, because it needs a
-  # flag a service cannot be given: max_connections of 1000, not 100. The
-  # postgres broker of payday (watchpg) has no way to be stopped, so every
-  # server built with it keeps its listening connection and its publishing
-  # one open after it is closed, for the rest of the process: two for each
-  # `init` and each `serve all` of every test, which reached the hundred a
-  # third of the way into the suite, and every test after it failed with
-  # "too many clients" (an issue to be filed: payday's watchpg broker and
-  # shale's Server.Close leave the broker's connections open). When they
-  # close, this goes back to the default.
+  # PostgreSQL runs with the hundred connections its image allows, and that
+  # is a test of its own: a server that is closed gives back its pool and
+  # its broker's two connections (the postgres broker of payday, watchpg,
+  # can be closed since lesomnus/payday#323, and Server.Close closes it),
+  # so the suite, which builds a server for each `init` and each `serve
+  # all` of every test, never holds more than a few at once. One that kept
+  # them reached the hundred a third of the way in, and every test after
+  # it failed with "too many clients": if that comes back, something built
+  # in a test is not closed, and raising the limit hides it.
+  #
+  # It is started here and not as a service so that it initializes while
+  # the rest is set up.
   #
   # The steps run on the runner, so the database is at localhost on the
   # mapped port. Readiness is asked over TCP: while the image initializes
@@ -172,7 +174,7 @@ jobs:
         run: |
           docker run -d --name shale-postgres -p 5432:5432 \
             -e POSTGRES_USER=shale -e POSTGRES_PASSWORD=shale -e POSTGRES_DB=shale_e2e \
-            postgres:17-alpine -c max_connections=1000
+            postgres:17-alpine
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
