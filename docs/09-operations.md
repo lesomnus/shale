@@ -154,6 +154,14 @@ continues as the same `node_id` with the same sinks
 6. laminae are readable again; no lamina rows change
 ```
 
+**The host is gone for good**: `shale node erase` says so, and is not undone
+([§33.4](10-security.md#334-joining-and-adoption), *Erasing a host*). Its
+sinks' laminae are UNAVAILABLE from then until the sinks are adopted, not
+LOST, exactly as when A is down above. They cannot be moved first: an
+adoption is refused while the sink's node still heartbeats ("erase or stop
+that node first"), so erasing or stopping A is the first step, and B adopts
+the sinks after it.
+
 A sink its node stops reporting, the disk pulled or the directory gone, is
 pending adoption from that heartbeat on: placement skips it, and the CP
 stops handing out tokens for it, so producers are not sent to a node that

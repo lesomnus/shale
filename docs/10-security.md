@@ -685,9 +685,21 @@ the CP can verify.
 `shale reader erase`). The CP resolves every mTLS peer to its row and compares
 the certificate serial the row records, so an erased host, or a host whose
 certificate was replaced, is refused on its next call without a revocation
-list. `shale node erase` is refused while sinks are attached to the node,
-unless `--detach` is given, which leaves their laminae UNAVAILABLE until the
-sinks are adopted elsewhere ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
+list. None of the three asks anything first: the row gets its
+`date_erased`, and nothing else is written. An erased node leaves DNS, is
+sent no directives, and placement skips its sinks. The sinks keep their rows
+as they were, still the erased node's, so within `node_down_after` of its
+last heartbeat (30 s) every lamina on them reads UNAVAILABLE, as on a node
+that died; nothing is deleted or marked LOST, and the bytes stay on the
+disks. Erasing does not reach the machine: one left running still answers a
+read token issued before, until the token ends (`read_token_ttl`, an hour),
+so stopping it is what ends that. Erasing is not undone. The same machine
+joins again as a new node, with a new `node_id` (a join looks its hardware
+identity up among the rows that are not erased; the erased node's alias is
+free to take), and is adopted; the sinks it reports are then pending
+adoption, and are adopted onto it by the leader once the erased node has been
+silent for `sink_auto_adopt_after` (10 minutes), or at once with
+`shale sink adopt` ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
 
 A **Reader** host is the machine that runs a media server, or the backend of
 a viewer of its own. `shale serve reader` is an agent beside it that keeps
