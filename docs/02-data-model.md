@@ -45,8 +45,9 @@ A **Site** groups sets within a tenant, e.g. a building or a branch. It is
 payday's second permission axis (field 3): a person or a reader sees the
 cameras of the sites it may see and no others, so a guard at one building
 cannot read another's cameras ([§33.1](10-security.md#331-trust-model)). A
-set belongs to at most one site, fixed when the set is added. Its sources,
-laminae, attempts, and producer carry the same site. A site may also name,
+set belongs to at most one site, said when the set is added and changed
+only by placing the set (below). Its sources, laminae, attempts, and
+producer carry the same site. A site may also name,
 by labels, which relays its producers should use
 ([§39.2](16-relay.md#392-assignment)).
 
@@ -77,9 +78,82 @@ none of is refused.
 laminae, attempts and producer -- is seen by whoever sees every site and
 by nobody else: no kind and no membership reaches it. A tenant that does
 not use sites therefore shows its cameras only to whoever sees every site.
-To show a camera to others, its set is put in a site: a set's site is
-said when the set is added, and moving a set that exists into a site is
-not yet possible.
+To show a camera to others, its set is put in a site.
+
+**Placing a set.** A set's site is said when the set is added, and a set
+that exists is put into a site, or moved from one to another, by
+`SetService/Place` (`shale set place <set> <site>`, the console's
+*Sites* page). In one transaction it rewrites the site of every row that
+carries it because of the set, each because the wall reads a row by its
+own site:
+
+- the **set**;
+- each of its **sources**, by `set`;
+- each **lamina** of the set, by `set`, and each **attempt** of those
+  laminae, by `lamina`: every recording the set ever made, before the
+  move as after;
+- each **producer** adopted for the set, by `set`, as adoption writes it.
+
+**A set whose cameras Shale manages** (one with a `CameraAssignment`) is
+placed with its camera network and everything of it, in the same
+transaction, since every camera operation checks that the network, its
+devices, the assignment and its bindings and jobs, the worker, the policy,
+the preset and the credentials are of one site with the set, its sources
+and its producer. What ties each kind to the set:
+
+| kind | tied by | moves |
+|---|---|---|
+| `CameraAssignment` | `set` | every one of the set's |
+| `CameraBinding` | `assignment` | every one of those assignments' |
+| `CameraJob` | `assignment` | every one of those assignments' |
+| `CameraNetwork` | named by a live assignment of the set | yes |
+| `CameraDevice` | `network` | every device of the network |
+| `CameraCredential` | `device` | every credential of those devices |
+| `CameraCredentialVersion` | `credential` | every version of those credentials |
+| `CameraPolicy` | `network` | every policy of the network |
+| `CameraWorker` | named by a live assignment of the set (`worker_id`); its site is its adoption's | yes |
+| `CameraPreset` | the site alone; named by a policy of the network (`preset`) or by a job of the set (`inputs.preset`) | one in the site the set leaves, when nothing outside the network names it; one in no site while the set leaves a site is the tenant's, usable from any site, and stays |
+
+What a placing refuses instead, writing nothing, in sentences the dry run
+answers too:
+
+- a network another live set is assigned to: it names the sets, which move
+  together or not at all, and placing several sets at once is not built;
+- a worker another live set is assigned;
+- a preset another network's policy or another set's job names (it says
+  how many), or whose rules name a site;
+- a job of the set under way, since a job checks at every step the scope
+  it began with.
+
+In a tenant whose managed sets each have a network of their own and were
+all added in no site, the policies are each network's own (a policy names
+its network), and so are the credentials (a credential names its device);
+a preset and a worker are of no site alone, and each moves with the one
+network that names it. That is told by what names each row, never by its
+site. A credential's sealed payload is bound to its tenant, device,
+binding, credential, purpose and version, not to a site, so rewriting its
+row's site is the whole of moving it. The set's producer reads the site
+it records in once, when it starts: after a managed set is placed it is
+refused its cameras' next credential (each says the site it is delivered
+in) until it is restarted ([§32.4](09-operations.md#324-placing-a-set-in-a-site)).
+A worker reads its site and its assignments at each call and goes on.
+
+Nothing else carries the set's site because of the set:
+
+- **A key's lists of cameras** (`Reach`) name sites and sources and are not
+  rewritten: a list that named one of the set's sources still reaches it;
+  a list that named the site it left no longer does, and one that names
+  the site it is in now does.
+- **A site's members** are the site's, and a reader's sites its members.
+
+Placing it where it is writes nothing. Out of a site into none is not
+offered: a set in no site is seen by whoever sees every site alone, and
+putting one there is hiding it -- somebody who wants that makes a site of
+kind `MEMBERS` with nobody in it and places the set there, which says so.
+Only whoever sees every site places a set, even between two sites they
+see: a move changes who sees every recording the set ever made
+([§33.1](10-security.md#331-trust-model)). What it locks and how long it
+takes: [§32.4](09-operations.md#324-placing-a-set-in-a-site).
 
 A **Reach** is a person's own list of cameras: a `name`, the person
 (`holder`), and `cameras`, the sites and the sources it names by

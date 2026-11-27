@@ -9,6 +9,7 @@ import "shale/payday/holder_svc.g.proto";
 import "shale/payday/tenant_svc.g.proto";
 import "shale/set.proto";
 import "shale/set_svc.g.proto";
+import "shale/site.proto";
 
 option go_package = "github.com/lesomnus/shale/api";
 
@@ -34,6 +35,13 @@ service DelegationService {
   // recording already permits these bytes. The handle stays server-side;
   // only the short-lived scoped download URL is given to the browser.
   rpc Export(DelegationExportRequest) returns (LaminaExportResponse);
+  // Catalog is the sets the person may see now, each with its site and its
+  // cameras: `SetService.List` and `SourceService.List` for the person,
+  // within the handle, paged and ordered as `SetService.List` is, and
+  // nothing of a host. With a set, that set or nothing: an empty answer,
+  // never NOT_FOUND, is "not theirs" as it is "no such set". It mints
+  // nothing. The app is granted it by name, apart from Live and Timeline.
+  rpc Catalog(DelegationCatalogRequest) returns (DelegationCatalogResponse);
   // Revoke ends a handle: what the app does when its own session ends.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 }
@@ -159,6 +167,56 @@ message DelegationTimelineRequest {
 message DelegationExportRequest {
   string handle = 1 [features.field_presence = IMPLICIT];
   LaminaExportRequest export = 2;
+}
+
+message DelegationCatalogRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+  // One set, by id or alias: answered alone if the person sees it, and
+  // nothing if not or if there is none. Unset is every set, a page at a
+  // time.
+  SetRef set = 2;
+  // As `SetService.List`'s: how many sets a page holds (its default and
+  // its most), and the `next` of the page before.
+  int32 size = 3 [features.field_presence = IMPLICIT];
+  string after = 4 [features.field_presence = IMPLICIT];
+}
+
+message DelegationCatalogResponse {
+  // In `SetService.List`'s order: oldest first, then by id.
+  repeated DelegationCatalogSet items = 1;
+  // What to ask for next, as `SetService.List` answers it; empty when this
+  // was the last page.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+// A set as a catalogue shows it.
+message DelegationCatalogSet {
+  bytes id = 1 [features.field_presence = IMPLICIT];
+  string alias = 2 [features.field_presence = IMPLICIT];
+  string name = 3 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 4;
+  // Unset for a set in no site, which only whoever sees every site sees.
+  DelegationCatalogSite site = 5;
+  // Its cameras the handle names, in the set's order (ordinal).
+  repeated DelegationCatalogSource sources = 6;
+}
+
+message DelegationCatalogSite {
+  bytes id = 1 [features.field_presence = IMPLICIT];
+  string alias = 2 [features.field_presence = IMPLICIT];
+  string name = 3 [features.field_presence = IMPLICIT];
+  // Its kind: who sees it (§33.1).
+  SiteVisibility visibility = 4 [features.field_presence = IMPLICIT];
+}
+
+message DelegationCatalogSource {
+  bytes id = 1 [features.field_presence = IMPLICIT];
+  string alias = 2 [features.field_presence = IMPLICIT];
+  string name = 3 [features.field_presence = IMPLICIT];
+  int32 ordinal = 4 [features.field_presence = IMPLICIT];
+  // As the source says it; empty reads as `video/mp4` (§38.9).
+  string content_type = 5 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 6;
 }
 
 message DelegationRevokeRequest {

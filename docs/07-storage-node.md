@@ -231,6 +231,10 @@ dates are the lamina's initial dates until the CP reschedules them, and then
 the CP tells the node to rewrite the xattr at once
 ([§20.3](06-retention-gc.md#203-rescheduling)). The ID fields are what an
 index rebuild needs to put the lamina back behind the right tenant and site.
+`site_id` is the site the set had when the bytes were written and is not
+rewritten when the set is placed in another
+([§7](02-data-model.md#7-source-set-zone-epoch)): a lamina put back from its
+record takes the site its set has then, and the record's is not read.
 
 A node that meets a `format_version` newer than it knows, for instance after
 a rollback or when a sink moved from a newer node, reads the fields it knows

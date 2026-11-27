@@ -25,7 +25,9 @@ func TestWebKeyMovesWithTheCameraAndAnImpostorPresentsAnother(t *testing.T) {
 	pin, err := tlsidentity.Observe(t.Context(), web)
 	require.NoError(t, err)
 	require.Equal(t, key.SPKI, pin)
-	require.Equal(t, 1, c.WebHandshakes())
+	// The camera counts a handshake when its own side is done, and under
+	// TLS 1.3 the observer's side is done first.
+	require.Eventually(t, func() bool { return c.WebHandshakes() == 1 }, 5*time.Second, time.Millisecond)
 	require.Empty(t, c.AuthAttempts(), "a handshake presents no credential")
 
 	require.NoError(t, c.MoveTo("127.0.0.2"))

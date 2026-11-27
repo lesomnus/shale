@@ -38,7 +38,20 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 	var set *api.Set
 	err = s.ownTx(ctx, func(ctx context.Context, nx api.Server) error {
 		c := New(nx, s.d)
-		a, err := c.producerCatalogRow(ctx, api.CameraAssignmentRef_builder{Id: target.GetAssignmentId()}.Build(), f.Actor, f.Tenant)
+		// The set's row held first, for writing, since this writes it: the
+		// assignment's hold below takes it shared, and two negotiations
+		// holding it shared would each wait for the other to write it
+		// (camera.go's order). The assignment's set, which the request's
+		// must be.
+		ref := api.CameraAssignmentRef_builder{Id: target.GetAssignmentId()}.Build()
+		was, err := nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: ref}.Build())
+		if err != nil {
+			return err
+		}
+		if err := c.lockSet(ctx, was.GetSet().GetId()); err != nil {
+			return err
+		}
+		a, err := c.producerCatalogRow(ctx, ref, f.Actor, f.Tenant)
 		if err != nil {
 			return err
 		}
@@ -58,6 +71,16 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 		}
 		if len(rows) > 500 {
 			return admissionRefused(codes.ResourceExhausted, "managed catalog exceeds source limit", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_SOURCE_LIMIT, int64(len(rows)), 500)
+		}
+		// The sources held before they are read and patched with the
+		// versions read: a heartbeat's starvation writes them outside any
+		// transaction.
+		held := make([][]byte, 0, len(rows))
+		for _, binding := range rows {
+			held = append(held, binding.SourceId[:])
+		}
+		if err := c.lockSources(ctx, held...); err != nil {
+			return err
 		}
 		proposals := map[string]*api.SourceProposal{}
 		for _, p := range r.GetSources() {

@@ -226,15 +226,22 @@ func (s Core) starvation(ctx context.Context, p *api.Producer, uplink int64, rep
 	// The raises and a new profile version together: the version is what
 	// makes the producer negotiate again, and that negotiation is where the
 	// raised ceilings are agreed (§12.6).
+	//
+	// The set's row is held first, then the sources are written, in the
+	// order every transaction takes them (camera.go), and the set is read
+	// once held, so that what it is patched with is not moved meanwhile.
 	err = s.ownTx(ctx, func(ctx context.Context, nx api.Server) error {
-		for _, patch := range raised {
-			if _, err := nx.Source().Patch(ctx, patch); err != nil {
-				return err
-			}
+		if err := s.lockSet(ctx, set.GetId()); err != nil {
+			return err
 		}
 		cur, err := nx.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
 		if err != nil {
 			return err
+		}
+		for _, patch := range raised {
+			if _, err := nx.Source().Patch(ctx, patch); err != nil {
+				return err
+			}
 		}
 		v := cur.GetProfileVersion() + 1
 		_, err = nx.Set().Patch(ctx, api.SetPatchRequest_builder{

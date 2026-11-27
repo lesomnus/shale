@@ -149,7 +149,10 @@ never reused.
 - **Field 3 is `site`**, payday's second permission axis
   ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
   nullable and immutable. `Source`, `Lamina`, `Attempt`, and `Producer` carry
-  a copy, because payday narrows each row by its own field 3. A reader may see
+  a copy, because payday narrows each row by its own field 3. Immutable is
+  the generated contract's: `SetService/Place` is the one road that rewrites
+  a set's site and its copies, below the generated layer, in one
+  transaction. A reader may see
   several sites, so its sites are `SiteMember` rows, or all of them
   (`all_sites`) when it was adopted with none. A person sees the sites a
   site's `visibility` and its `SiteMember` rows give them, or every site
@@ -243,6 +246,18 @@ service SetService {
   // Live viewing: per member, the relay's endpoints, a view token, and the
   // WHEP URL (§39.4).
   rpc Live(SetLiveRequest) returns (SetLiveResponse);
+  // Puts a set that exists into a site, or moves it to another (§7): the
+  // set, its sources, their laminae and attempts and its producer, and for
+  // a set whose cameras Shale manages its camera network with everything
+  // of it, in one transaction, answered with the set as it is now, the
+  // site it was in, and how many rows of each kind moved. `dry_run` counts
+  // and writes nothing, and says in `refused` what would be refused and
+  // why; a set already there is answered and nothing is written. Whoever
+  // sees every site may; no site (INVALID_ARGUMENT), another tenant's
+  // (NOT_FOUND), an erased one and a camera row shared with what does not
+  // move (FAILED_PRECONDITION) are refused, and so is anybody else
+  // (PERMISSION_DENIED).
+  rpc Place(SetPlaceRequest) returns (SetPlaceResponse);
 }
 
 service SourceService {
@@ -327,11 +342,19 @@ service ReaderService {
 - `Holder` has no custom RPCs. People sign in through payday
   ([§33.1](10-security.md#331-trust-model)).
 - `DelegationService` is an app's, viewing on a person's behalf
-  ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)). Its four
+  ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)). Its six
   verbs take the app's exchange token from roster as `authorization:
   Bearer rd_…` and nothing else: no session, no certificate, and its
-  generated verbs are served to nobody. `Live` and `Timeline` are also the
-  permission methods a tenant binds to the app's holder at roster.
+  generated verbs are served to nobody. `Live`, `Timeline` and `Catalog`
+  are also the permission methods a tenant binds to the app's holder at
+  roster; `Export` goes with `Timeline`. `Catalog` is `SetService.List`
+  and `SourceService.List` for the person, narrowed to the handle, as a
+  catalogue shows them: a set's id, alias, name, labels and site (id,
+  alias, name, `visibility`), and its cameras' id, alias, name, ordinal,
+  content type and labels in ordinal order -- nothing of a host. It is
+  paged by `SetService.List`'s cursor, `size` (20, at most 100) and order
+  (`date_created`, then `id`); with `set` it is that set or an empty
+  answer, never `NOT_FOUND`.
 
 ```proto
 service DelegationService {
@@ -345,6 +368,9 @@ service DelegationService {
   rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
   // Native MP4 download within the same delegated recording permission.
   rpc Export(DelegationExportRequest) returns (LaminaExportResponse);
+  // The sets the person sees now, with their sites and cameras, paged as
+  // SetService.List; with a set, it or nothing. Mints nothing.
+  rpc Catalog(DelegationCatalogRequest) returns (DelegationCatalogResponse);
   // Ends a handle.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 }

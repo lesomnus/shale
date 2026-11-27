@@ -411,16 +411,32 @@ func (s coreProducer) Adopt(ctx context.Context, req *api.ProducerAdoptRequest) 
 		DateCertExpires: timestamppb.New(exp),
 		DateUpdated:     p.GetDateUpdated(),
 	}
-	if len(set.GetSite().GetId()) > 0 {
-		patch.Site = api.SiteRef_builder{Id: set.GetSite().GetId()}.Build()
-	} else {
-		patch.SiteNull = z.Ptr(true)
-	}
 	if a := strings.TrimSpace(req.GetAlias()); a != "" {
 		patch.Alias = z.Ptr(a)
 	}
 
-	return s.ProducerServiceServer.Patch(ctx, patch.Build())
+	// The set's site as it is now, held while the producer is written: a
+	// set placed in a site meanwhile has its producer placed with it (§7).
+	var out *api.Producer
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		site, err := s.heldSite(ctx, set.GetId())
+		if err != nil {
+			return err
+		}
+		if len(site) > 0 {
+			patch.Site = siteRefOf(site)
+		} else {
+			patch.SiteNull = z.Ptr(true)
+		}
+		out, err = nx.Producer().Patch(ctx, patch.Build())
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func (s coreProducer) RenewCertificate(ctx context.Context, req *api.ProducerRenewCertificateRequest) (*api.ProducerRenewCertificateResponse, error) {

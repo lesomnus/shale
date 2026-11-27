@@ -38,8 +38,8 @@ holds a credential.
   | a person who sees every site | every site, and every row in no site |
   | any other person | the sites said `EVERYBODY`; the sites said `COMPANY` if they are of the company; the sites whose `SiteMember` rows name them, whatever they say |
   | a reader | every site with `all_sites`; otherwise the sites it is a member of, and no site by its kind: a reader is a host and nobody |
-  | a producer | the site of its set, or every site when its set has none |
-  | a camera worker | the site it was adopted for, or none |
+  | a producer | the site of its set, or every site when its set has none; read at each call and not kept, so a set placed in a site is the producer's at once |
+  | a camera worker | the site it was adopted for, or none; read at each call and not kept, so a set placed with its camera network is the worker's at once |
   | a node, a relay, a satellite | every site; they read no camera of a tenant's |
 
   **Who sees every site**: where roster says what people may change
@@ -74,7 +74,16 @@ holds a credential.
   attempts and producer -- matches no site, so it is seen by whoever sees
   every site and by nobody else; no kind and no membership reaches it. A
   camera is shown to others by its set being in a site, which is said when
-  the set is added; a set that exists cannot yet be moved into one.
+  the set is added, or later by **placing the set** (`SetService/Place`,
+  [§7](02-data-model.md#7-source-set-zone-epoch)), which moves every
+  recording the set ever made with it. **Only whoever sees every site
+  places a set** -- where roster says what people may change, whoever it
+  grants all of Shale, which covers `/shale.SetService/Place`; where it
+  does not, whoever's row has `all_sites` -- and somebody who sees only
+  some sites may not, even between two of theirs: a move changes who sees
+  everything the set recorded, before it as after, for the people of
+  sites that are not theirs to show. Out of a site into none is not
+  offered (a site of kind `MEMBERS` with nobody in it hides a set openly).
 
   The answer is kept per caller for 10 seconds and not forgotten when a
   site or a membership is written, so a kind changed, a membership added
@@ -1119,10 +1128,13 @@ portal ─ DelegationService/Exchange {app: @<tenant>/shale} ─▶ roster
 portal ─ DelegationService.Start {access_token, live, recordings, sets,
          sources, recordings_from/to}   authorization: Bearer rd_… ─▶ Shale
        ◀─ handle, until date_ends
-portal ─ DelegationService.Live / Timeline {handle, …}
+portal ─ DelegationService.Catalog {handle, set?, size, after}
          authorization: Bearer rd_… (fresh) ─▶ Shale
-       ◀─ view tokens and WHEP URLs / laminae and signed URLs,
-          for the person, naming the portal
+       ◀─ the sets the person sees, with their sites and cameras
+portal ─ DelegationService.Live / Timeline / Export {handle, …}
+         authorization: Bearer rd_… (fresh) ─▶ Shale
+       ◀─ view tokens and WHEP URLs / laminae and signed URLs /
+          a download URL, for the person, naming the portal
 browser ─ WHEP, Range ─▶ relay, nodes                          (unchanged)
 portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own sign-out)
 ```
@@ -1141,27 +1153,68 @@ portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own si
   server is told. It ends at `date_ends` -- at most `auth.delegation.max_ttl`,
   12 h, and renewing does not move it -- when the portal revokes it, or when
   roster says the person was signed out everywhere, suspended or erased.
-- **Every use asks again.** `Live` and `Timeline` take the handle and a
-  fresh exchange token for the same app, ask roster again what it grants the
-  app's holder and the person (kept `auth.operators.ttl`, 30 s), and serve
-  the person as the gate would -- their tenant, their sites -- narrowed to
-  the handle. Asking `Live` again before its tokens lapse is the renewal, and
-  an open WHEP session takes the fresh token in place
-  ([§39.4](16-relay.md#394-viewers)).
+- **Every use asks again.** `Live`, `Timeline`, `Export` and `Catalog`
+  take the handle and a fresh exchange token for the same app, ask roster
+  again what it grants the app's holder and the person (kept
+  `auth.operators.ttl`, 30 s), and serve the person as the gate would --
+  their tenant, their sites -- narrowed to the handle. Asking `Live` again
+  before its tokens lapse is the renewal, and an open WHEP session takes the
+  fresh token in place ([§39.4](16-relay.md#394-viewers)). Each use is said
+  on the row as its last (below), `Catalog`'s as `Timeline`'s, and none
+  moves `date_ends`.
+- **What the person may see, asked by the app.** `Catalog` answers the
+  sets the person sees now, each with its site and its cameras: what
+  `SetService/List` and `SourceService/List` would answer the person
+  themselves, read by the same servers in the person's frame -- their
+  sites, the wall, a site's kind and its members as they are within the
+  10 s an answer about them is kept -- and narrowed to the sets and
+  sources the handle names. A set is its id, alias, name, labels and site;
+  a site its id, alias, name and kind (`visibility`); a camera its id,
+  alias, name, ordinal, content type and labels, in the set's order. It
+  never answers anything of a host -- no producer, relay or satellite, no
+  address, no state of one (whether a set's producer is up is
+  `ProducerService`'s, a grant of its own,
+  [§33.1](#331-trust-model)) -- and it mints nothing. It is paged as
+  `SetService/List` is, by the same cursor, `size` and its most (20 and
+  100), in its order: oldest first, then by id; a set's cameras come with
+  it. With `set` (by id or alias) it answers that set or nothing, so the
+  app can ask *may this person see this set* without minting a view; a set
+  the person does not see and one there is not are the same empty answer,
+  never `NOT_FOUND`: the app cannot tell them apart, any more than the
+  person can.
 - **What the portal may do** is what a tenant binds to the app's holder at
   roster: a **role of Shale's** naming `/shale.DelegationService/Live`,
-  `/shale.DelegationService/Timeline`, or both, bound to the portal's
-  holder -- Shale asks `HolderService/Reaches` about that holder, which is
-  answered of Shale's roles. A role of roster's names neither, and one of
-  the portal's own is the portal's. Live and recordings are granted apart.
-  Nothing the portal says widens it.
+  `/shale.DelegationService/Timeline`, `/shale.DelegationService/Catalog`,
+  or any of them, bound to the portal's holder -- Shale asks
+  `HolderService/Reaches` about that holder, which is answered of Shale's
+  roles. A role of roster's names none, and one of the portal's own is the
+  portal's. Live, recordings and the catalogue are granted apart; `Export`
+  goes with `Timeline`. Nothing the portal says widens it. A role made for
+  an app before `Catalog` was does not name it (unless it names
+  `/shale.DelegationService/*`), and the app is refused
+  `PERMISSION_DENIED` naming the method until roster's operator adds it:
+
+  ```sh
+  roster --as <operator> role widen @acme/<the app's role> '{"methods":["/shale.DelegationService/Catalog"]}'
+  ```
+
+  or makes a role of Shale's for it and binds it to the app's holder:
+
+  ```sh
+  roster --as <operator> role add @acme/portal-catalog \
+    '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}, "methods": ["/shale.DelegationService/Catalog"]}'
+  roster --as <operator> binding add \
+    '{"role": {"slug": {"alias": "portal-catalog", "tenant": {"alias": "acme"}}}, "holder": {"slug": {"alias": "portal", "tenant": {"alias": "acme"}}}}'
+  ```
 - **What the person may do** is what they may read themselves: every
   person of the tenant, by default. With `auth.operators.reads: granted`,
   reads are as far as roster grants them like any other call, and a role
   naming the delegated methods (`/shale.DelegationService/*`) is as good as
-  one naming the reads -- which is how somebody views through a portal and
+  one naming the reads -- `Catalog` stands for two reads, `SetService/List` and
+  `SourceService/List`, and a person granted neither `Catalog` nor both
+  is refused it -- which is how somebody views through a portal and
   reads nothing here with a session of their own, since `DelegationService`
-  serves no session and no certificate: on the tenant API its four entries
+  serves no session and no certificate: on the tenant API its six entries
   take an app's exchange token alone and its generated verbs are refused to
   everybody, and the cluster API does not serve it at all.
   With `auth.delegation.persons: tenant`, any person of the tenant in good

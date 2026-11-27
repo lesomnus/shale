@@ -296,6 +296,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		Ent:           client,
 		Drv:           drv,
 		Own:           ungated,
+		Recorder:      rec,
 		Keys:          core.NewKeys(s.Kek, ungated, nil),
 		CA:            s.CA,
 		ClusterTenant: s.ClusterTenant,

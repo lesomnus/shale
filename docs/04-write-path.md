@@ -526,6 +526,11 @@ CP        clamps each value into the active UploadPolicy's bounds and the
   The policy's cap and the set's total still apply on top of it. An encoder
   the producer runs takes a ceiling agreed other than the one proposed, up
   or down, at the next segment boundary.
+- The CP decides and stores in one transaction, holding the set's row and
+  then its sources' while it reads them, so a heartbeat that stores a
+  source's starvation meanwhile waits for the negotiation instead of
+  changing the row under it; so does a person's patch of either, and
+  another negotiation of the set.
 
 **Bitrate is a ceiling, not a rate.** Encoders either hold a constant bitrate
 (CBR) or vary it with the picture (VBR). A quiet scene then costs a fraction of

@@ -101,6 +101,15 @@ func (s coreCameraBinding) bind(ctx context.Context, r *api.CameraBindingBindReq
 			if err != nil {
 				return err
 			}
+			// Held, and read again, before it is patched with the version
+			// read (camera.go's order).
+			if err := c.lockSources(ctx, src.GetId()); err != nil {
+				return err
+			}
+			src, err = nx.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build())
+			if err != nil {
+				return err
+			}
 			if alias != "" && alias != src.GetAlias() {
 				return invalid("source_alias", "alias does not match the explicitly imported Source")
 			}
@@ -114,6 +123,9 @@ func (s coreCameraBinding) bind(ctx context.Context, r *api.CameraBindingBindReq
 			if err == nil {
 				if existing.SetId != mustId(a.GetSet().GetId()).Uuid() || existing.Labels[cameraBindingLabel] != r.GetLogicalKey() || existing.Labels[cameraDeviceLabel] != d.GetDeviceKey() {
 					return status.Error(codes.AlreadyExists, "source alias is reserved; importing a manual Source requires an explicit reference")
+				}
+				if err := c.lockSources(ctx, existing.Id[:]); err != nil {
+					return err
 				}
 				src, err = nx.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: existing.Id[:]}.Build()}.Build())
 				if err != nil {

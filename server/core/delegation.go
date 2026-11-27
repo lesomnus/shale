@@ -162,6 +162,7 @@ func (s Core) Delegation() api.DelegationServiceServer {
 var (
 	delegatedLive     = api.DelegationService_Live_FullMethodName
 	delegatedTimeline = api.DelegationService_Timeline_FullMethodName
+	delegatedCatalog  = api.DelegationService_Catalog_FullMethodName
 )
 
 // IsDelegationEntry says whether a method is one an app calls with its
@@ -169,7 +170,8 @@ var (
 // which finds no credential it knows, and proved by the handler.
 func IsDelegationEntry(method string) bool {
 	switch method {
-	case api.DelegationService_Start_FullMethodName, delegatedLive, delegatedTimeline, api.DelegationService_Export_FullMethodName, api.DelegationService_Revoke_FullMethodName:
+	case api.DelegationService_Start_FullMethodName, delegatedLive, delegatedTimeline, delegatedCatalog,
+		api.DelegationService_Export_FullMethodName, api.DelegationService_Revoke_FullMethodName:
 		return true
 	}
 
@@ -233,13 +235,15 @@ func (s coreDelegation) ceiling(ctx context.Context, tenant, app pdid.Id, method
 }
 
 // as is ctx served as the person, for a delegated method, the way the gate
-// would serve them the method it stands for: their tenant, their sites,
+// would serve them each method it stands for: their tenant, their sites,
 // and on a deployment whose reads are granted, what roster grants them --
 // the method itself, or the delegated one, which is how a person is let
 // view through an app and read nothing here themselves -- unless every
-// person may be viewed for (`auth.delegation.persons: tenant`).
+// person may be viewed for (`auth.delegation.persons: tenant`). A
+// delegated method that stands for two reads is refused unless the person
+// may make both.
 func (s coreDelegation) as(ctx context.Context, holder *api.Holder, delegated string) (context.Context, error) {
-	method := inner(delegated)
+	methods := inner(delegated)
 	actor, err := idOf(holder.GetId())
 	if err != nil {
 		return nil, err
@@ -248,9 +252,21 @@ func (s coreDelegation) as(ctx context.Context, holder *api.Holder, delegated st
 	if err != nil {
 		return nil, err
 	}
-	f := frame.New(actor, tenant, frame.Whole().In(tenant).To(method)).WithRow(holder)
+	f := frame.New(actor, tenant, frame.Whole().In(tenant).To(methods...)).WithRow(holder)
+	ctx = frame.Into(ctx, f)
+	p := newPersonPolicy(s.d.Operators, s.d.Reads, s.d.DelegationConfig, delegated)
+	var out context.Context
+	for _, m := range methods {
+		v, err := gate.Decide(ctx, p, m)
+		if err != nil {
+			return nil, err
+		}
+		if out == nil {
+			out = v
+		}
+	}
 
-	return gate.Decide(frame.Into(ctx, f), newPersonPolicy(s.d.Operators, s.d.Reads, s.d.DelegationConfig, delegated), method)
+	return out, nil
 }
 
 // personPolicy is the tenant policy for a person an app is served for: a
@@ -419,13 +435,17 @@ func (s coreDelegation) Start(ctx context.Context, req *api.DelegationStartReque
 	}.Build(), nil
 }
 
-// inner is the method a delegated one is served as.
-func inner(method string) string {
-	if method == delegatedTimeline {
-		return api.LaminaService_Timeline_FullMethodName
+// inner is the methods a delegated one is served as: what the person would
+// call for it themselves.
+func inner(method string) []string {
+	switch method {
+	case delegatedTimeline:
+		return []string{api.LaminaService_Timeline_FullMethodName}
+	case delegatedCatalog:
+		return []string{api.SetService_List_FullMethodName, api.SourceService_List_FullMethodName}
 	}
 
-	return api.SetService_Live_FullMethodName
+	return []string{api.SetService_Live_FullMethodName}
 }
 
 // shown is a delegation as it is answered: never its secret's hash.
@@ -439,7 +459,8 @@ func shown(v *api.Delegation) *api.Delegation {
 // use is a handle's delegation, good now, with the app's exchange token
 // beside it: not revoked, not ended, the same app, and roster still
 // granting it method. It answers the delegation and the context to serve
-// the person in.
+// the person in. Every delegated method goes through here, and each use
+// is said on the row (touch), Catalog's as Live's and Timeline's.
 func (s coreDelegation) use(ctx context.Context, handle, method string) (*ent.Delegation, *api.Holder, context.Context, error) {
 	if err := s.ready(); err != nil {
 		return nil, nil, nil, err
@@ -660,6 +681,118 @@ func (s coreDelegation) Timeline(ctx context.Context, req *api.DelegationTimelin
 	s.issued(row, holder, delegatedTimeline, n)
 
 	return v, nil
+}
+
+// catalogFilters is how many sets one SourceService/List is asked about:
+// the most filters that list takes (its generated SourceFilterLimit).
+const catalogFilters = 32
+
+// Catalog is the sets the person may see now, each with its site and its
+// cameras, as SetService/List and SourceService/List answer the person
+// themselves -- the same servers, in the person's frame, so their sites,
+// the wall, the page and the order are those lists' -- narrowed to what
+// the handle names and to what a catalogue shows. Nothing of a host is
+// read: not a producer's row, nor a relay's or a satellite's. It mints
+// nothing.
+//
+// With a set it is that set or nothing: a set the person does not see is
+// answered as one there is not, empty, and never NOT_FOUND.
+func (s coreDelegation) Catalog(ctx context.Context, req *api.DelegationCatalogRequest) (*api.DelegationCatalogResponse, error) {
+	row, _, pc, err := s.use(ctx, req.GetHandle(), delegatedCatalog)
+	if err != nil {
+		return nil, err
+	}
+	sel := api.SetSelect_builder{
+		Alias: z.Ptr(true), Name: z.Ptr(true), Labels: z.Ptr(true),
+		Site: api.SiteSelect_builder{Alias: z.Ptr(true), Name: z.Ptr(true), Visibility: z.Ptr(true)}.Build(),
+	}.Build()
+	var sets []*api.Set
+	next := ""
+	if ref := req.GetSet(); ref != nil {
+		if req.GetAfter() != "" {
+			return nil, invalid("after", "one set is one answer, with no page after it")
+		}
+		v, err := s.Core.Set().Get(pc, api.SetGetRequest_builder{Ref: ref, Select: sel}.Build())
+		switch {
+		case status.Code(err) == codes.NotFound:
+		case err != nil:
+			return nil, err
+		default:
+			sets = []*api.Set{v}
+		}
+	} else {
+		v, err := s.Core.Set().List(pc, api.SetListRequest_builder{Size: req.GetSize(), After: req.GetAfter(), Select: sel}.Build())
+		if err != nil {
+			return nil, err
+		}
+		sets, next = v.GetItems(), v.GetNext()
+	}
+	members, err := s.catalogSources(pc, sets)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*api.DelegationCatalogSet, 0, len(sets))
+	for _, set := range sets {
+		var srcs []*api.DelegationCatalogSource
+		for _, src := range members[string(set.GetId())] {
+			if within(row, set.GetId(), src.GetId()) {
+				srcs = append(srcs, api.DelegationCatalogSource_builder{
+					Id: src.GetId(), Alias: src.GetAlias(), Name: src.GetName(), Ordinal: src.GetOrdinal(),
+					ContentType: src.GetContentType(), Labels: src.GetLabels(),
+				}.Build())
+			}
+		}
+		// A set the handle names, or one of whose cameras it names.
+		if !within(row, set.GetId(), nil) && len(srcs) == 0 {
+			continue
+		}
+		var site *api.DelegationCatalogSite
+		if v := set.GetSite(); len(v.GetId()) > 0 {
+			site = api.DelegationCatalogSite_builder{Id: v.GetId(), Alias: v.GetAlias(), Name: v.GetName(), Visibility: v.GetVisibility()}.Build()
+		}
+		items = append(items, api.DelegationCatalogSet_builder{
+			Id: set.GetId(), Alias: set.GetAlias(), Name: set.GetName(), Labels: set.GetLabels(), Site: site, Sources: srcs,
+		}.Build())
+	}
+
+	return api.DelegationCatalogResponse_builder{Items: items, Next: next}.Build(), nil
+}
+
+// catalogSources is the sources of sets the person sees, by set, each set's
+// in ordinal order: SourceService/List in the person's frame.
+func (s coreDelegation) catalogSources(pc context.Context, sets []*api.Set) (map[string][]*api.Source, error) {
+	out := map[string][]*api.Source{}
+	sel := api.SourceSelect_builder{
+		Alias: z.Ptr(true), Name: z.Ptr(true), Labels: z.Ptr(true), Ordinal: z.Ptr(true), ContentType: z.Ptr(true),
+		Set: api.SetSelect_builder{}.Build(),
+	}.Build()
+	for chunk := range slices.Chunk(sets, catalogFilters) {
+		filters := make([]*api.SourceFilter, len(chunk))
+		for i, set := range chunk {
+			filters[i] = api.SourceFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()
+		}
+		after := ""
+		for {
+			v, err := s.Core.Source().List(pc, api.SourceListRequest_builder{Filters: filters, Size: 500, After: after, Select: sel}.Build())
+			if err != nil {
+				return nil, err
+			}
+			for _, src := range v.GetItems() {
+				k := string(src.GetSet().GetId())
+				out[k] = append(out[k], src)
+			}
+			if v.GetNext() == "" {
+				break
+			}
+			after = v.GetNext()
+		}
+	}
+	for _, vs := range out {
+		slices.SortFunc(vs, func(a, b *api.Source) int { return int(a.GetOrdinal()) - int(b.GetOrdinal()) })
+	}
+
+	return out, nil
 }
 
 // issued logs what was handed out under a delegation, with who for and

@@ -138,6 +138,14 @@ func (s coreCameraPolicy) Create(ctx context.Context, r *api.CameraPolicyCreateR
 		if err != nil {
 			return err
 		}
+		// The network held and read again: a policy carries its site, and
+		// a placing that moves the network holds it (§7).
+		if err := c.cameraLockNetwork(ctx, network.GetId()); err != nil {
+			return err
+		}
+		if network, err = nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: network.GetId()}.Build()}.Build()); err != nil {
+			return err
+		}
 		preset, err := nx.CameraPreset().Get(ctx, api.CameraPresetGetRequest_builder{Ref: r.GetPreset()}.Build())
 		if err != nil {
 			return err

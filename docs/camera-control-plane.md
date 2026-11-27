@@ -130,7 +130,12 @@ the assigned network and reserves the binding/Source IDs, alias and labels.
 Source metadata labels are synchronized in the same transaction, preserving
 unrelated labels, so normal Producer registration can validate the specification.
 Explicit nonempty names/zones are copied; profile negotiation remains the
-Producer/Set negotiation path. Managed specifications exclude commands, vendor clients and plaintext secrets.
+Producer/Set negotiation path. The Source's row is held before Publish reads
+it, after the set's, the network's, the assignment's and the device's (the
+one order every camera operation takes them in, `server/core/camera.go`), so
+a write that does not hold it -- a Producer heartbeat storing the Source's
+starvation, a node's observed rate, a person's patch -- waits for the
+publication rather than moving the Source's version under it. Managed specifications exclude commands, vendor clients and plaintext secrets.
 Unknown nested wire fields, userinfo and authentication query parameters are
 rejected instead of being persisted as an opaque JSON side channel. URI queries
 are limited to noncredential stream selectors.

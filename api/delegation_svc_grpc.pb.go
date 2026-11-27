@@ -26,6 +26,7 @@ const (
 	DelegationService_Live_FullMethodName     = "/shale.DelegationService/Live"
 	DelegationService_Timeline_FullMethodName = "/shale.DelegationService/Timeline"
 	DelegationService_Export_FullMethodName   = "/shale.DelegationService/Export"
+	DelegationService_Catalog_FullMethodName  = "/shale.DelegationService/Catalog"
 	DelegationService_Revoke_FullMethodName   = "/shale.DelegationService/Revoke"
 )
 
@@ -54,6 +55,13 @@ type DelegationServiceClient interface {
 	// recording already permits these bytes. The handle stays server-side;
 	// only the short-lived scoped download URL is given to the browser.
 	Export(ctx context.Context, in *DelegationExportRequest, opts ...grpc.CallOption) (*LaminaExportResponse, error)
+	// Catalog is the sets the person may see now, each with its site and its
+	// cameras: `SetService.List` and `SourceService.List` for the person,
+	// within the handle, paged and ordered as `SetService.List` is, and
+	// nothing of a host. With a set, that set or nothing: an empty answer,
+	// never NOT_FOUND, is "not theirs" as it is "no such set". It mints
+	// nothing. The app is granted it by name, apart from Live and Timeline.
+	Catalog(ctx context.Context, in *DelegationCatalogRequest, opts ...grpc.CallOption) (*DelegationCatalogResponse, error)
 	// Revoke ends a handle: what the app does when its own session ends.
 	Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error)
 }
@@ -136,6 +144,16 @@ func (c *delegationServiceClient) Export(ctx context.Context, in *DelegationExpo
 	return out, nil
 }
 
+func (c *delegationServiceClient) Catalog(ctx context.Context, in *DelegationCatalogRequest, opts ...grpc.CallOption) (*DelegationCatalogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DelegationCatalogResponse)
+	err := c.cc.Invoke(ctx, DelegationService_Catalog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *delegationServiceClient) Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DelegationRevokeResponse)
@@ -171,6 +189,13 @@ type DelegationServiceServer interface {
 	// recording already permits these bytes. The handle stays server-side;
 	// only the short-lived scoped download URL is given to the browser.
 	Export(context.Context, *DelegationExportRequest) (*LaminaExportResponse, error)
+	// Catalog is the sets the person may see now, each with its site and its
+	// cameras: `SetService.List` and `SourceService.List` for the person,
+	// within the handle, paged and ordered as `SetService.List` is, and
+	// nothing of a host. With a set, that set or nothing: an empty answer,
+	// never NOT_FOUND, is "not theirs" as it is "no such set". It mints
+	// nothing. The app is granted it by name, apart from Live and Timeline.
+	Catalog(context.Context, *DelegationCatalogRequest) (*DelegationCatalogResponse, error)
 	// Revoke ends a handle: what the app does when its own session ends.
 	Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
@@ -203,6 +228,9 @@ func (UnimplementedDelegationServiceServer) Timeline(context.Context, *Delegatio
 }
 func (UnimplementedDelegationServiceServer) Export(context.Context, *DelegationExportRequest) (*LaminaExportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
+}
+func (UnimplementedDelegationServiceServer) Catalog(context.Context, *DelegationCatalogRequest) (*DelegationCatalogResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Catalog not implemented")
 }
 func (UnimplementedDelegationServiceServer) Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
@@ -354,6 +382,24 @@ func _DelegationService_Export_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DelegationService_Catalog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelegationCatalogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DelegationServiceServer).Catalog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DelegationService_Catalog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DelegationServiceServer).Catalog(ctx, req.(*DelegationCatalogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DelegationService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DelegationRevokeRequest)
 	if err := dec(in); err != nil {
@@ -406,6 +452,10 @@ var DelegationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _DelegationService_Export_Handler,
+		},
+		{
+			MethodName: "Catalog",
+			Handler:    _DelegationService_Catalog_Handler,
 		},
 		{
 			MethodName: "Revoke",
