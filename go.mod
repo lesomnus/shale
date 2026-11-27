@@ -24,9 +24,9 @@ require (
 	github.com/lesomnus/mkot v0.0.0-20261102031530-c2e07a0dfebd
 	github.com/lesomnus/mkot/otlp v0.0.0-20261109051210-adf1656dc93b
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261127130922-e84de67d3ec2
+	github.com/lesomnus/payday v0.0.0-20261127183626-099c03d0f0ba
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
-	github.com/lesomnus/roster v0.1.2-0.20261127161608-cdbf583cb47d
+	github.com/lesomnus/roster v0.1.2-0.20261127185118-20e830246287
 	github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.4-0.20261123042429-3e6291b33598
@@ -114,7 +114,7 @@ require (
 	github.com/pion/transport/v5 v5.1.4 // indirect
 	github.com/pion/turn/v5 v5.1.3 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20261125032619-9acf880182c7 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261125130103-6f4d6f2c9d21 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261127181046-80ed333182e8 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261125034134-c681581d9964 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261125031855-95c68cb76ee6 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
