@@ -221,6 +221,13 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 					return err
 				}
 			}
+			// The truncated file is no longer the lamina's: its size, which
+			// the row carries, is taken away before the complete one's is
+			// added (§21.4). A second application stops at the redelivery
+			// above, so this happens once.
+			if err := s.storedBytes(ctx, own, pdid.Id(obj.TenantId), -obj.Size); err != nil {
+				return err
+			}
 		} else {
 			winner = false
 		}
@@ -419,15 +426,10 @@ func (s Core) applyDeleted(ctx context.Context, own api.Server, nodeId pdid.Id, 
 		return err
 	}
 	if obj == nil {
-		// A duplicate's or an orphan's file: nothing in the index changes.
-		if len(ev.GetAttemptId()) > 0 {
-			if at, err := s.ent(ctx).Attempt.Query().Where(attempt.IdEQ(mustId(ev.GetAttemptId()).Uuid())).First(ctx); err == nil && at.State == int32(api.AttemptState_ATTEMPT_STATE_DUPLICATE) {
-				if o, err := s.ent(ctx).Lamina.Query().Where(lamina.IdEQ(at.LaminaId)).First(ctx); err == nil {
-					return s.storedBytes(ctx, own, pdid.Id(o.TenantId), -ev.GetSize())
-				}
-			}
-		}
-
+		// A duplicate's or an orphan's file: nothing in the index changes,
+		// and no bytes move. A duplicate that never won was never counted,
+		// and one that had won was taken away when the file that replaced
+		// it was stored (§21.4).
 		return nil
 	}
 	if obj.State == int32(api.LaminaState_LAMINA_STATE_DELETED) {
@@ -445,6 +447,11 @@ func (s Core) applyDeleted(ctx context.Context, own api.Server, nodeId pdid.Id, 
 		DateUpdatedForce: z.Ptr(true),
 	}.Build()); err != nil {
 		return err
+	}
+	// Only a file that still counts is taken away: a LOST lamina's was
+	// taken away when it was lost.
+	if obj.State != int32(api.LaminaState_LAMINA_STATE_COMMITTED) && obj.State != int32(api.LaminaState_LAMINA_STATE_DELETING) {
+		return nil
 	}
 
 	return s.storedBytes(ctx, own, pdid.Id(obj.TenantId), -obj.Size)

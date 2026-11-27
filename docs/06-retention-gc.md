@@ -214,7 +214,11 @@ never deletes a lamina whose dates were extended.
 Sinks are shared by every tenant, so one tenant writing more would otherwise
 shorten everyone's retention. Each tenant has a `capacity_share`: a fraction
 of cluster capacity (default: equal shares). The CP tracks each tenant's
-stored bytes from commit and confirmed deletion events.
+stored bytes from commit and confirmed deletion events. A file counts while
+it is its lamina's: its size is added when its stored event wins, and taken
+away once when it stops being the lamina's (its deletion confirmed, the
+lamina lost, or a complete file stored in place of a truncated one). A
+duplicate's file never counts.
 
 When GC approves candidates, **expired laminae of tenants over their share go
 first**, then the rest by `date_expired`. Recording is never refused. A tenant
