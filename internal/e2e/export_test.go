@@ -287,6 +287,11 @@ func TestDelegatedNativeExport(t *testing.T) {
 	src, ex := exportRecording(t, c, admin)
 	base := exportHTTPBase(t, c, cmd.SurfaceTenant)
 	id := c.running.CP.Identity
+	// Bob sees the recording's site as everybody does, and holds nothing.
+	_, err := api.NewSiteServiceClient(admin).Patch(ctx, api.SitePatchRequest_builder{
+		Ref: api.SiteRef_builder{Id: src.GetSite().GetId()}.Build(), Visibility: z.Ptr(api.SiteVisibility_SITE_VISIBILITY_EVERYBODY), DateUpdatedForce: z.Ptr(true),
+	}.Build())
+	require.NoError(t, err)
 	bob, err := id.AddPerson(ctx, "acme", "export-bob", "Bob")
 	require.NoError(t, err)
 	portal, err := id.AddPerson(ctx, "acme", "portal", "Portal")

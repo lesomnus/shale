@@ -55,7 +55,9 @@ func TestDelegatedViewing(t *testing.T) {
 	defer cancel()
 	id := c.running.CP.Identity
 	admin := c.dial("@acme/admin")
-	set, _ := liveSource(t, ctx, c, admin, "av.mp4")
+	// In a site everybody sees, so that what Bob sees is the delegation's
+	// to narrow and roster's grants to refuse.
+	set, _ := liveSourceAt(t, ctx, c, admin, "av.mp4", everybody(t, ctx, admin, "lobby"))
 
 	bob, err := id.AddPerson(ctx, "acme", "bob", "Bob")
 	require.NoError(t, err)
@@ -173,7 +175,7 @@ func TestDelegatedViewing(t *testing.T) {
 
 	// Narrowed to what it names: a delegation for another set answers none
 	// of this one's cameras.
-	other, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Id: set.GetTenant().GetId()}.Build(), Alias: "yard"}.Build())
+	other, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Id: set.GetTenant().GetId()}.Build(), Alias: "yard", Site: api.SiteRef_builder{Id: set.GetSite().GetId()}.Build()}.Build())
 	require.NoError(t, err)
 	narrow, err := start(rd, personToken(bob.Id.String(), portalClient, shaleApi), true, false, api.SetRef_builder{Id: other.GetId()}.Build())
 	require.NoError(t, err)
@@ -256,7 +258,7 @@ func TestDelegatedViewingEveryPerson(t *testing.T) {
 			defer cancel()
 			id := c.running.CP.Identity
 			admin := c.dial("@acme/admin")
-			set, _ := liveSource(t, ctx, c, admin, "av.mp4")
+			set, _ := liveSourceAt(t, ctx, c, admin, "av.mp4", everybody(t, ctx, admin, "lobby"))
 			byId := api.SetRef_builder{Id: set.GetId()}.Build()
 
 			bob, err := id.AddPerson(ctx, "acme", "bob", "Bob")

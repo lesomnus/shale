@@ -323,6 +323,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 	deps.Operators, deps.Reads = s.operators(), c.Auth.Operators.GrantedReads()
 	deps.KeyRemembered = c.Auth.Operators.Ttl
+	// Nobody is of the company yet: a COMPANY site shows its cameras to its
+	// members and to whoever sees every site (§33.1).
+	deps.Company = core.NoCompany{}
 	if c.Auth.Delegation.On() {
 		deps.Delegations, deps.DelegationConfig = delegations{s}, c.Auth.Delegation.core()
 	}

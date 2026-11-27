@@ -30946,6 +30946,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 4, Name: entSite.FieldAlias, Type: 9, Nullable: false, Key: 0},
 				{Number: 5, Name: entSite.FieldName, Type: 9, Nullable: false, Key: 0},
 				{Number: 6, Name: entSite.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: entSite.FieldVisibility, Type: 14, Nullable: false, Key: 0},
 				{Number: 13, Name: entSite.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entSite.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entSite.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

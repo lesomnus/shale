@@ -30,6 +30,9 @@ func (Site) Fields() []ent.Field {
 			Optional(),
 		field.Json("satellite_selector", map[string]string{}).
 			Optional(),
+		field.Int32("visibility").
+			Optional().
+			Default(0),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

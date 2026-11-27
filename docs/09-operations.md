@@ -500,8 +500,8 @@ shale set add|ls|get|patch|erase|watch   # patch: retention, placement, max_bitr
 shale set negotiate|allocate|live <set>
 shale source add|ls|get|patch|erase|live
 shale reach add|ls|get|patch|erase        # a person's own lists of cameras, which a token may carry (§33.1)
-shale site add|ls|erase
-shale site-member add|ls|erase           # which people and readers may see which site
+shale site add|ls|get|patch|erase       # visibility: who sees it, its members, the company's people or everybody (§33.1)
+shale site-member add|ls|erase           # which people and readers a site names
 shale holder add|ls|patch|erase          # people: `add` makes them at roster first (§33.1)
 shale lamina get|ls|watch
 shale lamina reschedule <lamina> --expired <t> --deleted <t> --reason <text>
@@ -554,14 +554,16 @@ and then Shale is installed in the tenant as on any roster
   memberships, an `all_sites` an administrator gave them, and a delegation
   an app started for them. An administrator gives it again -- every site
   with `shale holder patch` and `all_sites`, some with `shale site-member
-  add` -- where the new row does not have it already: with
-  `auth.operators` every new person reads the whole tenant, and without it
-  nobody but a tenant's first sees a site until given one. What they may
+  add` -- where the new row does not have it already: a new person sees
+  the sites a site's kind gives everybody, and nothing else until given
+  it; with `auth.operators`, `all_sites` is not read, and every site is
+  whom roster grants all of Shale. What they may
   do at Shale is what roster grants the new holder
   ([§33.1](10-security.md#331-trust-model)).
 - `shale identity migrate` writes a deployment's tenants and people into
   the roster in this process with their identifiers; it does not reach a
   roster elsewhere.
+
 ### 32.2 Upgrading past roster's v0.2.0 freeze, with roster in this process
 
 roster keeps nothing for an earlier roster until it is released, and the
@@ -597,3 +599,43 @@ Shale's holder in each tenant, its role and the binding are written again
 on their own the first time Shale asks roster anything there. Where
 `auth.roster.db` names a database of its own, it is that database which is
 moved aside or emptied.
+
+### 32.3 Upgrading to sites that say who sees them
+
+A site now says who sees it: its members, the company's people, or
+everybody signed in ([§7](02-data-model.md#7-source-set-zone-epoch)). The
+database gains the column on its own when the control plane starts, and
+every site that exists reads as `MEMBERS`, so the kinds show nobody more
+than before.
+
+**One thing changes what somebody sees, where `auth.operators` is set.**
+Until now every person's row was made with `all_sites` on there, and it
+was read, so everybody saw every site and every camera in no site. A
+person's `all_sites` is not read there any more, and a row is no longer
+made with it: who sees every site is whoever roster grants all of Shale.
+**A person who is not granted all of Shale stops seeing every site** and
+sees the sites the kinds and memberships give them -- with no site said
+`EVERYBODY` or `COMPANY` and no membership, no camera at all -- and a set
+in no site is seen by whoever is granted all of Shale alone
+([§33.1](10-security.md#331-trust-model)). No row is rewritten. Without
+`auth.operators` nothing changes: `all_sites` is read as before.
+
+What to do, so that nobody loses a camera they should keep:
+
+- **Grant all of Shale** (`/shale.*/*`) at roster, before the upgrade, to
+  whoever should go on seeing every site and every camera in no site.
+- **Add the people a `MEMBERS` site names**, before or after: a
+  membership counts whatever the site's kind.
+- **Say each site's kind** once the upgrade is in: `EVERYBODY` for one
+  everybody signed in should see, `COMPANY` for the company's people, and
+  `MEMBERS`, which every site starts as, for one only the people it names
+  see (who is of the company: [§7](02-data-model.md#7-source-set-zone-epoch)).
+- **Cameras in no site** are not shown to anybody else by any kind. A
+  set's site is said when the set is added; a set that exists cannot yet
+  be moved into one.
+
+```sh
+shale set ls                     # a set with no site is seen by whoever is granted all of Shale alone
+shale site-member add '{"tenant":{"alias":"acme"},"site":{"id":"<site>"},"holder":{"id":"<person>"}}'
+shale site patch <site> '{"visibility":"SITE_VISIBILITY_EVERYBODY","date_updated_force":true}'
+```

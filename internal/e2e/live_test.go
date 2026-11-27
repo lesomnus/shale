@@ -401,6 +401,27 @@ func liveSource(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Clien
 	return set, live
 }
 
+// liveSourceAt is liveSource with its set in a site.
+func liveSourceAt(t *testing.T, ctx context.Context, c *cluster, admin *grpc.ClientConn, recording string, site *api.SiteRef) (*api.Set, *api.LiveSource) {
+	t.Helper()
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", recording))
+	require.NoError(t, err)
+	set, live, _ := liveProducerAt(t, ctx, c, admin, site, producer.SourceConfig{Alias: "door", Input: "raw:" + sample, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"})
+
+	return set, live
+}
+
+// everybody adds a site everybody signed in to acme sees (§33.1).
+func everybody(t *testing.T, ctx context.Context, admin *grpc.ClientConn, alias string) *api.SiteRef {
+	t.Helper()
+	v, err := api.NewSiteServiceClient(admin).Add(ctx, api.SiteAddRequest_builder{
+		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: alias, Visibility: z.Ptr(api.SiteVisibility_SITE_VISIBILITY_EVERYBODY),
+	}.Build())
+	require.NoError(t, err)
+
+	return api.SiteRef_builder{Id: v.GetId()}.Build()
+}
+
 // liveProducer sets up one set with one producer of the given sources,
 // adopted and assigned a relay, and answers what Live says about its
 // first source, and the producer.

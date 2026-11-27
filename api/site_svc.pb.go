@@ -32,6 +32,7 @@ type SiteAddRequest struct {
 	xxx_hidden_Labels            map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_RelaySelector     map[string]string      `protobuf:"bytes,8,rep,name=relay_selector,json=relaySelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_SatelliteSelector map[string]string      `protobuf:"bytes,9,rep,name=satellite_selector,json=satelliteSelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Visibility        SiteVisibility         `protobuf:"varint,10,opt,name=visibility,enum=shale.SiteVisibility"`
 	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
 	XXX_presence                 [1]uint32
@@ -120,6 +121,15 @@ func (x *SiteAddRequest) GetSatelliteSelector() map[string]string {
 	return nil
 }
 
+func (x *SiteAddRequest) GetVisibility() SiteVisibility {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 8) {
+			return x.xxx_hidden_Visibility
+		}
+	}
+	return SiteVisibility_SITE_VISIBILITY_UNSPECIFIED
+}
+
 func (x *SiteAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -132,7 +142,7 @@ func (x *SiteAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *SiteAddRequest) SetTenant(v *TenantRef) {
@@ -163,6 +173,11 @@ func (x *SiteAddRequest) SetSatelliteSelector(v map[string]string) {
 	x.xxx_hidden_SatelliteSelector = v
 }
 
+func (x *SiteAddRequest) SetVisibility(v SiteVisibility) {
+	x.xxx_hidden_Visibility = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
+}
+
 func (x *SiteAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
@@ -181,6 +196,13 @@ func (x *SiteAddRequest) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
+func (x *SiteAddRequest) HasVisibility() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
 func (x *SiteAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -195,6 +217,11 @@ func (x *SiteAddRequest) ClearId() {
 
 func (x *SiteAddRequest) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
+}
+
+func (x *SiteAddRequest) ClearVisibility() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_Visibility = SiteVisibility_SITE_VISIBILITY_UNSPECIFIED
 }
 
 func (x *SiteAddRequest) ClearDateCreated() {
@@ -212,6 +239,7 @@ type SiteAddRequest_builder struct {
 	Labels            map[string]string
 	RelaySelector     map[string]string
 	SatelliteSelector map[string]string
+	Visibility        *SiteVisibility
 	DateCreated       *timestamppb.Timestamp
 }
 
@@ -220,7 +248,7 @@ func (b0 SiteAddRequest_builder) Build() *SiteAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -230,6 +258,10 @@ func (b0 SiteAddRequest_builder) Build() *SiteAddRequest {
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_RelaySelector = b.RelaySelector
 	x.xxx_hidden_SatelliteSelector = b.SatelliteSelector
+	if b.Visibility != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
+		x.xxx_hidden_Visibility = *b.Visibility
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -610,6 +642,7 @@ type SiteSelect struct {
 	xxx_hidden_Labels            bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_RelaySelector     bool                   `protobuf:"varint,8,opt,name=relay_selector,json=relaySelector"`
 	xxx_hidden_SatelliteSelector bool                   `protobuf:"varint,9,opt,name=satellite_selector,json=satelliteSelector"`
+	xxx_hidden_Visibility        bool                   `protobuf:"varint,10,opt,name=visibility"`
 	xxx_hidden_DateUpdated       bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased        bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated       bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -700,6 +733,13 @@ func (x *SiteSelect) GetSatelliteSelector() bool {
 	return false
 }
 
+func (x *SiteSelect) GetVisibility() bool {
+	if x != nil {
+		return x.xxx_hidden_Visibility
+	}
+	return false
+}
+
 func (x *SiteSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -723,7 +763,7 @@ func (x *SiteSelect) GetDateCreated() bool {
 
 func (x *SiteSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
 }
 
 func (x *SiteSelect) SetTenant(v *TenantSelect) {
@@ -732,47 +772,52 @@ func (x *SiteSelect) SetTenant(v *TenantSelect) {
 
 func (x *SiteSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
 }
 
 func (x *SiteSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
 }
 
 func (x *SiteSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
 }
 
 func (x *SiteSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
 }
 
 func (x *SiteSelect) SetRelaySelector(v bool) {
 	x.xxx_hidden_RelaySelector = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
 }
 
 func (x *SiteSelect) SetSatelliteSelector(v bool) {
 	x.xxx_hidden_SatelliteSelector = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+}
+
+func (x *SiteSelect) SetVisibility(v bool) {
+	x.xxx_hidden_Visibility = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
 }
 
 func (x *SiteSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
 }
 
 func (x *SiteSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
 }
 
 func (x *SiteSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
 }
 
 func (x *SiteSelect) HasAll() bool {
@@ -831,25 +876,32 @@ func (x *SiteSelect) HasSatelliteSelector() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *SiteSelect) HasDateUpdated() bool {
+func (x *SiteSelect) HasVisibility() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *SiteSelect) HasDateErased() bool {
+func (x *SiteSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *SiteSelect) HasDateCreated() bool {
+func (x *SiteSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *SiteSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *SiteSelect) ClearAll() {
@@ -891,18 +943,23 @@ func (x *SiteSelect) ClearSatelliteSelector() {
 	x.xxx_hidden_SatelliteSelector = false
 }
 
-func (x *SiteSelect) ClearDateUpdated() {
+func (x *SiteSelect) ClearVisibility() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_Visibility = false
+}
+
+func (x *SiteSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *SiteSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *SiteSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -917,6 +974,7 @@ type SiteSelect_builder struct {
 	Labels            *bool
 	RelaySelector     *bool
 	SatelliteSelector *bool
+	Visibility        *bool
 	DateUpdated       *bool
 	DateErased        *bool
 	DateCreated       *bool
@@ -927,44 +985,48 @@ func (b0 SiteSelect_builder) Build() *SiteSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.RelaySelector != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
 		x.xxx_hidden_RelaySelector = *b.RelaySelector
 	}
 	if b.SatelliteSelector != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
 		x.xxx_hidden_SatelliteSelector = *b.SatelliteSelector
 	}
+	if b.Visibility != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		x.xxx_hidden_Visibility = *b.Visibility
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -979,6 +1041,7 @@ type SitePatchRequest struct {
 	xxx_hidden_Labels            map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_RelaySelector     map[string]string      `protobuf:"bytes,16,rep,name=relay_selector,json=relaySelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_SatelliteSelector map[string]string      `protobuf:"bytes,18,rep,name=satellite_selector,json=satelliteSelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Visibility        SiteVisibility         `protobuf:"varint,20,opt,name=visibility,enum=shale.SiteVisibility"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce  bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
@@ -1070,6 +1133,15 @@ func (x *SitePatchRequest) GetSatelliteSelector() map[string]string {
 	return nil
 }
 
+func (x *SitePatchRequest) GetVisibility() SiteVisibility {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 7) {
+			return x.xxx_hidden_Visibility
+		}
+	}
+	return SiteVisibility_SITE_VISIBILITY_UNSPECIFIED
+}
+
 func (x *SitePatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1090,17 +1162,17 @@ func (x *SitePatchRequest) SetRef(v *SiteRef) {
 
 func (x *SitePatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
 }
 
 func (x *SitePatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
 }
 
 func (x *SitePatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
 func (x *SitePatchRequest) SetLabels(v map[string]string) {
@@ -1115,13 +1187,18 @@ func (x *SitePatchRequest) SetSatelliteSelector(v map[string]string) {
 	x.xxx_hidden_SatelliteSelector = v
 }
 
+func (x *SitePatchRequest) SetVisibility(v SiteVisibility) {
+	x.xxx_hidden_Visibility = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
+}
+
 func (x *SitePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
 
 func (x *SitePatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *SitePatchRequest) HasRef() bool {
@@ -1152,6 +1229,13 @@ func (x *SitePatchRequest) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *SitePatchRequest) HasVisibility() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
 func (x *SitePatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -1163,7 +1247,7 @@ func (x *SitePatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *SitePatchRequest) ClearRef() {
@@ -1185,12 +1269,17 @@ func (x *SitePatchRequest) ClearDesc() {
 	x.xxx_hidden_Desc = nil
 }
 
+func (x *SitePatchRequest) ClearVisibility() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_Visibility = SiteVisibility_SITE_VISIBILITY_UNSPECIFIED
+}
+
 func (x *SitePatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *SitePatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1204,6 +1293,7 @@ type SitePatchRequest_builder struct {
 	Labels            map[string]string
 	RelaySelector     map[string]string
 	SatelliteSelector map[string]string
+	Visibility        *SiteVisibility
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1226,23 +1316,27 @@ func (b0 SitePatchRequest_builder) Build() *SitePatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_RelaySelector = b.RelaySelector
 	x.xxx_hidden_SatelliteSelector = b.SatelliteSelector
+	if b.Visibility != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
+		x.xxx_hidden_Visibility = *b.Visibility
+	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1934,7 +2028,7 @@ var File_shale_site_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_site_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x16shale/site_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x10shale/site.proto\"\x90\x05\n" +
+	"\x16shale/site_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x10shale/site.proto\"\xc7\x05\n" +
 	"\x0eSiteAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\x1b\n" +
@@ -1943,7 +2037,11 @@ const file_shale_site_svc_g_proto_rawDesc = "" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x129\n" +
 	"\x06labels\x18\a \x03(\v2!.shale.SiteAddRequest.LabelsEntryR\x06labels\x12O\n" +
 	"\x0erelay_selector\x18\b \x03(\v2(.shale.SiteAddRequest.RelaySelectorEntryR\rrelaySelector\x12[\n" +
-	"\x12satellite_selector\x18\t \x03(\v2,.shale.SiteAddRequest.SatelliteSelectorEntryR\x11satelliteSelector\x12=\n" +
+	"\x12satellite_selector\x18\t \x03(\v2,.shale.SiteAddRequest.SatelliteSelectorEntryR\x11satelliteSelector\x125\n" +
+	"\n" +
+	"visibility\x18\n" +
+	" \x01(\x0e2\x15.shale.SiteVisibilityR\n" +
+	"visibility\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -1963,7 +2061,7 @@ const file_shale_site_svc_g_proto_rawDesc = "" +
 	"\x03key\"O\n" +
 	"\rSiteRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12(\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xde\x02\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xfe\x02\n" +
 	"\n" +
 	"SiteSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
@@ -1973,11 +2071,15 @@ const file_shale_site_svc_g_proto_rawDesc = "" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
 	"\x06labels\x18\a \x01(\bR\x06labels\x12%\n" +
 	"\x0erelay_selector\x18\b \x01(\bR\rrelaySelector\x12-\n" +
-	"\x12satellite_selector\x18\t \x01(\bR\x11satelliteSelector\x12!\n" +
+	"\x12satellite_selector\x18\t \x01(\bR\x11satelliteSelector\x12\x1e\n" +
+	"\n" +
+	"visibility\x18\n" +
+	" \x01(\bR\n" +
+	"visibility\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x91\x05\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc8\x05\n" +
 	"\x10SitePatchRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SiteRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -1986,7 +2088,10 @@ const file_shale_site_svc_g_proto_rawDesc = "" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12;\n" +
 	"\x06labels\x18\x0e \x03(\v2#.shale.SitePatchRequest.LabelsEntryR\x06labels\x12Q\n" +
 	"\x0erelay_selector\x18\x10 \x03(\v2*.shale.SitePatchRequest.RelaySelectorEntryR\rrelaySelector\x12]\n" +
-	"\x12satellite_selector\x18\x12 \x03(\v2..shale.SitePatchRequest.SatelliteSelectorEntryR\x11satelliteSelector\x12=\n" +
+	"\x12satellite_selector\x18\x12 \x03(\v2..shale.SitePatchRequest.SatelliteSelectorEntryR\x11satelliteSelector\x125\n" +
+	"\n" +
+	"visibility\x18\x14 \x01(\x0e2\x15.shale.SiteVisibilityR\n" +
+	"visibility\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
@@ -2052,51 +2157,54 @@ var file_shale_site_svc_g_proto_goTypes = []any{
 	nil,                           // 17: shale.SitePatchRequest.RelaySelectorEntry
 	nil,                           // 18: shale.SitePatchRequest.SatelliteSelectorEntry
 	(*TenantRef)(nil),             // 19: shale.TenantRef
-	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 21: shale.TenantSelect
-	(*Site)(nil),                  // 22: shale.Site
+	(SiteVisibility)(0),           // 20: shale.SiteVisibility
+	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 22: shale.TenantSelect
+	(*Site)(nil),                  // 23: shale.Site
 }
 var file_shale_site_svc_g_proto_depIdxs = []int32{
 	19, // 0: shale.SiteAddRequest.tenant:type_name -> shale.TenantRef
 	13, // 1: shale.SiteAddRequest.labels:type_name -> shale.SiteAddRequest.LabelsEntry
 	14, // 2: shale.SiteAddRequest.relay_selector:type_name -> shale.SiteAddRequest.RelaySelectorEntry
 	15, // 3: shale.SiteAddRequest.satellite_selector:type_name -> shale.SiteAddRequest.SatelliteSelectorEntry
-	20, // 4: shale.SiteAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 5: shale.SiteGetRequest.ref:type_name -> shale.SiteRef
-	4,  // 6: shale.SiteGetRequest.select:type_name -> shale.SiteSelect
-	3,  // 7: shale.SiteRef.slug:type_name -> shale.SiteRefBySlug
-	19, // 8: shale.SiteRefBySlug.tenant:type_name -> shale.TenantRef
-	21, // 9: shale.SiteSelect.tenant:type_name -> shale.TenantSelect
-	2,  // 10: shale.SitePatchRequest.ref:type_name -> shale.SiteRef
-	16, // 11: shale.SitePatchRequest.labels:type_name -> shale.SitePatchRequest.LabelsEntry
-	17, // 12: shale.SitePatchRequest.relay_selector:type_name -> shale.SitePatchRequest.RelaySelectorEntry
-	18, // 13: shale.SitePatchRequest.satellite_selector:type_name -> shale.SitePatchRequest.SatelliteSelectorEntry
-	20, // 14: shale.SitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	9,  // 15: shale.SiteListRequest.filters:type_name -> shale.SiteFilter
-	4,  // 16: shale.SiteListRequest.select:type_name -> shale.SiteSelect
-	22, // 17: shale.SiteListResponse.items:type_name -> shale.Site
-	2,  // 18: shale.SiteFilter.ref:type_name -> shale.SiteRef
-	19, // 19: shale.SiteFilter.tenant:type_name -> shale.TenantRef
-	9,  // 20: shale.SiteWatchRequest.filters:type_name -> shale.SiteFilter
-	12, // 21: shale.SiteWatchResponse.items:type_name -> shale.SiteWatchItem
-	22, // 22: shale.SiteWatchItem.value:type_name -> shale.Site
-	0,  // 23: shale.SiteService.Add:input_type -> shale.SiteAddRequest
-	1,  // 24: shale.SiteService.Get:input_type -> shale.SiteGetRequest
-	5,  // 25: shale.SiteService.Patch:input_type -> shale.SitePatchRequest
-	2,  // 26: shale.SiteService.Erase:input_type -> shale.SiteRef
-	7,  // 27: shale.SiteService.List:input_type -> shale.SiteListRequest
-	10, // 28: shale.SiteService.Watch:input_type -> shale.SiteWatchRequest
-	22, // 29: shale.SiteService.Add:output_type -> shale.Site
-	22, // 30: shale.SiteService.Get:output_type -> shale.Site
-	22, // 31: shale.SiteService.Patch:output_type -> shale.Site
-	6,  // 32: shale.SiteService.Erase:output_type -> shale.SiteEraseResponse
-	8,  // 33: shale.SiteService.List:output_type -> shale.SiteListResponse
-	11, // 34: shale.SiteService.Watch:output_type -> shale.SiteWatchResponse
-	29, // [29:35] is the sub-list for method output_type
-	23, // [23:29] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	20, // 4: shale.SiteAddRequest.visibility:type_name -> shale.SiteVisibility
+	21, // 5: shale.SiteAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 6: shale.SiteGetRequest.ref:type_name -> shale.SiteRef
+	4,  // 7: shale.SiteGetRequest.select:type_name -> shale.SiteSelect
+	3,  // 8: shale.SiteRef.slug:type_name -> shale.SiteRefBySlug
+	19, // 9: shale.SiteRefBySlug.tenant:type_name -> shale.TenantRef
+	22, // 10: shale.SiteSelect.tenant:type_name -> shale.TenantSelect
+	2,  // 11: shale.SitePatchRequest.ref:type_name -> shale.SiteRef
+	16, // 12: shale.SitePatchRequest.labels:type_name -> shale.SitePatchRequest.LabelsEntry
+	17, // 13: shale.SitePatchRequest.relay_selector:type_name -> shale.SitePatchRequest.RelaySelectorEntry
+	18, // 14: shale.SitePatchRequest.satellite_selector:type_name -> shale.SitePatchRequest.SatelliteSelectorEntry
+	20, // 15: shale.SitePatchRequest.visibility:type_name -> shale.SiteVisibility
+	21, // 16: shale.SitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 17: shale.SiteListRequest.filters:type_name -> shale.SiteFilter
+	4,  // 18: shale.SiteListRequest.select:type_name -> shale.SiteSelect
+	23, // 19: shale.SiteListResponse.items:type_name -> shale.Site
+	2,  // 20: shale.SiteFilter.ref:type_name -> shale.SiteRef
+	19, // 21: shale.SiteFilter.tenant:type_name -> shale.TenantRef
+	9,  // 22: shale.SiteWatchRequest.filters:type_name -> shale.SiteFilter
+	12, // 23: shale.SiteWatchResponse.items:type_name -> shale.SiteWatchItem
+	23, // 24: shale.SiteWatchItem.value:type_name -> shale.Site
+	0,  // 25: shale.SiteService.Add:input_type -> shale.SiteAddRequest
+	1,  // 26: shale.SiteService.Get:input_type -> shale.SiteGetRequest
+	5,  // 27: shale.SiteService.Patch:input_type -> shale.SitePatchRequest
+	2,  // 28: shale.SiteService.Erase:input_type -> shale.SiteRef
+	7,  // 29: shale.SiteService.List:input_type -> shale.SiteListRequest
+	10, // 30: shale.SiteService.Watch:input_type -> shale.SiteWatchRequest
+	23, // 31: shale.SiteService.Add:output_type -> shale.Site
+	23, // 32: shale.SiteService.Get:output_type -> shale.Site
+	23, // 33: shale.SiteService.Patch:output_type -> shale.Site
+	6,  // 34: shale.SiteService.Erase:output_type -> shale.SiteEraseResponse
+	8,  // 35: shale.SiteService.List:output_type -> shale.SiteListResponse
+	11, // 36: shale.SiteService.Watch:output_type -> shale.SiteWatchResponse
+	31, // [31:37] is the sub-list for method output_type
+	25, // [25:31] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_shale_site_svc_g_proto_init() }

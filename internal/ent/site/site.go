@@ -24,6 +24,8 @@ const (
 	FieldRelaySelector = "relay_selector"
 	// FieldSatelliteSelector holds the string denoting the satellite_selector field in the database.
 	FieldSatelliteSelector = "satellite_selector"
+	// FieldVisibility holds the string denoting the visibility field in the database.
+	FieldVisibility = "visibility"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -54,6 +56,7 @@ var Columns = []string{
 	FieldLabels,
 	FieldRelaySelector,
 	FieldSatelliteSelector,
+	FieldVisibility,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -69,6 +72,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultVisibility holds the default value on creation for the "visibility" field.
+	DefaultVisibility int32
+)
 
 // OrderOption defines the ordering options for the Site queries.
 type OrderOption func(*sql.Selector)
@@ -91,6 +99,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByDesc orders the results by the desc field.
 func ByDesc(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDesc, opts...).ToFunc()
+}
+
+// ByVisibility orders the results by the visibility field.
+func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibility, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

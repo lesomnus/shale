@@ -14,9 +14,12 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/protobuf-orm/ent/dialect/sql"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/ent/reader"
+	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/lesomnus/shale/internal/ent/sitemember"
 	"github.com/lesomnus/shale/internal/identity"
 )
@@ -149,6 +152,21 @@ type Operators interface {
 	// which is what sees every site.
 	Administers(ctx context.Context, tenant, holder pdid.Id) (bool, error)
 }
+
+// Company says whether a person is of the company, whom a site of kind
+// COMPANY shows its cameras (§33.1). NoCompany is the only answer Shale
+// has yet: nobody is, so a COMPANY site is seen by the people it names and
+// by whoever sees every site. An answer it could not get is an error, and
+// an error is no.
+type Company interface {
+	// Of says whether holder of tenant is of the company.
+	Of(ctx context.Context, tenant, holder pdid.Id) (bool, error)
+}
+
+// NoCompany is a Company of nobody.
+type NoCompany struct{}
+
+func (NoCompany) Of(context.Context, pdid.Id, pdid.Id) (bool, error) { return false, nil }
 
 // granted asks, failing closed: a lookup that failed is a refusal that
 // says so, as Unavailable, so a caller retries rather than concluding it
@@ -540,11 +558,31 @@ func (ClusterPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error
 	return frame.Everything, nil
 }
 
-// Sites answers which sites a caller may see (§33.1): a person or a reader
-// with all_sites, or a node, sees every site; otherwise the SiteMember
-// rows; a producer sees its set's site. Where roster says what people may
-// change, a person it grants all of Shale sees every site whatever their
-// row says.
+// Sites answers which sites a caller may see (§33.1), and is the one place
+// a person's are decided.
+//
+// A person sees every site who sees every site: where roster says what
+// people may change (`auth.operators`), whoever it grants all of Shale, and
+// nobody by their row's all_sites; where it does not, whoever's row has
+// all_sites. Anybody else sees the sites said EVERYBODY, the sites said
+// COMPANY if they are of the company (Company), and the sites whose
+// SiteMember rows name them, whatever those say.
+//
+// A reader with all_sites sees every site, otherwise its SiteMember rows; a
+// camera worker its adopted site; a producer its set's site, or every site
+// when it has none; a node, a relay or a satellite every site. A row with
+// no site (a set, a source, a lamina, a producer) matches no site, so only
+// whoever sees every site sees it.
+//
+// An answer is kept for sitesTTL per caller and not forgotten when a site
+// or a membership is written: a site's kind changed, a membership added or
+// taken away, a grant of roster's, is seen within it (and Administers'
+// own remembering), as it is for the person's session, their keys and the
+// delegations made in their name alike, which share one entry. Ten
+// seconds is enough: what it holds back is an administrator's change, not
+// the person's, so somebody who loses a site reads it for ten seconds more
+// at the most, as they could the moment before; and a page's every read
+// does not ask the database again.
 type Sites struct {
 	d *Deps
 	// Operators, where roster says what people may change.
@@ -585,35 +623,16 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 	e = sitesEntry{at: now}
 	switch kindOf(f.Actor) {
 	case DomHolder:
-		row, ok := f.Row.(*api.Holder)
-		if ok && row.GetAllSites() {
-			e.all = true
-			break
-		}
-		if s.Operators != nil {
-			// Whoever holds all of Shale administers the tenant, so sees
-			// all of it; a failed lookup is no, as everywhere (§33.1).
-			if is, _ := s.Operators.Administers(ctx, f.Tenant, f.Actor); is {
-				e.all = true
-				break
-			}
-		}
-		if !ok {
-			h, err := s.d.Own.Holder().Get(ctx, api.HolderGetRequest_builder{Ref: api.HolderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
-			if err != nil {
-				return nil, false, err
-			}
-			if h.GetAllSites() {
-				e.all = true
-				break
-			}
-		}
-		ms, err := s.d.Ent.SiteMember.Query().Where(sitemember.HolderIdEQ(f.Actor.Uuid())).All(ctx)
+		all, err := s.everySite(ctx, f)
 		if err != nil {
 			return nil, false, err
 		}
-		for _, m := range ms {
-			e.ids = append(e.ids, pdid.Id(m.SiteId))
+		if all {
+			e.all = true
+			break
+		}
+		if e.ids, err = s.ofPerson(ctx, f); err != nil {
+			return nil, false, err
 		}
 	case DomCameraWorker:
 		// The site approved at adoption is the maximum scope; assignments narrow it
@@ -626,6 +645,8 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 			e.ids = []pdid.Id{mustId(w.GetSite().GetId())}
 		}
 	case DomReader:
+		// A reader is a host and nobody: a site's kind says which people see
+		// it, and a reader sees the sites it is a member of and no more.
 		r, err := s.d.Ent.Reader.Query().Where(reader.IdEQ(f.Actor.Uuid())).Only(ctx)
 		if err != nil {
 			return nil, false, err
@@ -660,4 +681,63 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 	s.mu.Unlock()
 
 	return uuidsOf(e.ids, pdid.Id.Uuid), e.all, nil
+}
+
+// everySite says whether a person sees every site: where roster says what
+// people may change, whoever it grants all of Shale (a failed lookup is
+// no, as everywhere), and nobody by their row; where it does not, whoever's
+// row has all_sites, from the frame or else read.
+func (s *Sites) everySite(ctx context.Context, f *frame.Frame) (bool, error) {
+	if s.Operators != nil {
+		is, err := s.Operators.Administers(ctx, f.Tenant, f.Actor)
+
+		return is && err == nil, nil
+	}
+	if row, ok := f.Row.(*api.Holder); ok {
+		return row.GetAllSites(), nil
+	}
+	h, err := s.d.Own.Holder().Get(ctx, api.HolderGetRequest_builder{Ref: api.HolderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	if err != nil {
+		return false, err
+	}
+
+	return h.GetAllSites(), nil
+}
+
+// ofPerson is the sites of a person who does not see every site, in one
+// query: the tenant's sites said EVERYBODY, those said COMPANY if they are
+// of the company, and those they are a member of. An erased site gives
+// nobody anything by its kind; a membership counts as it always has.
+func (s *Sites) ofPerson(ctx context.Context, f *frame.Frame) ([]pdid.Id, error) {
+	kinds := []int32{int32(api.SiteVisibility_SITE_VISIBILITY_EVERYBODY)}
+	if s.d.Company != nil {
+		// A failed lookup is no, as everywhere.
+		if is, err := s.d.Company.Of(ctx, f.Tenant, f.Actor); is && err == nil {
+			kinds = append(kinds, int32(api.SiteVisibility_SITE_VISIBILITY_COMPANY))
+		}
+	}
+	ids, err := s.d.Ent.Site.Query().Where(
+		site.TenantIdEQ(f.Tenant.Uuid()),
+		site.Or(
+			site.And(site.DateErasedIsNil(), site.VisibilityIn(kinds...)),
+			memberOf(f.Actor.Uuid()),
+		),
+	).Ids(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]pdid.Id, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, pdid.Id(id))
+	}
+
+	return out, nil
+}
+
+// memberOf is the sites a SiteMember row names holder in.
+func memberOf(holder uuid.UUID) predicate.Site {
+	return predicate.Site(func(q *sql.Selector) {
+		t := sql.Table(sitemember.Table)
+		q.Where(sql.In(q.C(site.FieldId), sql.Select(t.C(sitemember.FieldSiteId)).From(t).Where(sql.EQ(t.C(sitemember.FieldHolderId), holder))))
+	})
 }
