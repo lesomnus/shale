@@ -108,6 +108,13 @@ func testPublishHoldsTheSource(t *testing.T, cf *capFixture) {
 		RequestKey: "door-job", RequestHash: []byte{1}, Stage: api.CameraJobStage_CAMERA_JOB_STAGE_VERIFYING, AssignmentGeneration: 1,
 		LeaseOwner: who.Bytes(), LeaseGeneration: 1, LeaseExpires: timestamppb.New(f.now.Add(time.Hour))}.Build())
 	require.NoError(t, err)
+	// The version is taken from a read, as a caller takes it. A generated
+	// Add answers the row as it built it, stamped by the sink's clock with
+	// nanoseconds; PostgreSQL keeps a microsecond, so that answer is not
+	// the version Publish reads and compares, and it is refused there.
+	// SQLite keeps the nanoseconds and hides it.
+	j, err = f.sink.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: job.Bytes()}.Build()}.Build())
+	require.NoError(t, err)
 
 	profile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 160, Height: 90, Fps: 10, MaxBitrateBps: 1_000_000}.Build()
 	observed := api.CameraJobObservation_builder{Effective: profile, Verified: api.CameraMediaEvidence_builder{
