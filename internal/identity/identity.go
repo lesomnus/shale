@@ -119,7 +119,9 @@ const Agent = "shale"
 // passwords there: `/roster.HolderService/Get`,
 // `/roster.HolderService/Reaches`, `/roster.TenantService/Get` and
 // `/payday.TokenService/Introspect` -- and `/roster.MeService/Get` for an
-// `rt_`, which is how Shale learns the key's own tenant.
+// `rt_`, which is how Shale learns the key's own tenant -- and more in one
+// way: [CompanyMethods], to tell who is of the company, which the embedded
+// roster is not asked (everybody is).
 var AgentMethods = []string{
 	"/roster.VouchService/Verify",
 	"/roster.HolderService/Get",

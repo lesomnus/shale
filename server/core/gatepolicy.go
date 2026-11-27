@@ -154,10 +154,10 @@ type Operators interface {
 }
 
 // Company says whether a person is of the company, whom a site of kind
-// COMPANY shows its cameras (§33.1). NoCompany is the only answer Shale
-// has yet: nobody is, so a COMPANY site is seen by the people it names and
-// by whoever sees every site. An answer it could not get is an error, and
-// an error is no.
+// COMPANY shows its cameras (§33.1): roster's answer (identity.Company),
+// or, with no identity store, NoCompany, which is nobody, so a COMPANY site
+// is seen by the people it names and by whoever sees every site. An answer
+// it could not get is an error, and an error is no.
 type Company interface {
 	// Of says whether holder of tenant is of the company.
 	Of(ctx context.Context, tenant, holder pdid.Id) (bool, error)
@@ -704,22 +704,22 @@ func (s *Sites) everySite(ctx context.Context, f *frame.Frame) (bool, error) {
 	return h.GetAllSites(), nil
 }
 
-// ofPerson is the sites of a person who does not see every site, in one
-// query: the tenant's sites said EVERYBODY, those said COMPANY if they are
-// of the company, and those they are a member of. An erased site gives
-// nobody anything by its kind; a membership counts as it always has.
+// ofPerson is the sites of a person who does not see every site: the
+// tenant's sites said EVERYBODY, those said COMPANY if they are of the
+// company, and those they are a member of. An erased site gives nobody
+// anything by its kind; a membership counts as it always has.
+//
+// Two queries, and roster only when it can matter: the EVERYBODY sites and
+// the memberships, then the COMPANY sites not among them. Only when there
+// is one is Company asked -- so a tenant with no site said COMPANY never
+// asks roster about anybody's address, and neither does a person who sees
+// every COMPANY site by a membership. Both read the sites' identifiers
+// only; what the wall shows is still these and no more.
 func (s *Sites) ofPerson(ctx context.Context, f *frame.Frame) ([]pdid.Id, error) {
-	kinds := []int32{int32(api.SiteVisibility_SITE_VISIBILITY_EVERYBODY)}
-	if s.d.Company != nil {
-		// A failed lookup is no, as everywhere.
-		if is, err := s.d.Company.Of(ctx, f.Tenant, f.Actor); is && err == nil {
-			kinds = append(kinds, int32(api.SiteVisibility_SITE_VISIBILITY_COMPANY))
-		}
-	}
 	ids, err := s.d.Ent.Site.Query().Where(
 		site.TenantIdEQ(f.Tenant.Uuid()),
 		site.Or(
-			site.And(site.DateErasedIsNil(), site.VisibilityIn(kinds...)),
+			site.And(site.DateErasedIsNil(), site.VisibilityEQ(int32(api.SiteVisibility_SITE_VISIBILITY_EVERYBODY))),
 			memberOf(f.Actor.Uuid()),
 		),
 	).Ids(ctx)
@@ -728,6 +728,29 @@ func (s *Sites) ofPerson(ctx context.Context, f *frame.Frame) ([]pdid.Id, error)
 	}
 	out := make([]pdid.Id, 0, len(ids))
 	for _, id := range ids {
+		out = append(out, pdid.Id(id))
+	}
+	if s.d.Company == nil {
+		return out, nil
+	}
+
+	company, err := s.d.Ent.Site.Query().Where(
+		site.TenantIdEQ(f.Tenant.Uuid()),
+		site.DateErasedIsNil(),
+		site.VisibilityEQ(int32(api.SiteVisibility_SITE_VISIBILITY_COMPANY)),
+	).Ids(ctx)
+	if err != nil {
+		return nil, err
+	}
+	company = slices.DeleteFunc(company, func(id uuid.UUID) bool { return slices.Contains(ids, id) })
+	if len(company) == 0 {
+		return out, nil
+	}
+	// A failed lookup is no, as everywhere.
+	if is, err := s.d.Company.Of(ctx, f.Tenant, f.Actor); !is || err != nil {
+		return out, nil
+	}
+	for _, id := range company {
 		out = append(out, pdid.Id(id))
 	}
 

@@ -334,10 +334,16 @@ in front (§33.1), Shale runs no roster of its own and takes no password:
    ```sh
    roster --as <operator> control key add --allow /roster.NominationService/List shale
    roster --as <operator> app install --tenant <tenant> \
-     --allow /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get,/payday.TokenService/Introspect \
+     --allow /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get,/payday.TokenService/Introspect,/roster.EmailService/List,/roster.MailDomainService/List \
      --serves '/shale.*/*' --administer <people> \
      shale
    ```
+
+   The last two tell who is of the company, whom a site said `COMPANY`
+   shows its cameras: a proved address at a mail domain the tenant names
+   at roster, so the tenant names its mail domains there too (a
+   `MailDomain`, by name, with the connection it routes to). Without them
+   nobody is ([§33.1](../../docs/10-security.md#331-trust-model)).
 
    The key holds one method as itself -- listing the tenants that
    nominated it, and `/roster.SyncService/Watch` beside it where apps view

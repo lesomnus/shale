@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
 	"uuid"
@@ -21,13 +22,15 @@ import (
 )
 
 // fakeCompany is of the company whom it names, and fails for whom it is
-// told to.
+// told to; asked counts the questions.
 type fakeCompany struct {
 	of     map[pdid.Id]bool
 	failed map[pdid.Id]bool
+	asked  *atomic.Int32
 }
 
 func (c fakeCompany) Of(_ context.Context, _, holder pdid.Id) (bool, error) {
+	c.asked.Add(1)
 	if c.failed[holder] {
 		return true, errors.New("roster: connection refused")
 	}
@@ -50,7 +53,7 @@ type sitesFixture struct {
 // is a deployment where roster says what people may change.
 func newSitesFixture(t *testing.T, operators bool) *sitesFixture {
 	t.Helper()
-	f := &sitesFixture{readerFixture: newReaderFixture(t), now: time.Now(), company: fakeCompany{of: map[pdid.Id]bool{}, failed: map[pdid.Id]bool{}}}
+	f := &sitesFixture{readerFixture: newReaderFixture(t), now: time.Now(), company: fakeCompany{of: map[pdid.Id]bool{}, failed: map[pdid.Id]bool{}, asked: &atomic.Int32{}}}
 	f.tid = mustId(f.tenant.GetId())
 	f.sites = NewSites(&Deps{Ent: f.client, Own: f.sink, Company: f.company, Now: func() time.Time { return f.now }})
 	if operators {
@@ -307,4 +310,39 @@ func TestSiteKindIsSeenWithinTheRememberingTime(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, all)
 	require.Empty(t, vs)
+}
+
+// Who is of the company is asked only when it can matter: when the
+// person's tenant has a site said COMPANY, not erased, that they would not
+// see anyway. A tenant with no such site never asks about anybody (§33.1).
+func TestSitesAskTheCompanyOnlyWhenItMatters(t *testing.T) {
+	f := newSitesFixture(t, true)
+	f.kind(t, "everybody", api.SiteVisibility_SITE_VISIBILITY_EVERYBODY)
+	members := f.kind(t, "members", api.SiteVisibility_SITE_VISIBILITY_MEMBERS)
+	bob := f.person(t, "bob", false)
+	f.company.of[mustId(bob.GetId())] = true
+
+	require.Equal(t, only("everybody"), f.seen(t, f.as(bob)))
+	require.Zero(t, f.company.asked.Load(), "no COMPANY site, nobody asked about")
+
+	// A COMPANY site he is a member of: he sees it anyway.
+	company := f.kind(t, "company", api.SiteVisibility_SITE_VISIBILITY_COMPANY)
+	f.member(t, company, bob)
+	f.member(t, members, bob)
+	f.later()
+	require.Equal(t, only("company", "everybody", "members"), f.seen(t, f.as(bob)))
+	require.Zero(t, f.company.asked.Load(), "a COMPANY site he sees anyway")
+
+	// One he would not see otherwise: asked, and seen.
+	f.kind(t, "office", api.SiteVisibility_SITE_VISIBILITY_COMPANY)
+	f.later()
+	require.Equal(t, only("company", "everybody", "members", "office"), f.seen(t, f.as(bob)))
+	require.Equal(t, int32(1), f.company.asked.Load())
+
+	// Somebody not of the company is asked about, and does not see it.
+	carol := f.person(t, "carol", false)
+	require.Equal(t, only("everybody"), f.seen(t, f.as(carol)))
+	require.Equal(t, int32(2), f.company.asked.Load())
+	require.Equal(t, only("everybody"), f.seen(t, f.as(carol)), "remembered")
+	require.Equal(t, int32(2), f.company.asked.Load())
 }

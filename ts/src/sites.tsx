@@ -63,7 +63,7 @@ const KINDS: ReadonlyArray<{ v: SiteVisibility; name: string; line: string }> = 
 	{
 		v: SiteVisibility.COMPANY,
 		name: "The company's people",
-		line: "The company's people see its cameras, and the people and readers it names. Until Shale tells the company's people apart, nobody is one, and only its members see it.",
+		line: "The company's people see its cameras -- whoever has a proved address at a mail domain the tenant names at its identity service, or everybody signed in where that runs inside Shale -- and the people and readers it names.",
 	},
 	{
 		v: SiteVisibility.EVERYBODY,

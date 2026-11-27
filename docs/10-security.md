@@ -51,6 +51,25 @@ holds a credential.
   the field, is `MEMBERS` ([§7](02-data-model.md#7-source-set-zone-epoch)).
   Who is of the company is said in [§7](02-data-model.md#7-source-set-zone-epoch).
 
+  **Of the company** is roster's answer, asked as Shale in the tenant: the
+  person's addresses (`EmailService.List` filtered to them, the address
+  and `date_verified` alone selected) and the tenant's mail domains
+  (`MailDomainService.List`). A mail domain is the tenant's own statement
+  about its own people, which roster does not prove, and that is enough
+  here: it only sorts people inside that tenant. Shale keeps the answer and
+  never the address -- each is compared and dropped, in no log line, no
+  error, nothing stored -- for `auth.company.ttl` (10 minutes), longer than
+  a grant is kept because each reading of an address is written to
+  roster's access record; the tenant's mail domains as long. It **fails
+  closed**: an answer roster could not give is no, remembered 5 s and
+  logged once, and a roster that refuses the two reads
+  (`PERMISSION_DENIED`, Shale not allowed them there, *With a roster
+  elsewhere* below) is no with a line naming them. It is asked only when
+  it can matter: when the person's tenant has a site said `COMPANY`, not
+  erased, that a membership does not already show them; a tenant with no
+  such site has nobody's address read. Where roster runs inside Shale
+  everybody of the tenant is of the company, and roster is not asked.
+
   **A row in no site** -- a set added without one, its sources, laminae,
   attempts and producer -- matches no site, so it is seen by whoever sees
   every site and by nobody else; no kind and no membership reaches it. A
@@ -460,7 +479,7 @@ holds a credential.
   ```sh
   roster --as <operator> control key add --allow /roster.NominationService/List shale
   roster --as <operator> app install --tenant acme \
-    --allow /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get,/payday.TokenService/Introspect \
+    --allow /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get,/payday.TokenService/Introspect,/roster.EmailService/List,/roster.MailDomainService/List \
     --serves '/shale.*/*' --administer admin shale
   roster --as <operator> role add @acme/shale-operator \
     '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}, "methods": ["/shale.*/*"]}'
@@ -473,10 +492,24 @@ holds a credential.
   ([§33.8](#338-viewing-on-a-persons-behalf)), or where a person's keys
   for Shale are to be forgotten the moment they stop being in good
   standing rather than within `auth.operators.ttl` -- and nothing else; in each tenant it is answered as the
-  holder `install` made, which may call the four methods `--allow` names
+  holder `install` made, which may call the methods `--allow` names
   -- `/roster.VouchService/Verify` beside them where people sign in with a
   password, and `/roster.MeService/Get` for a tenant key (`rt_`), which is
-  how Shale learns the key's tenant. `--serves` writes `shale-everything`,
+  how Shale learns the key's tenant. The last two, `EmailService/List` and
+  `MailDomainService/List`, tell who is of the company; without them
+  nobody is, and a site said `COMPANY` is seen by the people it names. The
+  tenant also names its mail domains at roster, each by name with the
+  connection its people sign in through, as roster declares one
+  (roster's `docs/operating.md`, *Declaring the rows that are
+  configuration*):
+
+  ```yaml
+  resources:
+    - kind: MailDomain
+      tenant: acme
+      name: acme.example
+      routes: entra
+  ``` `--serves` writes `shale-everything`,
   a role of Shale's, and `--administer` names the people of the tenant who
   hold it -- all of Shale, so they administer it there, and operate the
   cluster where theirs is the operators' tenant -- and who write Shale's

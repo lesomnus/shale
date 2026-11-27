@@ -377,6 +377,10 @@ type AuthConfig struct {
 	// `control.cluster_tenant` (§33.1). Set, every person of a tenant
 	// reads, and calls the rest as far as a role at roster covers it.
 	Operators identity.OperatorsConfig `yaml:"operators"`
+	// Company is how long who is of the company -- whom a site said
+	// COMPANY shows its cameras: a proved address at a mail domain the
+	// tenant names at roster -- is believed (§33.1).
+	Company identity.CompanyConfig `yaml:"company"`
 	// Oidc is the issuer people sign in through (§33.1): each HTTP listener
 	// is a relying party of it, and the CLI signs operators in with its
 	// device flow.
