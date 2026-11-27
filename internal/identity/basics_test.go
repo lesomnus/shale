@@ -35,7 +35,7 @@ type basicsFixture struct {
 	s      *Store
 	b      *Basics
 	made   *memMade
-	log    *bytes.Buffer
+	log    *lockedBuffer
 	now    time.Time
 	tenant pdid.Id
 }
@@ -73,7 +73,7 @@ func (m *memMade) of(tenant pdid.Id) bool {
 
 func newBasicsFixture(t *testing.T) *basicsFixture {
 	t.Helper()
-	x := &basicsFixture{f: newFakeRoster(t, "acme"), made: &memMade{}, log: &bytes.Buffer{}, now: time.Unix(1_700_000_000, 0)}
+	x := &basicsFixture{f: newFakeRoster(t, "acme"), made: &memMade{}, log: &lockedBuffer{}, now: time.Unix(1_700_000_000, 0)}
 	x.s = x.f.open(t)
 	x.b = x.basics(x.s)
 	x.tenant = pdid.Id(x.f.tenant.GetId())
@@ -83,15 +83,18 @@ func newBasicsFixture(t *testing.T) *basicsFixture {
 
 // basics is another process's Basics on the same roster.
 func (x *basicsFixture) basics(s *Store) *Basics {
-	b := NewBasics(s, testBasics, x.made, slog.New(slog.NewTextHandler(&lockedBuffer{b: x.log}, nil)))
+	b := NewBasics(s, testBasics, x.made, slog.New(slog.NewTextHandler(x.log, nil)))
 	b.Now = func() time.Time { return x.now }
 
 	return b
 }
 
+// lockedBuffer is the one log every Basics of a fixture writes to. One lock
+// for all of them: two keepers at once are two loggers, and a lock each would
+// guard nothing they share.
 type lockedBuffer struct {
 	mu sync.Mutex
-	b  *bytes.Buffer
+	b  bytes.Buffer
 }
 
 func (l *lockedBuffer) Write(p []byte) (int, error) {
@@ -99,6 +102,20 @@ func (l *lockedBuffer) Write(p []byte) (int, error) {
 	defer l.mu.Unlock()
 
 	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	return l.b.String()
+}
+
+func (l *lockedBuffer) Reset() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.b.Reset()
 }
 
 // unquoted is a text log as it was written, before slog quoted it.
@@ -444,10 +461,10 @@ func TestBasicsEmbedded(t *testing.T) {
 	carol, err := s.AddPerson(ctx, "acme", "carol", "Carol")
 	require.NoError(t, err)
 
-	log := &bytes.Buffer{}
+	log := &lockedBuffer{}
 	made := &memMade{}
 	newBasics := func() *Basics {
-		return NewBasics(s, testBasics, made, slog.New(slog.NewTextHandler(&lockedBuffer{b: log}, nil)))
+		return NewBasics(s, testBasics, made, slog.New(slog.NewTextHandler(log, nil)))
 	}
 	a, b := newBasics(), newBasics()
 	var wg sync.WaitGroup
