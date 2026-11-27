@@ -134,6 +134,86 @@ jobs:
           e2e+='|SatelliteAccepted|SatelliteAcceptedPassedThrough|SatelliteAcceptedLost|SatelliteAcceptedFeedsLive|SatelliteDelegatedCalls'
           e2e+='|SatelliteServeAll'
           go test -race -count=1 -timeout 45m -run "^Test($e2e)\$" ./internal/e2e/
+  # The end-to-end tests on PostgreSQL, the database the deployments run on
+  # (deploy/k8s, the same image), where the others run on SQLite: a row
+  # lock that exists only there (FOR SHARE), a statement the two plan
+  # differently, a migration, the LISTEN/NOTIFY broker and the leader
+  # lease. The whole of internal/e2e, since every control plane its tests
+  # start takes SHALE_E2E_DB_DSN (start, startTLS, rolloverControl,
+  # cameraTLSControl), and so will a test added that starts one; and cli,
+  # whose concurrent migration runs only on PostgreSQL. About as long as the
+  # e2e package takes in the test job, and beside it.
+  #
+  # One database for all of it: each control plane the harness starts
+  # empties the schema first (drop schema public cascade), so the tests are
+  # kept apart by running one at a time, which they do, none being
+  # parallel, and the two packages one after the other, never at once.
+  #
+  # PostgreSQL is started here and not as a service, because it needs a
+  # flag a service cannot be given: max_connections of 1000, not 100. The
+  # postgres broker of payday (watchpg) has no way to be stopped, so every
+  # server built with it keeps its listening connection and its publishing
+  # one open after it is closed, for the rest of the process: two for each
+  # `init` and each `serve all` of every test, which reached the hundred a
+  # third of the way into the suite, and every test after it failed with
+  # "too many clients" (an issue to be filed: payday's watchpg broker and
+  # shale's Server.Close leave the broker's connections open). When they
+  # close, this goes back to the default.
+  #
+  # The steps run on the runner, so the database is at localhost on the
+  # mapped port. Readiness is asked over TCP: while the image initializes
+  # the database its server listens on the socket alone, and it listens on
+  # TCP only once it is the server that stays.
+  postgres:
+    runs-on: ubuntu-latest
+    steps:
+      - name: postgresql
+        # Started first, so it initializes while the rest is set up.
+        run: |
+          docker run -d --name shale-postgres -p 5432:5432 \
+            -e POSTGRES_USER=shale -e POSTGRES_PASSWORD=shale -e POSTGRES_DB=shale_e2e \
+            postgres:17-alpine -c max_connections=1000
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/shale-ffmpeg
+          key: shale-ci-ffmpeg-btbn-n8.1.3-linux64-41e9c565594c3906
+      - name: ffmpeg
+        # The producer's tests, which write under concurrency, skip without
+        # it. The same pinned build as the test job.
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sh .github/scripts/ffmpeg.sh "$RUNNER_TEMP/shale-ffmpeg"
+      - name: postgresql is ready
+        timeout-minutes: 2
+        run: |
+          until docker exec shale-postgres pg_isready -q -h 127.0.0.1 -p 5432 -U shale -d shale_e2e; do
+            if [ "$(docker inspect -f '{{.State.Running}}' shale-postgres)" != true ]; then
+              docker logs shale-postgres
+              exit 1
+            fi
+            sleep 1
+          done
+          docker exec shale-postgres psql -U shale -d shale_e2e -Atc 'show max_connections'
+      - name: test
+        # The sinks' user xattrs, as in the test job.
+        env:
+          SHALE_E2E_DB_DSN: postgres://shale:shale@localhost:5432/shale_e2e?sslmode=disable
+        run: |
+          fallocate -l 2G /tmp/shale.img && mkfs.ext4 -q -F /tmp/shale.img
+          sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
+          sudo chmod 1777 /mnt/shale-tmp
+          export TMPDIR=/mnt/shale-tmp
+          go test -count=1 -timeout 10m ./cli
+          go test -count=1 -timeout 60m ./internal/e2e
+      - name: postgresql's log
+        if: failure()
+        run: docker logs --tail 200 shale-postgres
   package:
     runs-on: ubuntu-latest
     needs: test
