@@ -24,6 +24,8 @@ import (
 
 	"github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
+
+	"github.com/lesomnus/shale/internal/identity/rosterapp"
 )
 
 // fakeRoster is an external roster's data plane, as much of it as Shale
@@ -69,6 +71,11 @@ type fakeRoster struct {
 	noSync atomic.Bool
 	syncs  atomic.Int32
 
+	// app is Shale's own roles and groups, the bindings of the one to the
+	// other and the people in the groups, which what a person reaches
+	// across the tenant includes.
+	app *rosterapp.App
+
 	down  atomic.Bool
 	calls atomic.Int32
 	lists atomic.Int32
@@ -92,6 +99,7 @@ func newFakeRoster(t *testing.T, tenantAlias string) *fakeRoster {
 		sync:      make(chan *rstr.SyncEvent, 16),
 	}
 	f.tenant = f.addTenant(tenantAlias)
+	f.app = &rosterapp.App{Alias: Agent, Tenant: walled}
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	g := grpc.NewServer(grpc.UnaryInterceptor(f.check))
@@ -103,6 +111,7 @@ func newFakeRoster(t *testing.T, tenantAlias string) *fakeRoster {
 	rstr.RegisterSyncServiceServer(g, syncs{fakeRoster: f})
 	rstr.RegisterEmailServiceServer(g, emails{fakeRoster: f})
 	rstr.RegisterMailDomainServiceServer(g, mailDomains{fakeRoster: f})
+	f.app.Register(g)
 	go g.Serve(l)
 	t.Cleanup(g.Stop)
 	f.addr = l.Addr().String()
@@ -261,8 +270,8 @@ func (f holders) Reaches(ctx context.Context, req *rstr.HolderReachesRequest) (*
 		return nil, err
 	}
 	f.mu.Lock()
-	defer f.mu.Unlock()
-	held := f.grants[string(v.GetId())]
+	held := append(slices.Clone(f.grants[string(v.GetId())]), f.app.Everywhere(v.GetId())...)
+	f.mu.Unlock()
 
 	// `methods` is wider than `everywhere` here on purpose: a grant bound
 	// at one of roster's sites is in the first and not the second, and

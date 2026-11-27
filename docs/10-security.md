@@ -15,7 +15,7 @@ holds a credential.
 |---|---|---|---|---|
 | **Producer** | host, tenant entity | tenant API | host certificate (mTLS) | negotiate and allocate for its set; upload with the access tokens it is given |
 | **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read laminae of its sites |
-| **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read its tenant's hosts, and the sets, cameras, live video, laminae and sites of the sites it sees (*Sites*, below); where roster says what people may change (below), the rest as far as roster grants them |
+| **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read the sets, cameras, live video, laminae and sites of the sites it sees (*Sites*, below), and its tenant's hosts where roster does not say what people may change; where it does (below), the basics, and the rest -- the hosts' reads among it -- as far as roster grants them |
 | **Person, by a key** | person (Holder) | tenant API | `Authorization: Bearer rt_…`, a key for Shale roster minted them (below) | what the person may, and of it only the methods the key names |
 | **Tenant admin** | person (Holder) | tenant API | a session, after roster vouched for them | manage its tenant's sites, sets, sources, producers, readers, and retention dates: every person of the tenant where operators are a tenant; where roster says, a person it grants all of Shale (`/shale.*/*`) |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
@@ -213,7 +213,12 @@ holds a credential.
   **Making a token needs a role of Shale's**, since a key is held to what
   its person holds at Shale, and so, on a deployment that carries its
   roster inside, `auth.operators`: without it no role of Shale's exists,
-  and the *Tokens* page says so and what an operator sets.
+  and the *Tokens* page says so and what an operator sets. With
+  `auth.operators` and its reads everybody's, everybody holds one: the
+  basics, which Shale writes at roster and puts each person in the group of
+  (*Everybody holds the basics*, below), so a person nobody bound anything
+  makes a token of the basics, and a token made before a camera is theirs
+  to see sees it once it is.
 
   **The one thing a key is refused that its person is not** is making a
   key where roster runs in this process. There the console is roster's
@@ -426,18 +431,29 @@ holds a credential.
   hold. `auth.operators.team` is refused at start with what to do instead.
 
   The same setting changes the **tenant API** for people. Every person of
-  a tenant reads what the console's pages read -- sets, sources and their
-  live video, laminae and their timeline (playback and export), attempts,
-  sites, producers and readers, and the `Watch` that keeps each current --
-  and anything else (adopting a producer, a set, a source, a retention
-  date, a site, a person; people, site membership, the trail, passwords)
-  only as far as roster grants them. With `auth.operators.reads: granted`
-  the reads are as far as roster grants them too, so a person granted
-  nothing reads nothing; that is how people who should see cameras only
-  through an app beside Shale are kept to it
+  a tenant calls **the basics** -- the reads and views about cameras and
+  sites: `Get`, `List` and `Watch` of `SetService`, `SourceService`,
+  `LaminaService` and `SiteService`, `Live` of sets and sources, `Timeline`
+  and `Export` of laminae, `Get` and `List` of `AttemptService`, eighteen
+  methods (`BasicMethods`, `server/core/gatepolicy.go`: what a key that
+  carries a list of cameras may call, and the sites) -- and anything else
+  only as far as roster grants them: adopting a producer, a set, a source,
+  a retention date, a site, a person; people, site membership, the trail,
+  passwords; and **the hosts' reads**, `Get`, `List` and `Watch` of
+  `ProducerService` and `ReaderService`, which the console's *Hosts* page
+  and the producers' state on *Cameras* read. Those are not the basics: a
+  producer's and a reader's rows show the machine's hardware identity, its
+  hostname, the address it joined from, its certificate or request,
+  version and status, and a reader's are not narrowed by site at all, so
+  they are an operator's to hand out, a role of Shale's naming them as any
+  other call is. With `auth.operators.reads: granted` the basics are as far
+  as roster grants them too, so a person granted nothing reads nothing;
+  that is how people who should see cameras only through an app beside
+  Shale are kept to it
   ([§33.8](#338-viewing-on-a-persons-behalf); with
   `auth.delegation.persons: tenant` an app may view for any of them, and
-  the grant decides the console alone). Hosts are unchanged. Without
+  the grant decides the console alone). Hosts themselves -- a producer's,
+  a reader's calls -- are unchanged. Without
   `auth.operators` the rule is the one before it, and it is what an
   embedded roster, `--dev` and the tests run by default: every person
   administers their own tenant, except where an act hands somebody a
@@ -465,16 +481,115 @@ holds a credential.
   `EVERYBODY` or `COMPANY` and no membership, no camera
   ([§32.3](09-operations.md#323-upgrading-to-sites-that-say-who-sees-them)).
 
+  **Everybody holds the basics, at roster too.** A token is made at roster,
+  and roster mints a key only for methods its person holds at Shale, so
+  what the gate lets everybody call is written down at roster as well:
+  where `auth.operators` is set and its reads are everybody's, Shale makes,
+  as its own holder in each tenant it serves,
+
+  - **`shale-basics`**, a role of Shale's (`Role.app`) naming exactly the
+    eighteen, and
+  - **`shale-people`**, a group of Shale's (`Group.app`),
+  - with the role **bound to the group**, in no site.
+
+  Each says in its `desc` that Shale made it. **Shale makes them once and
+  then leaves them to whoever operates the deployment**, as the roles an
+  app ships are the tenant's once written (roster's `docs/apps.md`, *The
+  roles an app ships*). They are looked at **at start**, in every tenant
+  served, and **when a tenant is first served** after it: each read, and
+  made if absent -- the role with the build's list -- unless Shale made them
+  there before. Once Shale has made them in a tenant it says so on its own
+  row of the tenant, the label `shale.basics`, and while that is there it
+  makes none of the three again: one that is absent was removed by an
+  operator. (roster cannot tell it: a role, a group or a binding erased is
+  read by nobody after, its alias is free for an `Add` again, and an erased
+  binding may be made again, so one removed and one never made answer
+  alike.) A second process doing the same at once is no error. A role or a
+  group of either name that is not Shale's is left as it is, and said.
+
+  **The role's methods are not written once it is there.** An operator
+  changes them at roster, with `roster role widen` and `roster role
+  narrow` -- exports not for everybody here, say:
+
+  ```sh
+  roster --as <operator> role narrow @acme/shale-basics '{"methods":["/shale.LaminaService/Export"]}'
+  ```
+
+  Where they differ from the build's list Shale says so once at start, in
+  one line that names what the role has that the list has not and what
+  the list has that the role has not, with the commands that would bring
+  it to the list, and changes nothing:
+
+  ```text
+  WARN basics: shale-basics at roster differs from this build's list of the basics, and Shale leaves it as it is; to bring it to the list, roster's operator runs: roster role widen @acme/shale-basics '{"methods":["/shale.LaminaService/Export"]}' tenant=acme not_in_the_list="" not_in_the_role=/shale.LaminaService/Export
+  ```
+
+  Equal, nothing is said. An upgrade that brings a method to the basics is
+  said the same way, and is the operator's to widen. What Shale made and an
+  operator removed is said once at start too (*… was removed at roster;
+  Shale made it once and does not make it again*). Taking the label off
+  Shale's row of the tenant (`TenantService` on the cluster API) makes
+  Shale make what is absent at its next start.
+
+  **Each person is put in `shale-people`** when a process first sees them,
+  on every road -- a session's call, a sign-in by password or through the
+  issuer, the CLI's token, a key's first arrival, a delegation's `Start`,
+  the plain header of development mode -- with
+  `GroupMembershipService/Add` as Shale, and remembered as put in for
+  **ten minutes**; after them the next call asks again, and puts back
+  somebody taken out. roster answers a second add of the same person
+  `ALREADY_EXISTS` (its unique index on a place counts the places not
+  erased, so somebody whose place was erased is put in again), and that is
+  the ordinary answer and no error. It is never in the way of the call
+  that brought them: bounded by two seconds, keeping the tenant's group
+  included; a failure logged once and remembered for 30 s, then tried
+  again; the call goes on with whatever the person holds. A roster that
+  refuses -- Shale installed without `--serves`, which is what binds it
+  roster's verbs for its own roles and groups -- is one line in the log
+  saying so, said again every ten minutes, and until then a token offers
+  only the roles an operator binds by hand. Nothing else changes.
+
+  **Nobody is left out by Shale.** There is no exclusion: somebody taken out
+  of `shale-people` at roster is put back when next seen. roster says why
+  there is none (`docs/apps.md`, *Reading an app's users*): *taking somebody
+  out of Loft is ending their place in its group, or their binding: there
+  is no exclusion and no denial, and nothing for a reader to subtract* --
+  and *an app that enrols people itself is the one that remembers whom it
+  took out*, which Shale does not: somebody who should not use Shale is
+  suspended at roster, or the deployment says `auth.operators.reads:
+  granted`. **Taking the basics away from the group**, without changing
+  `reads`, is removing the binding of `shale-basics` to `shale-people` at
+  roster, which Shale does not make again: people are still put in the
+  group, which then hands them nothing there, so a token offers them only
+  what roles are bound by hand, while the gate still lets them call the
+  basics with no role. **Taking them away from everybody** is `reads:
+  granted` as well. With `granted` Shale writes none of it and puts nobody
+  anywhere, since a group that hands the reads to everybody would undo the
+  operator's word; what an earlier `everybody` left is left, since an
+  operator may have come to rely on it, and said once at start, as
+  roster's to remove. Without `auth.operators` nothing of it runs: every
+  person administers their tenant, and roles of Shale's decide nothing.
+
   **With the embedded roster** Shale installs itself in each tenant as an
   app, as `roster app install` does (roster's `cli.InstallApp`): its holder
   `shale`, `shale-app`, a role of roster's naming what Shale asks roster,
   and `shale-everything`, a role of Shale's naming `/shale.*/*`, both bound
   to it. `shale init` binds the first operator `shale-operator`, a role of
-  Shale's naming `/shale.*/*`.
+  Shale's naming `/shale.*/*`. Where `auth.operators` is set and its reads
+  are everybody's, `shale-basics` and `shale-people` are made in every
+  tenant as above, through the same calls as Shale's holder there, which
+  `install` bound `app-administrator` for itself.
 
-  **With a roster elsewhere** Shale writes no role: roster's operator
-  installs it, at the box, once per tenant, and the tenant gives its
-  people Shale's roles:
+  **With a roster elsewhere** Shale writes no role but its own two above:
+  roster's operator installs it, at the box, once per tenant, and the
+  tenant gives its people Shale's other roles. Writing the basics asks
+  nothing new of the installation: `--serves '/shale.*/*'` binds Shale's
+  holder `app-administrator` for itself, whose `ForAnApp` names
+  `RoleService` `Get` and `Add`, `GroupService` `Get`
+  and `Add`, `BindingService` `List` and `Add`, and
+  `GroupMembershipService/Add`, each held to Shale's own rows; and
+  `shale-everything` is what lets it hand the basics out at Shale. The
+  key's `--allow` does not grow:
 
   ```sh
   roster --as <operator> control key add --allow /roster.NominationService/List shale
@@ -514,8 +629,10 @@ holds a credential.
   hold it -- all of Shale, so they administer it there, and operate the
   cluster where theirs is the operators' tenant -- and who write Shale's
   roles and bind them, as `role add` and `binding add` do above. An
-  operator is a role of Shale's naming `/shale.*/*`; a viewer, where
-  `auth.operators.reads: granted`, one naming what the console reads --
+  operator is a role of Shale's naming `/shale.*/*`; somebody who looks
+  after the hosts where the basics are everybody's, one naming `Get`,
+  `List` and `Watch` of `ProducerService` and `ReaderService`; a viewer,
+  where `auth.operators.reads: granted`, one naming what the console reads --
   `Get`, `List` and `Watch` of `SetService`, `SourceService`,
   `LaminaService`, `SiteService`, `ProducerService` and `ReaderService`,
   `Get` and `List` of `AttemptService`, `Live` of sets and sources, and

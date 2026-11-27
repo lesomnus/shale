@@ -259,8 +259,9 @@ func (s coreDelegation) as(ctx context.Context, holder *api.Holder, delegated st
 // themselves, whom DelegationService refuses.
 //
 // With EveryPerson, reads are not granted for the person whatever the
-// deployment says: a person of the tenant reads what the console's pages
-// read, as where reads are everybody's, and nothing else.
+// deployment says: a person of the tenant calls the basics (the reads and
+// views about cameras and sites), as where reads are everybody's, and
+// nothing else.
 type personPolicy struct {
 	TenantPolicy
 	delegated string

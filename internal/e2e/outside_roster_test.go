@@ -23,6 +23,8 @@ import (
 	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/rstr"
+
+	"github.com/lesomnus/shale/internal/identity/rosterapp"
 )
 
 // outsideRoster is a roster of its own that Shale reaches over the wire,
@@ -34,7 +36,9 @@ import (
 // tenant's mail domains, answered as roster's generated lists answer them:
 // walled to the tenant, an erased address never read, `date_verified`
 // absent where nobody proved it, a filter by holder, only what the select
-// names. A method Shale's holder is not allowed is PermissionDenied.
+// names; Shale's own roles and groups and the people in them, which what
+// a person reaches across the tenant includes. A method Shale's holder is
+// not allowed is PermissionDenied.
 type outsideRoster struct {
 	key    string
 	tenant *rstr.Tenant
@@ -47,6 +51,7 @@ type outsideRoster struct {
 	emails  []outsideEmail
 	domains []string
 	refused map[string]bool
+	app     *rosterapp.App
 
 	emailLists atomic.Int32
 }
@@ -74,6 +79,10 @@ func newOutsideRoster(t *testing.T, tenant string) *outsideRoster {
 		keys:    map[string]outsideKey{},
 		refused: map[string]bool{},
 	}
+	r.app = &rosterapp.App{Alias: "shale", Tenant: func(ctx context.Context) *rstr.Tenant {
+		v, _ := ctx.Value(outsideTenant{}).(*rstr.Tenant)
+		return v
+	}}
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	g := grpc.NewServer(grpc.UnaryInterceptor(r.check))
@@ -82,6 +91,8 @@ func newOutsideRoster(t *testing.T, tenant string) *outsideRoster {
 	pdpb.RegisterTokenServiceServer(g, outsideTokens{outsideRoster: r})
 	rstr.RegisterEmailServiceServer(g, outsideEmails{outsideRoster: r})
 	rstr.RegisterMailDomainServiceServer(g, outsideMailDomains{outsideRoster: r})
+	rstr.RegisterApiKeyServiceServer(g, outsideApiKeys{outsideRoster: r})
+	r.app.Register(g)
 	go g.Serve(l)
 	t.Cleanup(g.Stop)
 	r.addr = l.Addr().String()
@@ -195,11 +206,31 @@ func (r outsideHolders) Reaches(_ context.Context, req *rstr.HolderReachesReques
 	if err != nil {
 		return nil, err
 	}
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	held := r.grants[string(v.GetId())]
+	return rstr.HolderReachesResponse_builder{Methods: r.held(v.GetId()), Everywhere: r.held(v.GetId())}.Build(), nil
+}
 
-	return rstr.HolderReachesResponse_builder{Methods: held, Everywhere: held}.Build(), nil
+// held is what a person reaches across the tenant: what they are granted,
+// and what Shale's groups they are in hand them.
+func (r *outsideRoster) held(holder []byte) []string {
+	r.mu.Lock()
+	held := slices.Clone(r.grants[string(holder)])
+	r.mu.Unlock()
+
+	return append(held, r.app.Everywhere(holder)...)
+}
+
+// mint is a person's key for Shale as roster mints it at their yes:
+// refused, in roster's words, a method one pattern they hold at Shale does
+// not cover on its own.
+func (r *outsideRoster) mint(holder []byte, methods ...string) (string, error) {
+	held := r.held(holder)
+	for _, m := range methods {
+		if !slices.ContainsFunc(held, func(h string) bool { return frame.Covers(h, m) }) {
+			return "", status.Errorf(codes.PermissionDenied, "methods: you do not hold %q at shale", m)
+		}
+	}
+
+	return r.apiKey(holder, methods...), nil
 }
 
 type outsideTokens struct {
@@ -266,4 +297,15 @@ func (r outsideMailDomains) List(context.Context, *rstr.MailDomainListRequest) (
 	}
 
 	return rstr.MailDomainListResponse_builder{Items: out}.Build(), nil
+}
+
+type outsideApiKeys struct {
+	rstr.UnimplementedApiKeyServiceServer
+	*outsideRoster
+}
+
+// List is a person's keys for Shale as roster lists them to Shale: none
+// here, since what the double mints is answered by Introspect alone.
+func (r outsideApiKeys) List(context.Context, *rstr.ApiKeyListRequest) (*rstr.ApiKeyListResponse, error) {
+	return rstr.ApiKeyListResponse_builder{}.Build(), nil
 }

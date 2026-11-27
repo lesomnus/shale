@@ -131,6 +131,10 @@ type Server struct {
 	// Operators is what roster grants people, when `auth.operators` says
 	// so; nil is the rule before it, the cluster tenant's people.
 	Operators *identity.Operators
+	// Basics writes down at roster what everybody who signs in holds, and
+	// puts each person in Shale's group there, where `auth.operators` is
+	// set and its reads are everybody's (§33.1); nil otherwise.
+	Basics *identity.Basics
 	// Sso is the relying party of `auth.oidc`'s issuer; nil when there is
 	// none, or before init, when there is no KEK to seal its flows under.
 	Sso *sso.RP
@@ -266,6 +270,10 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		}
 	}
 
+	if s.Operators != nil && !c.Auth.Operators.GrantedReads() {
+		s.Basics = identity.NewBasics(s.Identity, core.BasicMethods(), basicsMade{s}, slog.Default())
+	}
+
 	if err := c.Auth.Delegation.check(c.Auth); err != nil {
 		s.Identity.Close()
 		db.Close()
@@ -389,6 +397,18 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	s.Spin = append(s.Spin, s.Jobs, s.Directives, s.Dns)
 	if c.Auth.Delegation.On() || !c.Auth.Roster.None {
 		s.Spin = append(s.Spin, spin.Func(s.followStanding))
+	}
+	switch {
+	case s.Basics != nil:
+		// The basics at roster (§33.1), kept in every tenant served once
+		// at start, and after it when a tenant is first served. Every
+		// process does it; a second at once is no error.
+		s.Spin = append(s.Spin, spin.Called("shale.basics", spin.InEveryProcess(spin.Func(s.Basics.Keep))))
+	case s.Operators != nil:
+		// Reads granted: Shale writes none of it, and says once what an
+		// earlier `everybody` left at roster.
+		left := identity.NewBasics(s.Identity, core.BasicMethods(), nil, slog.Default())
+		s.Spin = append(s.Spin, spin.Called("shale.basics", spin.InEveryProcess(spin.Func(left.Left))))
 	}
 	if c.Watch.Outbox && b != nil {
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))

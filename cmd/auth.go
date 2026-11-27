@@ -35,61 +35,72 @@ import (
 // It reads through the server the wall was never installed on: working out
 // who is calling happens before there is anybody to be walled by.
 func Resolver(s *Server) auth.Resolver {
-	own := s.Ungated
-
 	return auth.ResolverFunc(func(ctx context.Context, id auth.Identity) (*frame.Frame, error) {
-		if id.Id == "" {
-			// A name: a person.
-			if id.Tenant == "" || id.Alias == "" {
-				return nil, fmt.Errorf("names nobody: %w", auth.ErrNoCredential)
-			}
-			ref := api.HolderRef_builder{
-				Slug: api.HolderRefBySlug_builder{
-					Alias:  z.Ptr(id.Alias),
-					Tenant: api.TenantRef_builder{Alias: z.Ptr(id.Tenant)}.Build(),
-				}.Build(),
-			}.Build()
-			f, err := holderFrame(ctx, own, ref)
-			if err == nil || !errors.Is(err, auth.ErrNoCredential) || s.Identity == nil {
-				return f, err
-			}
-			// Nobody here by that name: somebody roster knows arriving for
-			// the first time gets their rows now (§33.1). The credential
-			// itself was believed by whoever handed it over, which for a
-			// name is the plain header of development mode.
-			p, err := s.Identity.Lookup(ctx, id.Tenant, id.Alias)
-			if err != nil {
-				if errors.Is(err, identity.ErrNoPerson) || errors.Is(err, identity.ErrNoTenant) || errors.Is(err, identity.ErrRefused) {
-					return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
-				}
-
-				return nil, fmt.Errorf("%w: roster: %w", auth.ErrUnavailable, err)
-			}
-			if _, err := s.Provision(ctx, p); err != nil {
-				return nil, err
-			}
-
-			return holderFrame(ctx, own, ref)
+		f, err := resolve(ctx, s, id)
+		if err == nil && f.Actor.Domain() == core.DomHolder {
+			// Every road a person comes by passes here, a session whose row
+			// is there already among them, which Provision does not see.
+			s.seen(ctx, f.Tenant, f.Actor)
 		}
 
-		k, err := pdid.Parse(id.Id)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
-		}
-
-		switch k.Domain() {
-		case core.DomHolder:
-			if id.Authority == authorityKey {
-				return keyFrame(ctx, s, k, id)
-			}
-
-			return holderFrame(ctx, own, api.HolderRef_builder{Id: k.Bytes()}.Build())
-		case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay, core.DomSatellite, core.DomCameraWorker:
-			return hostFrame(ctx, own, k, id)
-		default:
-			return nil, fmt.Errorf("%w: a %s cannot call", auth.ErrNoCredential, k.Domain())
-		}
+		return f, err
 	})
+}
+
+// resolve is the frame a claim names; see [Resolver].
+func resolve(ctx context.Context, s *Server, id auth.Identity) (*frame.Frame, error) {
+	own := s.Ungated
+	if id.Id == "" {
+		// A name: a person.
+		if id.Tenant == "" || id.Alias == "" {
+			return nil, fmt.Errorf("names nobody: %w", auth.ErrNoCredential)
+		}
+		ref := api.HolderRef_builder{
+			Slug: api.HolderRefBySlug_builder{
+				Alias:  z.Ptr(id.Alias),
+				Tenant: api.TenantRef_builder{Alias: z.Ptr(id.Tenant)}.Build(),
+			}.Build(),
+		}.Build()
+		f, err := holderFrame(ctx, own, ref)
+		if err == nil || !errors.Is(err, auth.ErrNoCredential) || s.Identity == nil {
+			return f, err
+		}
+		// Nobody here by that name: somebody roster knows arriving for
+		// the first time gets their rows now (§33.1). The credential
+		// itself was believed by whoever handed it over, which for a
+		// name is the plain header of development mode.
+		p, err := s.Identity.Lookup(ctx, id.Tenant, id.Alias)
+		if err != nil {
+			if errors.Is(err, identity.ErrNoPerson) || errors.Is(err, identity.ErrNoTenant) || errors.Is(err, identity.ErrRefused) {
+				return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
+			}
+
+			return nil, fmt.Errorf("%w: roster: %w", auth.ErrUnavailable, err)
+		}
+		if _, err := s.Provision(ctx, p); err != nil {
+			return nil, err
+		}
+
+		return holderFrame(ctx, own, ref)
+	}
+
+	k, err := pdid.Parse(id.Id)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
+	}
+
+	switch k.Domain() {
+	case core.DomHolder:
+		if id.Authority == authorityKey {
+			return keyFrame(ctx, s, k, id)
+		}
+
+		return holderFrame(ctx, own, api.HolderRef_builder{Id: k.Bytes()}.Build())
+	case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay, core.DomSatellite, core.DomCameraWorker:
+		return hostFrame(ctx, own, k, id)
+	default:
+		return nil, fmt.Errorf("%w: a %s cannot call", auth.ErrNoCredential, k.Domain())
+	}
 }
 
 func holderFrame(ctx context.Context, own api.Server, ref *api.HolderRef) (*frame.Frame, error) {

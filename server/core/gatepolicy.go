@@ -186,9 +186,10 @@ func granted(ctx context.Context, may func(context.Context, pdid.Id, pdid.Id, st
 // TenantPolicy is the tenant API: people see their tenant; a producer or a
 // reader sees its tenant and only the calls it needs.
 //
-// With Operators, a person reads what the console's pages read (personMay)
-// and calls the rest as far as roster grants them; with Reads too, the
-// reads are as far as roster grants them as well. Without Operators, the
+// With Operators, a person calls the basics -- the reads and views about
+// cameras and sites (basics) -- and the rest as far as roster grants them,
+// the hosts' reads among it; with Reads too, the basics are as far as
+// roster grants them as well. Without Operators, the
 // rule before it: a person may do anything inside their tenant, but for
 // what hands somebody a secret (May).
 //
@@ -250,12 +251,16 @@ var readerMay = map[string]bool{
 	api.ReaderService_RenewCertificate_FullMethodName: true,
 }
 
-// personMay is what every person of a tenant may call where roster says
-// what people may change (§33.1): the reads behind the console's pages --
-// sets, cameras, live, the laminae and their timeline (which is playback
-// and export), sites, producers and readers, attempts -- and the Watch
-// that keeps each current. Not people, site membership, the trail, a
-// password, or any write: those are what roster grants.
+// personMay is the reads behind the console's pages (§33.1): sets,
+// cameras, live, the laminae and their timeline (which is playback and
+// export), sites, producers and readers, attempts -- and the Watch that
+// keeps each current. Not people, site membership, the trail, a password,
+// or any write.
+//
+// It is the whole of what the console reads, which a hand-made viewer's
+// role at roster names and the docs list, and what ListKeys says of a
+// person's holds as their reads. It is not what the gate lets everybody
+// call: that is basics, which leaves the hosts out.
 var personMay = map[string]bool{
 	api.SetService_Get_FullMethodName:         true,
 	api.SetService_List_FullMethodName:        true,
@@ -281,6 +286,55 @@ var personMay = map[string]bool{
 	api.ReaderService_Get_FullMethodName:      true,
 	api.ReaderService_List_FullMethodName:     true,
 	api.ReaderService_Watch_FullMethodName:    true,
+}
+
+// basics is what everybody who signs in holds where roster says what
+// people may change and reads are everybody's (§33.1,
+// `auth.operators.reads: everybody`): the reads and views that are about
+// cameras and sites -- sets, sources and laminae, their live view,
+// timeline and export, upload attempts, and the sites. It is keyScopeMay,
+// what a list of cameras confines, and the three reads of SiteService.
+//
+// The gate lets every person call these with no role, and Shale writes
+// the same list down at roster as a role of its own that everybody holds
+// through a group of its own (identity.Basics), so that what the gate lets
+// everybody do is what roster knows everybody holds, and a token can be
+// given it.
+//
+// The hosts' reads are not among them, though the console reads them
+// (personMay): a producer's and a reader's rows carry the host's hardware
+// id, hostname, the address it joined from and its certificate, and a
+// reader's rows are not narrowed by site at all, so they are an operator's
+// to hand out, a role of Shale's naming them, as any other call is. A host
+// service is never added here (TestBasicsAreCamerasAndSites).
+var basics = func() map[string]bool {
+	out := map[string]bool{
+		api.SiteService_Get_FullMethodName:   true,
+		api.SiteService_List_FullMethodName:  true,
+		api.SiteService_Watch_FullMethodName: true,
+	}
+	for m := range keyScopeMay {
+		out[m] = true
+	}
+
+	return out
+}()
+
+// Basic says whether a method is one everybody who signs in holds where
+// reads are everybody's (basics).
+func Basic(method string) bool { return basics[method] }
+
+// BasicMethods is every method everybody who signs in holds where reads
+// are everybody's, sorted: the methods of the role Shale writes at roster
+// for them (identity.BasicsRole).
+func BasicMethods() []string {
+	out := make([]string, 0, len(basics))
+	for m := range basics {
+		out = append(out, m)
+	}
+	slices.Sort(out)
+
+	return out
 }
 
 // ownKeys are a person's keys for Shale, made, listed and ended by the
@@ -362,8 +416,8 @@ func scopedKey(ctx context.Context) bool {
 // OwnKeys says whether a method is one of a person's own keys' (ownKeys).
 func OwnKeys(method string) bool { return ownKeys[method] }
 
-// PersonMay says whether every person may call a method on the tenant API
-// where roster says what people may change.
+// PersonMay says whether a method is one of the console's reads
+// (personMay). Everybody is let call the basics of them (Basic).
 func PersonMay(method string) bool { return personMay[method] }
 
 func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
@@ -402,9 +456,13 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 			return nil
 		}
 		if p.Operators != nil {
-			// Reading is everybody's, unless reads are granted too; the
-			// rest is what roster grants (§33.1).
-			if personMay[m] && !p.Reads {
+			// The basics are everybody's, unless reads are granted too;
+			// the rest is what roster grants (§33.1), the hosts' reads
+			// among it. The list is basics and not the console's whole
+			// (personMay): the same list is what Shale writes at roster
+			// as everybody's role, so what passes here with no role is
+			// what a token of theirs can be given.
+			if basics[m] && !p.Reads {
 				return nil
 			}
 
