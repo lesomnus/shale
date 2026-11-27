@@ -385,6 +385,13 @@ are direct, idempotent, and repeat until acknowledged.
   is at-least-once. An event about a sink that is no longer attached to the
   sending node is still applied when the attempt it names was allocated to
   that sink on that node ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
+- An event refused for what it says (another node's sink, a lamina it
+  cannot be applied to) is logged and left out of `applied`, and the rest of
+  the batch is applied. An event the store could not apply just then (a
+  deadlock or serialization abort, a connection lost, a database busy) is
+  tried again in the CP, three times in all; if it still does not go
+  through, `PushEvents` fails with `Unavailable` and the node sends the
+  batch again, the events already applied included.
 - Events lost in a node crash are covered by reconciliation below.
 
 **Directives: CP → node.** The CP calls the node's control API
