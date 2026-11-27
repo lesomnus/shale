@@ -185,6 +185,13 @@ type Deps struct {
 	// row is written and before it commits, so that a test can hold a move
 	// open and allocate meanwhile.
 	placeHeld func(context.Context)
+	// publishHeld, set by a test, runs inside CameraJobService/Publish's
+	// transaction once the Source is read and before it is patched.
+	publishHeld func(context.Context)
+	// negotiateHeld, set by a test, runs inside SetService/Negotiate's
+	// transaction, for a set whose cameras Shale does not manage, once the
+	// set and its sources are read and before any is patched.
+	negotiateHeld func(context.Context)
 
 	// cas is the CA set as this process read it (§33.5).
 	casOnce sync.Once

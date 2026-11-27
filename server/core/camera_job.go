@@ -606,6 +606,13 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		// The normal Producer registration path verifies configuration labels
 		// against its Source row. Publish their authority metadata atomically with
 		// the desired specification, preserving unrelated existing labels.
+		// The Source is held before it is read, after the device (camera.go's
+		// order): a heartbeat's starvation or a node's observed rate writes it
+		// outside any transaction, and on PostgreSQL would commit between this
+		// read and the patch below, which would then be refused.
+		if err := c.lockSources(ctx, b.GetSource().GetId()); err != nil {
+			return err
+		}
 		src, err := nx.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build()}.Build())
 		if err != nil {
 			return err
@@ -627,6 +634,9 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		}
 		for key, value := range labels {
 			merged[key] = value
+		}
+		if c.d.publishHeld != nil {
+			c.d.publishHeld(ctx)
 		}
 		patch := api.SourcePatchRequest_builder{Ref: api.SourceRef_builder{Id: src.GetId()}.Build(), Labels: merged, DateUpdated: src.GetDateUpdated()}
 		if ready.GetName() != "" {

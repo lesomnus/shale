@@ -177,6 +177,15 @@ func (s coreCameraWorker) Revoke(ctx context.Context, r *api.CameraWorkerRevokeR
 		if err != nil {
 			return err
 		}
+		// Held and read again before it is patched with the version read:
+		// the worker's heartbeat writes it outside any transaction.
+		if err := New(nx, s.d).cameraLockWorker(ctx, w.GetId()); err != nil {
+			return err
+		}
+		w, err = nx.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: w.GetId()}.Build()}.Build())
+		if err != nil {
+			return err
+		}
 		if err := cameraVersion(r.GetExpectedVersion(), w.GetDateUpdated()); err != nil {
 			return err
 		}
@@ -306,6 +315,14 @@ func (s coreCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraW
 	err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 		// The frame retains the presented serial. A concurrent adoption/revoke must
 		// not be overwritten by a renewal authorized against the previous identity.
+		// The row is held before it is read: the worker's heartbeat writes it
+		// outside any transaction, and would otherwise move the version this
+		// patches with.
+		if f, err := actor(ctx); err == nil && kindOf(f.Actor) == DomCameraWorker {
+			if err := s.cameraLockWorker(ctx, f.Actor.Bytes()); err != nil {
+				return err
+			}
+		}
 		r, err := s.cameraWorkerActor(ctx)
 		if err != nil {
 			return err
@@ -345,6 +362,10 @@ func (s coreCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraW
 func (s coreCameraWorker) resumeApprovedWorker(ctx context.Context, id pdid.Id, hj *api.HostJoin, key, from string) (*api.CameraWorkerJoinResponse, error) {
 	var out *api.CameraWorkerJoinResponse
 	err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+		// Held before it is read, as RenewCertificate holds it.
+		if err := s.cameraLockWorker(ctx, id.Bytes()); err != nil {
+			return err
+		}
 		w, err := own.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: id.Bytes()}.Build()}.Build())
 		if err != nil {
 			return err

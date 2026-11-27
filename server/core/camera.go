@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
@@ -17,6 +18,9 @@ import (
 	"github.com/lesomnus/shale/internal/ent/cameraassignment"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/cameranetwork"
+	"github.com/lesomnus/shale/internal/ent/cameraworker"
+	entset "github.com/lesomnus/shale/internal/ent/set"
+	"github.com/lesomnus/shale/internal/ent/source"
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"google.golang.org/grpc/codes"
@@ -319,6 +323,28 @@ func cameraObservation(v *api.CameraJobObservation, verified bool) error {
 	}
 	return nil
 }
+
+// The rows a transaction holds, in the one order every transaction takes
+// them, so that no two wait on each other (PostgreSQL; on SQLite every
+// transaction holds the whole database from its BEGIN, and these take
+// nothing):
+//
+//  1. the set's: heldSite, shared, or lockSet where the transaction writes
+//     the set's row -- never shared first and written after, since two
+//     transactions holding it shared would each wait for the other;
+//  2. the camera network's: cameraLockNetwork;
+//  3. the camera assignment's: cameraLockAssignment;
+//  4. the camera device's: cameraLockDevice;
+//  5. the sources': lockSources, several at once in the order of their ids.
+//
+// A transaction leaves out what it does not need, and takes nothing of the
+// list after a row later in it. A row a transaction reads and then patches
+// with the version it read is held before it is read; otherwise a write
+// that does not hold it (a heartbeat's starvation, a node's observed rate,
+// a person's patch) commits in between on PostgreSQL and the patch is
+// refused. A camera binding and a camera job are not held: whatever writes
+// either holds its assignment first. A camera worker (cameraLockWorker) is
+// held alone.
 func (s Core) cameraLockAssignment(ctx context.Context, id []byte) error {
 	q := s.ent(ctx).CameraAssignment.Query().Where(cameraassignment.IdEQ(mustId(id).Uuid()))
 	if s.driver().Dialect() != dialect.SQLite {
@@ -329,6 +355,46 @@ func (s Core) cameraLockAssignment(ctx context.Context, id []byte) error {
 }
 func (s Core) cameraLockDevice(ctx context.Context, id []byte) error {
 	q := s.ent(ctx).CameraDevice.Query().Where(cameradevice.IdEQ(mustId(id).Uuid()))
+	if s.driver().Dialect() != dialect.SQLite {
+		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
+	}
+	_, err := q.Only(ctx)
+	return err
+}
+
+// lockSet holds the set's row for a transaction that writes it, first of
+// the rows it holds.
+func (s Core) lockSet(ctx context.Context, id []byte) error {
+	q := s.ent(ctx).Set.Query().Where(entset.IdEQ(mustId(id).Uuid()))
+	if s.driver().Dialect() != dialect.SQLite {
+		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
+	}
+	_, err := q.Only(ctx)
+	return err
+}
+
+// lockSources holds the sources' rows, in the order of their ids. A source
+// that is not there holds nothing; reading it then answers NotFound.
+func (s Core) lockSources(ctx context.Context, ids ...[]byte) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	us := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		us = append(us, mustId(id).Uuid())
+	}
+	q := s.ent(ctx).Source.Query().Where(source.IdIn(us...)).Order(ent.Asc(source.FieldId))
+	if s.driver().Dialect() != dialect.SQLite {
+		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
+	}
+	_, err := q.Ids(ctx)
+	return err
+}
+
+// cameraLockWorker holds a camera worker's row, which a transaction holds
+// alone.
+func (s Core) cameraLockWorker(ctx context.Context, id []byte) error {
+	q := s.ent(ctx).CameraWorker.Query().Where(cameraworker.IdEQ(mustId(id).Uuid()))
 	if s.driver().Dialect() != dialect.SQLite {
 		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
 	}

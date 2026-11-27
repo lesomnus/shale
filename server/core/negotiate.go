@@ -235,103 +235,137 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		return nil, failed("managed Set admission requires its current catalog identity")
 	}
 
-	var adjustments []*api.Adjustment
-	adjustFor := func(source []byte) func(field, proposed, agreed, reason string) {
-		return func(field, proposed, agreed, reason string) {
-			adjustments = append(adjustments, api.Adjustment_builder{
-				SourceId: source, Field: field, Proposed: proposed, Agreed: agreed, Reason: reason,
-			}.Build())
-		}
-	}
-
-	link := clampLink(req.GetLink(), b, adjustFor(nil))
-	epoch := epochOf(set)
-
-	// Every member, so a source left out of the proposal keeps what it had.
-	members, err := s.members(ctx, set.GetId())
-	if err != nil {
-		return nil, err
-	}
-	byId := map[string]*api.Source{}
-	for _, m := range members {
-		byId[string(m.GetId())] = m
-	}
-
-	proposed := map[string]*api.SegmentProfile{}
-	// What the producer says the bytes are (§38.9), kept only where nobody
-	// set the source's content_type; and whether it can show the source
-	// live (§39.3), which is its to say.
-	proposedType := map[string]string{}
-	liveCapable := map[string]bool{}
-	for _, sp := range req.GetSources() {
-		src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{Ref: sp.GetSource()}.Build())
-		if err != nil {
-			return nil, err
-		}
-		if string(src.GetSet().GetId()) != string(set.GetId()) {
-			return nil, invalid("sources", "a source of another set")
-		}
-		proposed[string(src.GetId())] = sp.GetProfile()
-		if ct := sp.GetContentType(); ct != "" && src.GetContentType() == "" {
-			proposedType[string(src.GetId())] = ct
-		}
-		liveCapable[string(src.GetId())] = sp.GetLiveCapable()
-	}
-
-	// Clamp each, then the set's total cap, which scales every ceiling
-	// proportionally (§12.6).
-	agreed := map[string]*api.SegmentProfile{}
-	var total int64
-	for id, m := range byId {
-		p, ok := proposed[id]
-		if !ok {
-			p = m.GetProfile()
-		}
-		if p.GetMaxBitrate() <= 0 {
-			// Never declared: nothing to agree on yet.
-			continue
-		}
-		p = segmentDefaults(p, b)
-		if floor := raisedFloor(set, m); floor > p.GetMaxBitrate() {
-			// What auto_raise raised stays raised (§38.5), whatever the
-			// producer remembers: it may have started again from its
-			// starting ceiling.
-			adjustFor(m.GetId())("max_bitrate", fmt.Sprint(p.GetMaxBitrate()), fmt.Sprint(floor), "auto_raise raised this starved source's ceiling")
-			p.SetMaxBitrate(floor)
-		}
-		out, err := clampSegment(p, b, epoch, adjustFor(m.GetId()))
-		if err != nil {
-			return nil, err
-		}
-		agreed[id] = out
-		total += out.GetMaxBitrate()
-	}
-	if cap := set.GetMaxBitrateTotal(); cap > 0 && total > cap {
-		scale := float64(cap) / float64(total)
-		for id, p := range agreed {
-			br := int64(float64(p.GetMaxBitrate()) * scale)
-			adjustFor([]byte(id))("max_bitrate", fmt.Sprint(p.GetMaxBitrate()), fmt.Sprint(br), "the set's max_bitrate_total caps the sum of its members' ceilings")
-			p.SetMaxBitrate(br)
-			again, err := clampSegment(p, b, epoch, func(string, string, string, string) {})
-			if err != nil {
-				return nil, err
-			}
-			agreed[id] = again
-		}
-	}
-
-	version := set.GetProfileVersion()
-	changed := !equalLink(set.GetLink(), link)
-	for id, p := range agreed {
-		if !equalSegment(byId[id].GetProfile(), p) {
-			changed = true
-		}
-	}
-	if changed || version == 0 {
-		version++
-	}
-
+	// What is agreed is decided inside the transaction that writes it, on
+	// the set and its sources as they are once held (camera.go's order: the
+	// set, then its sources), and patched with the versions read there: a
+	// heartbeat writes a source's starvation outside any transaction, and
+	// would otherwise land between a read here and its patch.
+	var (
+		adjustments []*api.Adjustment
+		members     []*api.Source
+		agreed      map[string]*api.SegmentProfile
+		version     int64
+		link        *api.LinkProfile
+	)
 	err = s.tx(ctx, func(ctx context.Context, next api.Server) error {
+		c := New(next, s.d)
+		if err := c.lockSet(ctx, set.GetId()); err != nil {
+			return err
+		}
+		set, err := next.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+		if err != nil {
+			return err
+		}
+		adjustments = nil
+		adjustFor := func(source []byte) func(field, proposed, agreed, reason string) {
+			return func(field, proposed, agreed, reason string) {
+				adjustments = append(adjustments, api.Adjustment_builder{
+					SourceId: source, Field: field, Proposed: proposed, Agreed: agreed, Reason: reason,
+				}.Build())
+			}
+		}
+
+		link = clampLink(req.GetLink(), b, adjustFor(nil))
+		epoch := epochOf(set)
+
+		// Every member, so a source left out of the proposal keeps what it had.
+		members, err = c.members(ctx, set.GetId())
+		if err != nil {
+			return err
+		}
+		ids := make([][]byte, 0, len(members))
+		for _, m := range members {
+			ids = append(ids, m.GetId())
+		}
+		if err := c.lockSources(ctx, ids...); err != nil {
+			return err
+		}
+		// Read again, now that they are held.
+		if members, err = c.members(ctx, set.GetId()); err != nil {
+			return err
+		}
+		byId := map[string]*api.Source{}
+		for _, m := range members {
+			byId[string(m.GetId())] = m
+		}
+
+		proposed := map[string]*api.SegmentProfile{}
+		// What the producer says the bytes are (§38.9), kept only where nobody
+		// set the source's content_type; and whether it can show the source
+		// live (§39.3), which is its to say.
+		proposedType := map[string]string{}
+		liveCapable := map[string]bool{}
+		for _, sp := range req.GetSources() {
+			src, err := next.Source().Get(ctx, api.SourceGetRequest_builder{Ref: sp.GetSource()}.Build())
+			if err != nil {
+				return err
+			}
+			if string(src.GetSet().GetId()) != string(set.GetId()) {
+				return invalid("sources", "a source of another set")
+			}
+			proposed[string(src.GetId())] = sp.GetProfile()
+			if ct := sp.GetContentType(); ct != "" && src.GetContentType() == "" {
+				proposedType[string(src.GetId())] = ct
+			}
+			liveCapable[string(src.GetId())] = sp.GetLiveCapable()
+		}
+
+		// Clamp each, then the set's total cap, which scales every ceiling
+		// proportionally (§12.6).
+		agreed = map[string]*api.SegmentProfile{}
+		var total int64
+		for id, m := range byId {
+			p, ok := proposed[id]
+			if !ok {
+				p = m.GetProfile()
+			}
+			if p.GetMaxBitrate() <= 0 {
+				// Never declared: nothing to agree on yet.
+				continue
+			}
+			p = segmentDefaults(p, b)
+			if floor := raisedFloor(set, m); floor > p.GetMaxBitrate() {
+				// What auto_raise raised stays raised (§38.5), whatever the
+				// producer remembers: it may have started again from its
+				// starting ceiling.
+				adjustFor(m.GetId())("max_bitrate", fmt.Sprint(p.GetMaxBitrate()), fmt.Sprint(floor), "auto_raise raised this starved source's ceiling")
+				p.SetMaxBitrate(floor)
+			}
+			out, err := clampSegment(p, b, epoch, adjustFor(m.GetId()))
+			if err != nil {
+				return err
+			}
+			agreed[id] = out
+			total += out.GetMaxBitrate()
+		}
+		if cap := set.GetMaxBitrateTotal(); cap > 0 && total > cap {
+			scale := float64(cap) / float64(total)
+			for id, p := range agreed {
+				br := int64(float64(p.GetMaxBitrate()) * scale)
+				adjustFor([]byte(id))("max_bitrate", fmt.Sprint(p.GetMaxBitrate()), fmt.Sprint(br), "the set's max_bitrate_total caps the sum of its members' ceilings")
+				p.SetMaxBitrate(br)
+				again, err := clampSegment(p, b, epoch, func(string, string, string, string) {})
+				if err != nil {
+					return err
+				}
+				agreed[id] = again
+			}
+		}
+
+		version = set.GetProfileVersion()
+		changed := !equalLink(set.GetLink(), link)
+		for id, p := range agreed {
+			if !equalSegment(byId[id].GetProfile(), p) {
+				changed = true
+			}
+		}
+		if changed || version == 0 {
+			version++
+		}
+
+		if s.d.negotiateHeld != nil {
+			s.d.negotiateHeld(ctx)
+		}
 		if changed || version != set.GetProfileVersion() {
 			if _, err := next.Set().Patch(ctx, api.SetPatchRequest_builder{
 				Ref:            api.SetRef_builder{Id: set.GetId()}.Build(),

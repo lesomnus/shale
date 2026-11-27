@@ -753,7 +753,8 @@ presets and the worker by id. Only `site_id` is written: no version
 moves, so no camera operation under way is refused for a row changed
 under it. The plan reads the tenant's camera jobs, to find the presets
 they name. Every camera operation on an assignment holds the set's row and
-then the network's, adding a device or a policy holds the network's, and
+then the network's (then, as it needs them, the assignment's, the device's
+and its Sources'), adding a device or a policy holds the network's, and
 a credential's store holds its device's: each waits for a placing, then
 reads the site it gave.
 
