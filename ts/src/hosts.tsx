@@ -26,7 +26,7 @@ import { SetService } from '../gen/shale/set_svc_pb.js'
 
 import { tenantOf } from './session.js'
 import { On, useSurfaces } from './surface.js'
-import { Ago, Badge, Empty, Err, Loading, byId, bytes, date, hex, useNow, usePolled } from './ui.js'
+import { Ago, Badge, Empty, Err, HOSTS_DENIED, Loading, byId, bytes, date, denied, hex, useNow, usePolled } from './ui.js'
 
 const DOWN_AFTER_MS = 90_000
 
@@ -327,6 +327,9 @@ function TenantHosts(): ReactNode {
 	const producers = usePolled(ProducerService.method.list, { filters: [filter], size: 200 })
 	const readers = usePolled(ReaderService.method.list, { filters: [filter], size: 200 })
 	const sets = usePolled(SetService.method.list, { filters: [filter], size: 200 }, 15000)
+	// Hosts are read by a role naming them, which the basics everybody
+	// holds are not: say what it takes rather than an error (§33.1).
+	if (denied(producers.error) || denied(readers.error)) return <p className="warn none-held">{HOSTS_DENIED}</p>
 	if (producers.state === 'error') return <Err error={producers.error} />
 	if (readers.state === 'error') return <Err error={readers.error} />
 	if (producers.data === undefined || readers.data === undefined) return <Loading />

@@ -40,7 +40,7 @@ import type { SourceReport } from '../gen/shale/common_pb.js'
 
 import { tenantOf } from './session.js'
 import { On, useSurfaces } from './surface.js'
-import { Ago, Badge, Bar, Empty, Err, Loading, bps, byId, bytes, date, hex, sameId, seconds, short, useNow, usePolled, type Tone } from './ui.js'
+import { Ago, Badge, Bar, Empty, Err, HOSTS_DENIED, Loading, bps, byId, bytes, date, denied, hex, sameId, seconds, short, useNow, usePolled, type Tone } from './ui.js'
 
 const DOWN_AFTER_MS = 90_000
 
@@ -284,10 +284,21 @@ function Sets(): ReactNode {
 	if (sets.data === undefined) return <Loading />
 	if (sets.data.items.length === 0) return <Empty>No set yet. A set is made with the CLI: `shale set add`, then a producer is adopted for it.</Empty>
 
+	// A person who holds only the basics reads the sets and their cameras
+	// and not the producers (§33.1): the page says so once, and shows no
+	// producer state rather than a producer that is not there.
+	const hidden = denied(producers.error)
+
 	return (
 		<>
+			{hidden && <p className="dim none-held">Whether each set's producer is up is not shown. {HOSTS_DENIED}</p>}
 			{sets.data.items.map((v) => (
-				<SetBlock key={key(v.id)} set={v} producers={producers.data?.items.filter((p) => sameId(p.set?.id, v.id)) ?? []} devices={devices} />
+				<SetBlock
+					key={key(v.id)}
+					set={v}
+					producers={hidden ? null : (producers.data?.items.filter((p) => sameId(p.set?.id, v.id)) ?? [])}
+					devices={devices}
+				/>
 			))}
 		</>
 	)
@@ -312,10 +323,12 @@ function useSourceDevices(filter: { tenant: { key: { case: 'alias'; value: strin
 	return out
 }
 
-function SetBlock(props: { set: Set; producers: Producer[]; devices: Map<string, CameraDevice> }): ReactNode {
+/** SetBlock is a set and its cameras; `producers` is null where the person may not read them. */
+function SetBlock(props: { set: Set; producers: Producer[] | null; devices: Map<string, CameraDevice> }): ReactNode {
 	const v = props.set
 	const sources = usePolled(SourceService.method.list, { filters: [{ set: byId(v.id) }], size: 200 }, 10000)
-	const producer = props.producers.find((p) => p.state === HostState.ADOPTED)
+	const hidden = props.producers === null
+	const producer = props.producers?.find((p) => p.state === HostState.ADOPTED)
 	const now = useNow()
 	const seen = date(producer?.dateSeen)
 	const alive = producer !== undefined && seen !== undefined && now - seen.getTime() <= DOWN_AFTER_MS
@@ -332,7 +345,7 @@ function SetBlock(props: { set: Set; producers: Producer[]; devices: Map<string,
 				{v.name !== '' && <span className="dim"> · {v.name}</span>}
 			</h2>
 			<div className="toolbar">
-				{producer === undefined ? (
+				{hidden ? null : producer === undefined ? (
 					<Badge tone="warn">no producer adopted</Badge>
 				) : (
 					<>
@@ -382,7 +395,7 @@ function SetBlock(props: { set: Set; producers: Producer[]; devices: Map<string,
 								key={key(src.id)}
 								source={src}
 								report={reports.get(hex(src.id))}
-								producerUp={alive}
+								producerUp={hidden ? null : alive}
 								wait={waiting.has(hex(src.id)) ? wait : undefined}
 								autoRaise={v.autoRaise}
 								device={props.devices.get(hex(src.id))}
@@ -397,7 +410,8 @@ function SetBlock(props: { set: Set; producers: Producer[]; devices: Map<string,
 function Camera(props: {
 	source: Source
 	report: SourceReport | undefined
-	producerUp: boolean
+	/** Whether the producer is up; null where the person may not read it. */
+	producerUp: boolean | null
 	wait: AdmissionWait | undefined
 	autoRaise: boolean
 	device: CameraDevice | undefined
@@ -408,7 +422,8 @@ function Camera(props: {
 	const ceiling = Number(r?.maxBitrate ?? s.profile?.maxBitrate ?? 0n)
 	const rate = Number(r?.measuredBitrate ?? 0n)
 	let state: { tone: Tone; text: string }
-	if (!props.producerUp) state = { tone: 'bad', text: 'producer down' }
+	if (props.producerUp === null) state = { tone: 'dim', text: 'state not shown' }
+	else if (!props.producerUp) state = { tone: 'bad', text: 'producer down' }
 	else if (r === undefined && props.wait !== undefined) state = { tone: 'warn', text: `waiting: ${waitShort(props.wait.reason)}` }
 	else if (r === undefined) state = { tone: 'dim', text: 'not reported' }
 	else if (!r.inputUp) state = { tone: 'bad', text: 'input down' }

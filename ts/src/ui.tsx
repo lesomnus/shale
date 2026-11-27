@@ -7,6 +7,7 @@
  */
 
 import type { DescMessage, DescMethodUnary, MessageInitShape, MessageShape } from '@bufbuild/protobuf'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { timestampDate, type Timestamp } from '@bufbuild/protobuf/wkt'
 import { useEffect, useState } from 'react'
 
@@ -174,6 +175,24 @@ export function Bar(props: { value: number; of: number; tone?: Tone; title?: str
 export function Empty(props: { children: React.ReactNode }): React.ReactNode {
 	return <p className="empty">{props.children}</p>
 }
+
+/**
+ * denied says whether an error is the gate's refusal: the person holds no
+ * role of Shale's that names the call. Where `auth.operators` reads are
+ * everybody's, everybody holds the basics -- the reads and views of cameras
+ * and sites -- and the hosts' reads are such a role (§33.1).
+ */
+export function denied(err: unknown): boolean {
+	return err instanceof ConnectError && err.code === Code.PermissionDenied
+}
+
+/**
+ * HOSTS_DENIED is what a page says where it may not read producers or
+ * readers: what they show, and what reading them takes.
+ */
+export const HOSTS_DENIED =
+	"You hold no role of Shale's that reads hosts: a producer's and a reader's rows show the machine's hardware identity, hostname, the address it joined from and its certificate, " +
+	'so reading them is a role at roster naming them (ProducerService and ReaderService Get, List and Watch). Ask an administrator for one.'
 
 /** Err is an error the page could not do anything about. */
 export function Err(props: { error: unknown }): React.ReactNode {

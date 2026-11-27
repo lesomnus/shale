@@ -461,7 +461,9 @@ function Make(props: { held: HolderListKeysResponse; seen: Seen; made: (token: s
 						<span className="dim">
 							{narrowed
 								? `· these cameras, live, their recordings and their export (${reads.length} methods)`
-								: `· cameras, live, recordings and their export, sites, producers and readers, as the console reads them (${reads.length} methods)`}
+								: reads.some((m) => m.startsWith('/shale.ProducerService/') || m.startsWith('/shale.ReaderService/'))
+									? `· cameras, live, recordings and their export, sites, producers and readers, as the console reads them (${reads.length} methods)`
+									: `· cameras, live, recordings and their export, and sites, as everybody may (${reads.length} methods)`}
 						</span>
 					</label>
 				)}
