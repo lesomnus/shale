@@ -23,6 +23,23 @@ import (
 // node's final word about what is on its device (§14), LaminaDeleted
 // confirms a deletion (§21.2), LaminaMissing says a key is gone.
 
+// eventPauses are the pauses before an event's transaction is run again,
+// once the store refused it (storeRefused): three tries in all.
+var eventPauses = [...]time.Duration{25 * time.Millisecond, 250 * time.Millisecond}
+
+// eventRetries is how many transactions one call runs again in all. The
+// node gives a call thirty seconds, and a batch is up to 500 events: ten
+// retries pause 1.4 s at most (five events that each use both pauses), and
+// a deadlock abort also waits for PostgreSQL's deadlock detection, a second
+// by default, before it is answered; about thirteen seconds in the worst
+// case, beyond the batch's first tries, under the node's thirty.
+const eventRetries = 10
+
+// errEventsUnavailable is the call failed as a whole: the node keeps the
+// batch and sends it again, and the events applied already are applied
+// again, idempotently. It names nothing of the event.
+var errEventsUnavailable = status.Error(codes.Unavailable, "the store could not apply an event of the batch just now; send the batch again")
+
 func (s coreNode) PushEvents(ctx context.Context, req *api.NodePushEventsRequest) (*api.NodePushEventsResponse, error) {
 	f, err := actor(ctx)
 	if err != nil {
@@ -32,36 +49,69 @@ func (s coreNode) PushEvents(ctx context.Context, req *api.NodePushEventsRequest
 		return nil, status.Error(codes.PermissionDenied, "only a node pushes events")
 	}
 
-	applied := 0
+	applied, retries := 0, 0
 	for _, ev := range req.GetEvents() {
-		var err error
-		switch {
-		case ev.GetStored() != nil:
-			err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
-				return s.applyStored(ctx, own, f.Actor, ev.GetStored())
-			})
-		case ev.GetDeleted() != nil:
-			err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
-				return s.applyDeleted(ctx, own, f.Actor, ev.GetDeleted())
-			})
-		case ev.GetMissing() != nil:
-			err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
-				return s.applyMissing(ctx, own, f.Actor, ev.GetMissing())
-			})
-		default:
+		apply := s.applier(f.Actor, ev)
+		if apply == nil {
 			continue
 		}
-		if err != nil {
-			// One bad event does not hold the batch: the node resends
-			// nothing it was answered for, and logs are where a refused
-			// event goes.
-			s.d.log().Warn("event refused", "node", f.Actor.String(), "err", err.Error())
-			continue
+		for try := 0; ; try++ {
+			err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+				if s.d.eventTried != nil {
+					if err := s.d.eventTried(ctx, ev); err != nil {
+						return err
+					}
+				}
+				return apply(ctx, own)
+			})
+			if err == nil {
+				applied++
+				break
+			}
+			if !storeRefused(err) {
+				// Refused for what it says: one bad event does not hold
+				// the batch, and logs are where it goes.
+				s.d.log().Warn("event refused", "node", f.Actor.String(), "by", "the event", "err", err.Error())
+				break
+			}
+			// Refused by the store: tried again, and if it still does not
+			// go through the call fails, so that the node keeps the batch.
+			if try >= len(eventPauses) || retries >= eventRetries || ctx.Err() != nil {
+				s.d.log().Warn("event refused", "node", f.Actor.String(), "by", "the store", "tries", try+1, "err", err.Error())
+				return nil, errEventsUnavailable
+			}
+			s.d.log().Info("event tried again", "node", f.Actor.String(), "err", err.Error())
+			retries++
+			select {
+			case <-ctx.Done():
+				return nil, errEventsUnavailable
+			case <-time.After(eventPauses[try]):
+			}
 		}
-		applied++
 	}
 
 	return api.NodePushEventsResponse_builder{Applied: int32(applied)}.Build(), nil
+}
+
+// applier is what applies an event in its transaction, or nil for an
+// event of no kind this CP knows.
+func (s coreNode) applier(nodeId pdid.Id, ev *api.Event) func(ctx context.Context, own api.Server) error {
+	switch {
+	case ev.GetStored() != nil:
+		return func(ctx context.Context, own api.Server) error {
+			return s.applyStored(ctx, own, nodeId, ev.GetStored())
+		}
+	case ev.GetDeleted() != nil:
+		return func(ctx context.Context, own api.Server) error {
+			return s.applyDeleted(ctx, own, nodeId, ev.GetDeleted())
+		}
+	case ev.GetMissing() != nil:
+		return func(ctx context.Context, own api.Server) error {
+			return s.applyMissing(ctx, own, nodeId, ev.GetMissing())
+		}
+	}
+
+	return nil
 }
 
 // sinkOnNode checks that the event's sink is one the node may speak for: the

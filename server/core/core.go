@@ -202,6 +202,13 @@ type Deps struct {
 	// abandonHeld, set by a test, runs inside the leader's jobs once the
 	// expired attempts are read and before any is abandoned.
 	abandonHeld func(context.Context)
+	// eventTried, set by a test, runs inside each transaction a node's
+	// event is applied in, before it is applied: an error it answers
+	// fails that transaction.
+	eventTried func(context.Context, *api.Event) error
+	// failureHeld, set by a test, runs inside ReportFailure's transaction
+	// once the first of the lamina's open attempts is written.
+	failureHeld func(context.Context)
 
 	// cas is the CA set as this process read it (§33.5).
 	casOnce sync.Once

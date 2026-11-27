@@ -476,7 +476,7 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 		if err != nil {
 			return err
 		}
-		for _, a := range open {
+		for i, a := range open {
 			st := api.AttemptState_ATTEMPT_STATE_FAILED
 			if _, err := nx.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
 				Ref:              api.AttemptRef_builder{Id: a.Id[:]}.Build(),
@@ -486,6 +486,9 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 				DateUpdatedForce: z.Ptr(true),
 			}.Build()); err != nil {
 				return err
+			}
+			if i == 0 && s.d.failureHeld != nil {
+				s.d.failureHeld(ctx)
 			}
 		}
 
