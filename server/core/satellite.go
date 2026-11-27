@@ -68,15 +68,28 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 	}
 	from, _ := peerAddr(ctx)
 
+	return polled(s.Core, "satellite", func() (*api.SatelliteJoinResponse, error) {
+		return s.join(ctx, req, from)
+	}, func(a *api.JoinAnswer) *api.SatelliteJoinResponse {
+		return api.SatelliteJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join, as a producer's is (host.go).
+func (s coreSatellite) join(ctx context.Context, req *api.SatelliteJoinRequest, from string) (*api.SatelliteJoinResponse, error) {
+	hj := req.GetHost()
 	row, err := s.ent(ctx).Satellite.Query().
 		Where(satellite.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), satellite.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
+	}
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -117,22 +130,22 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 			answer.Message = ""
 		}
 	case decPending:
-		v, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
-			Ref:              api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			Interfaces:       req.GetInterfaces(),
-			UploadAddress:    z.Ptr(req.GetUploadAddress()),
-			Version:          z.Ptr(hj.GetVersion()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build())
-		if err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
 		answer.Rejoin = js.join.GetRejoin()
+		v, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
+			Ref:           api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:          s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:      z.Ptr(hj.GetHostname()),
+			Interfaces:    req.GetInterfaces(),
+			UploadAddress: z.Ptr(req.GetUploadAddress()),
+			Version:       z.Ptr(hj.GetVersion()),
+			DateUpdated:   js.version,
+		}.Build())
+		if err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 		if auto {
 			v, err = s.adoptSatellite(ctx, s.own(ctx), v, "")
 			if err != nil {
@@ -148,6 +161,10 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 		answer.Alias = row.Alias
 		answer.Certificate = js.join.GetCertificate()
 	case decRejoin:
+		answer.Id = js.id.Bytes()
+		answer.Alias = row.Alias
+		answer.Rejoin = true
+		answer.Message = "known host, new key: waiting for adoption"
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || auto {
 			pem, serial, exp, err := s.issue(ctx, rec, js.id, s.satelliteNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetUploadAddress()))
@@ -156,31 +173,28 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 			}
 			rec.SetCertificate(pem)
 			if _, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
-				Ref:              api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				CertSerial:       z.Ptr(serial),
-				DateCertExpires:  timestamppb.New(exp),
-				Interfaces:       req.GetInterfaces(),
-				UploadAddress:    z.Ptr(req.GetUploadAddress()),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:             api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:            rec,
+				CertSerial:      z.Ptr(serial),
+				DateCertExpires: timestamppb.New(exp),
+				Interfaces:      req.GetInterfaces(),
+				UploadAddress:   z.Ptr(req.GetUploadAddress()),
+				DateUpdated:     js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
+			answer.Message = ""
 		} else {
 			if _, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
-				Ref:              api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				DateUpdatedForce: z.Ptr(true),
+				Ref:         api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:        rec,
+				DateUpdated: js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
-			answer.Message = "known host, new key: waiting for adoption"
 		}
-		answer.Id = js.id.Bytes()
-		answer.Alias = row.Alias
-		answer.Rejoin = true
 	}
 
 	if answer.State == api.HostState_HOST_STATE_ADOPTED {
@@ -789,12 +803,24 @@ func (s Core) satelliteName(ctx context.Context, id pdid.Id) string {
 // lamina's row keeps the satellite it was lost by, and the loss is counted
 // as the satellite's. lost says which of its laminae are; a late
 // LaminaStored still brings one back (§14).
+//
+// Every write tests the version of the row as this read it, so that a
+// node's stored event that landed after the read is not written over: a
+// lamina that moved is read again and lost only if it is still PENDING
+// through this satellite and still one `lost` says is. Refused a second
+// time, it is left as it is: the leader's jobs ask again of a satellite
+// that is down, a minute on; a restart asks once (satelliteRestarted), and
+// a lamina it left PENDING is removed by the jobs as one nobody stored
+// once its attempts expired and abandon_grace passed (§12.1).
 func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost func(*ent.Lamina) bool) (int, error) {
 	os, err := s.ent(ctx).Lamina.Query().
 		Where(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_PENDING)), lamina.SatelliteIdEQ(sat.Uuid())).
 		All(ctx)
 	if err != nil || len(os) == 0 {
 		return 0, err
+	}
+	if s.d.lostHeld != nil {
+		s.d.lostHeld(ctx)
 	}
 	name := s.satelliteName(ctx, sat)
 	reason := "satellite " + name + " lost what it accepted: " + why
@@ -804,6 +830,26 @@ func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost f
 		if lost != nil && !lost(o) {
 			continue
 		}
+		done, err := s.loseLamina(ctx, sat, o, reason, now, lost)
+		if err != nil {
+			s.d.log().Warn("lose a satellite's lamina", "satellite", name, "err", err.Error())
+			continue
+		}
+		if !done {
+			continue
+		}
+		n++
+		s.d.metrics().Lost.Add(ctx, 1, metric.WithAttributes(attribute.String("by", "satellite")))
+		s.d.log().Warn("lamina lost with the satellite that held it", "satellite", name, "lamina", pdid.Id(o.Id).String(), "key", o.LaminaKey, "why", why)
+	}
+
+	return n, nil
+}
+
+// loseLamina makes one lamina of satelliteLost LOST and its open attempts
+// FAILED, each with the version it was read at, and says whether it did.
+func (s Core) loseLamina(ctx context.Context, sat pdid.Id, o *ent.Lamina, reason string, now time.Time, lost func(*ent.Lamina) bool) (bool, error) {
+	for again := false; ; again = true {
 		err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 			open, err := s.ent(ctx).Attempt.Query().
 				Where(attempt.LaminaIdEQ(o.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
@@ -814,35 +860,43 @@ func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost f
 			for _, a := range open {
 				st := api.AttemptState_ATTEMPT_STATE_FAILED
 				if _, err := own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
-					Ref:              api.AttemptRef_builder{Id: a.Id[:]}.Build(),
-					State:            &st,
-					FailureReason:    z.Ptr(reason),
-					DateFinished:     timestamppb.New(now),
-					DateUpdatedForce: z.Ptr(true),
+					Ref:           api.AttemptRef_builder{Id: a.Id[:]}.Build(),
+					State:         &st,
+					FailureReason: z.Ptr(reason),
+					DateFinished:  timestamppb.New(now),
+					DateUpdated:   timestamppb.New(a.DateUpdated),
 				}.Build()); err != nil {
 					return err
 				}
 			}
 			st := api.LaminaState_LAMINA_STATE_LOST
 			_, err = own.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
-				Ref:              api.LaminaRef_builder{Id: o.Id[:]}.Build(),
-				State:            &st,
-				DateFinished:     timestamppb.New(now),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:          api.LaminaRef_builder{Id: o.Id[:]}.Build(),
+				State:        &st,
+				DateFinished: timestamppb.New(now),
+				DateUpdated:  timestamppb.New(o.DateUpdated),
 			}.Build())
 
 			return err
 		})
-		if err != nil {
-			s.d.log().Warn("lose a satellite's lamina", "satellite", name, "err", err.Error())
-			continue
+		if !moved(err) {
+			return err == nil, err
 		}
-		n++
-		s.d.metrics().Lost.Add(ctx, 1, metric.WithAttributes(attribute.String("by", "satellite")))
-		s.d.log().Warn("lamina lost with the satellite that held it", "satellite", name, "lamina", pdid.Id(o.Id).String(), "key", o.LaminaKey, "why", why)
+		if again {
+			s.d.log().Warn("a satellite's lamina moved twice while it was lost; left as it is", "satellite", sat.String(), "lamina", pdid.Id(o.Id).String())
+			return false, nil
+		}
+		o, err = s.ent(ctx).Lamina.Get(ctx, o.Id)
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		if o.State != int32(api.LaminaState_LAMINA_STATE_PENDING) || o.SatelliteId != sat.Uuid() || (lost != nil && !lost(o)) {
+			return false, nil
+		}
 	}
-
-	return n, nil
 }
 
 // satelliteRestarted makes LOST what a satellite held before it restarted

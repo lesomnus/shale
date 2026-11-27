@@ -226,11 +226,23 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 	}
 	tid := mustId(t.GetId())
 
+	return polled(s.Core, "camera worker", func() (*api.CameraWorkerJoinResponse, error) {
+		return s.join(ctx, hj, key, from, tid)
+	}, func(a *api.JoinAnswer) *api.CameraWorkerJoinResponse {
+		return api.CameraWorkerJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join, as a producer's is (host.go).
+func (s coreCameraWorker) join(ctx context.Context, hj *api.HostJoin, key, from string, tid pdid.Id) (*api.CameraWorkerJoinResponse, error) {
 	row, err := s.ent(ctx).CameraWorker.Query().
 		Where(cameraworker.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), cameraworker.TenantIdEQ(tid.Uuid()), cameraworker.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
+	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
 	}
 	// A pending new-key request never replaces the currently approved public
 	// certificate or blocks recovery of that approved key.
@@ -239,7 +251,7 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 	}
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -270,17 +282,17 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 		answer.Alias = alias
 		answer.Message = "waiting for adoption: shale camera-worker adopt @" + alias
 	case decPending:
-		if _, err := s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{
-			Ref:              api.CameraWorkerRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build()); err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
+		if _, err := s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{
+			Ref:         api.CameraWorkerRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:        s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:    z.Ptr(hj.GetHostname()),
+			DateUpdated: js.version,
+		}.Build()); err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 	case decIssued:
 		answer.State = api.HostState_HOST_STATE_ADOPTED
 		answer.Id = js.id.Bytes()
@@ -291,13 +303,13 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 		// A new key always requires a separate operator adoption, even when other
 		// host kinds use an automatic readoption policy.
 		rec := s.joinRecord(hj, from, true)
-		if _, err := s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{
-			Ref: api.CameraWorkerRef_builder{Id: js.id.Bytes()}.Build(), Join: rec, DateUpdatedForce: z.Ptr(true),
-		}.Build()); err != nil {
-			return nil, err
-		}
 		answer.Id, answer.Alias, answer.Rejoin = js.id.Bytes(), row.Alias, true
 		answer.Message = "known worker, new key: waiting for adoption"
+		if _, err := s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{
+			Ref: api.CameraWorkerRef_builder{Id: js.id.Bytes()}.Build(), Join: rec, DateUpdated: js.version,
+		}.Build()); err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 	}
 
 	return api.CameraWorkerJoinResponse_builder{Answer: answer.Build()}.Build(), nil

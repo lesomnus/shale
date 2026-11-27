@@ -192,6 +192,16 @@ type Deps struct {
 	// transaction, for a set whose cameras Shale does not manage, once the
 	// set and its sources are read and before any is patched.
 	negotiateHeld func(context.Context)
+	// joinHeld, set by a test, runs inside every kind of host's Join once
+	// the host's row is read and before it is written, each time the poll
+	// reads it.
+	joinHeld func(context.Context)
+	// lostHeld, set by a test, runs inside satelliteLost once the
+	// satellite's PENDING laminae are read and before any is written.
+	lostHeld func(context.Context)
+	// abandonHeld, set by a test, runs inside the leader's jobs once the
+	// expired attempts are read and before any is abandoned.
+	abandonHeld func(context.Context)
 
 	// cas is the CA set as this process read it (§33.5).
 	casOnce sync.Once

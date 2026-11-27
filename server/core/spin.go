@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
@@ -72,26 +73,61 @@ func (j *Jobs) log() *slog.Logger {
 	return j.d.log()
 }
 
-// Once runs every job one time.
-func (j *Jobs) Once(ctx context.Context) error {
-	now := j.d.now()
-	own := j.d.Own
-
-	// Attempts past their TTL with no event are ABANDONED (§12.1).
+// abandonExpired makes ABANDONED the attempts past their TTL with no event
+// (§12.1). Each is written with the version it was read at, so that a
+// node's stored event or a renewal that landed after the read is not
+// written over; an attempt that moved is read again and abandoned only if
+// it is still ALLOCATED and still expired. Refused a second time, it is
+// left to the next round, a minute on.
+func (j *Jobs) abandonExpired(ctx context.Context, now time.Time) error {
 	expired, err := j.d.Ent.Attempt.Query().
 		Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresLT(now)).
 		Limit(1000).All(ctx)
 	if err != nil {
 		return err
 	}
+	if j.d.abandonHeld != nil {
+		j.d.abandonHeld(ctx)
+	}
 	for _, a := range expired {
-		st := api.AttemptState_ATTEMPT_STATE_ABANDONED
-		if _, err := own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
-			Ref: api.AttemptRef_builder{Id: a.Id[:]}.Build(), State: &st,
-			DateFinished: timestamppb.New(now), DateUpdatedForce: z.Ptr(true),
-		}.Build()); err != nil {
-			j.log().Warn("abandon attempt", "err", err.Error())
+		for again := false; ; again = true {
+			st := api.AttemptState_ATTEMPT_STATE_ABANDONED
+			_, err := j.d.Own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
+				Ref: api.AttemptRef_builder{Id: a.Id[:]}.Build(), State: &st,
+				DateFinished: timestamppb.New(now), DateUpdated: timestamppb.New(a.DateUpdated),
+			}.Build())
+			if !moved(err) {
+				if err != nil {
+					j.log().Warn("abandon attempt", "err", err.Error())
+				}
+				break
+			}
+			if again {
+				j.log().Warn("an expired attempt moved twice while it was abandoned; left to the next round", "attempt", pdid.Id(a.Id).String())
+				break
+			}
+			if a, err = j.d.Ent.Attempt.Get(ctx, a.Id); err != nil {
+				if !ent.IsNotFound(err) {
+					j.log().Warn("abandon attempt", "err", err.Error())
+				}
+				break
+			}
+			if a.State != int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED) || !a.DateExpires.Before(now) {
+				break
+			}
 		}
+	}
+
+	return nil
+}
+
+// Once runs every job one time.
+func (j *Jobs) Once(ctx context.Context) error {
+	now := j.d.now()
+	own := j.d.Own
+
+	if err := j.abandonExpired(ctx, now); err != nil {
+		return err
 	}
 
 	// What a satellite that is down held under `retain: accepted` is LOST
