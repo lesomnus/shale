@@ -192,6 +192,10 @@ type Deps struct {
 	// transaction, for a set whose cameras Shale does not manage, once the
 	// set and its sources are read and before any is patched.
 	negotiateHeld func(context.Context)
+	// joinHeld, set by a test, runs inside every kind of host's Join once
+	// the host's row is read and before it is written, each time the poll
+	// reads it.
+	joinHeld func(context.Context)
 
 	// cas is the CA set as this process read it (§33.5).
 	casOnce sync.Once

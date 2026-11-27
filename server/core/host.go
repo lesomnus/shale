@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -38,6 +39,10 @@ type joinState struct {
 	state      api.HostState
 	join       *api.HostJoin
 	certSerial string
+	// version is the row's date_updated as the poll read it, which every
+	// write of the poll tests: read from the database, so it is the value
+	// the database compares (a microsecond on PostgreSQL).
+	version *timestamppb.Timestamp
 }
 
 // decision is what to do about a join.
@@ -211,6 +216,60 @@ func (s Core) autoAdopt(kind pdid.Domain, hj *api.HostJoin, from string) bool {
 	return s.d.AutoAdopt != nil && s.d.AutoAdopt(kind, hj, from)
 }
 
+// moved says that a patch was refused because a test it carried did not
+// hold: the row was written after it was read. The generated servers
+// answer FAILED_PRECONDITION for that and for refusals of other kinds, and
+// only their words tell this one apart (payday's docs/guide/errors.md).
+func moved(err error) bool {
+	v, ok := status.FromError(err)
+
+	return ok && v.Code() == codes.FailedPrecondition && v.Message() == "a test in the patch did not hold"
+}
+
+// pollMoved is a join poll's write refused because the host's row moved
+// after the poll read it; wait is what the poll answers if it is refused
+// so again.
+type pollMoved struct {
+	error
+	wait *api.JoinAnswer
+}
+
+func (e pollMoved) Unwrap() error { return e.error }
+
+// pollWrote is what a join poll's write answered: refused because the row
+// moved, it carries the poll's answer as it stood before the write, which
+// is waiting.
+func pollWrote(err error, answer *api.JoinAnswer_builder) error {
+	if moved(err) {
+		return pollMoved{err, answer.Build()}
+	}
+
+	return err
+}
+
+// polled runs a host's join poll (§33.4), and once more when its write is
+// refused because the host's row moved after the poll read it. A poll
+// reads the row outside any transaction, decides, and writes the join
+// record with the version it read, so that it never writes over what it
+// did not read: an adoption that committed in between, certificate and
+// all. Run again, it reads that adoption and answers its certificate in
+// the same call. Refused a second time, it answers what it would have
+// answered had its write landed, waiting: the host asks again in ten
+// seconds, and nothing is lost but those.
+func polled[R any](s Core, kind string, poll func() (R, error), answer func(*api.JoinAnswer) R) (R, error) {
+	r, err := poll()
+	var m pollMoved
+	if !errors.As(err, &m) {
+		return r, err
+	}
+	if r, err = poll(); !errors.As(err, &m) {
+		return r, err
+	}
+	s.d.log().Warn("join: the host's row moved twice while it polled; answered waiting", "kind", kind, "host", mustId(m.wait.GetId()).String(), "alias", m.wait.GetAlias())
+
+	return answer(m.wait), nil
+}
+
 // ---- Producer ----------------------------------------------------------
 
 type coreProducer struct {
@@ -235,16 +294,28 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 	}
 	tid := mustId(t.GetId())
 
+	return polled(s.Core, "producer", func() (*api.ProducerJoinResponse, error) {
+		return s.join(ctx, hj, from, tid)
+	}, func(a *api.JoinAnswer) *api.ProducerJoinResponse {
+		return api.ProducerJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join: the row read, a decision, and its write.
+func (s coreProducer) join(ctx context.Context, hj *api.HostJoin, from string, tid pdid.Id) (*api.ProducerJoinResponse, error) {
 	row, err := s.ent(ctx).Producer.Query().
 		Where(producer.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), producer.TenantIdEQ(tid.Uuid()), producer.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
+	}
 
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -276,25 +347,29 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 		}
 		answer.Message = `waiting for adoption: shale producer adopt ` + who + ` '{"set":{"id":"<set>"}}'`
 	case decPending:
-		if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
-			Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			Version:          z.Ptr(hj.GetVersion()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build()); err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
 		answer.Rejoin = js.join.GetRejoin()
+		if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+			Ref:         api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:        s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:    z.Ptr(hj.GetHostname()),
+			Version:     z.Ptr(hj.GetVersion()),
+			DateUpdated: js.version,
+		}.Build()); err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 	case decIssued:
 		answer.State = api.HostState_HOST_STATE_ADOPTED
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Certificate = js.join.GetCertificate()
 	case decRejoin:
+		answer.Id = js.id.Bytes()
+		answer.Alias = row.Alias
+		answer.Rejoin = true
+		answer.Message = "known host, new key: waiting for adoption"
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || s.autoAdopt(DomProducer, hj, from) {
 			pem, serial, exp, err := s.issue(ctx, rec, js.id, pki.Names{})
@@ -303,33 +378,30 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 			}
 			rec.SetCertificate(pem)
 			if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
-				Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				CertSerial:       z.Ptr(serial),
-				DateCertExpires:  timestamppb.New(exp),
-				Hostname:         z.Ptr(hj.GetHostname()),
-				Version:          z.Ptr(hj.GetVersion()),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:             api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:            rec,
+				CertSerial:      z.Ptr(serial),
+				DateCertExpires: timestamppb.New(exp),
+				Hostname:        z.Ptr(hj.GetHostname()),
+				Version:         z.Ptr(hj.GetVersion()),
+				DateUpdated:     js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
+			answer.Message = ""
 		} else {
 			if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
-				Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				Hostname:         z.Ptr(hj.GetHostname()),
-				Version:          z.Ptr(hj.GetVersion()),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:         api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:        rec,
+				Hostname:    z.Ptr(hj.GetHostname()),
+				Version:     z.Ptr(hj.GetVersion()),
+				DateUpdated: js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
-			answer.Message = "known host, new key: waiting for adoption"
 		}
-		answer.Id = js.id.Bytes()
-		answer.Alias = row.Alias
-		answer.Rejoin = true
 	}
 
 	return api.ProducerJoinResponse_builder{Answer: answer.Build()}.Build(), nil
@@ -728,15 +800,27 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 	}
 	tid := mustId(t.GetId())
 
+	return polled(s.Core, "reader", func() (*api.ReaderJoinResponse, error) {
+		return s.join(ctx, hj, from, tid)
+	}, func(a *api.JoinAnswer) *api.ReaderJoinResponse {
+		return api.ReaderJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join, as a producer's is.
+func (s coreReader) join(ctx context.Context, hj *api.HostJoin, from string, tid pdid.Id) (*api.ReaderJoinResponse, error) {
 	row, err := s.ent(ctx).Reader.Query().
 		Where(reader.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), reader.TenantIdEQ(tid.Uuid()), reader.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
+	}
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -768,23 +852,27 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 		}
 		answer.Message = "waiting for adoption: shale reader adopt " + who
 	case decPending:
-		if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
-			Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build()); err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
+		if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
+			Ref:         api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:        s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:    z.Ptr(hj.GetHostname()),
+			DateUpdated: js.version,
+		}.Build()); err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 	case decIssued:
 		answer.State = api.HostState_HOST_STATE_ADOPTED
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Certificate = js.join.GetCertificate()
 	case decRejoin:
+		answer.Id = js.id.Bytes()
+		answer.Alias = row.Alias
+		answer.Rejoin = true
+		answer.Message = "known host, new key: waiting for adoption"
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || s.autoAdopt(DomReader, hj, from) {
 			pem, serial, exp, err := s.issue(ctx, rec, js.id, pki.Names{})
@@ -793,29 +881,26 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 			}
 			rec.SetCertificate(pem)
 			if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
-				Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				CertSerial:       z.Ptr(serial),
-				DateCertExpires:  timestamppb.New(exp),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:             api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:            rec,
+				CertSerial:      z.Ptr(serial),
+				DateCertExpires: timestamppb.New(exp),
+				DateUpdated:     js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
+			answer.Message = ""
 		} else {
 			if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
-				Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				DateUpdatedForce: z.Ptr(true),
+				Ref:         api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:        rec,
+				DateUpdated: js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
-			answer.Message = "known host, new key: waiting for adoption"
 		}
-		answer.Id = js.id.Bytes()
-		answer.Alias = row.Alias
-		answer.Rejoin = true
 	}
 
 	return api.ReaderJoinResponse_builder{Answer: answer.Build()}.Build(), nil
@@ -1025,15 +1110,28 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 	}
 	from, _ := peerAddr(ctx)
 
+	return polled(s.Core, "node", func() (*api.NodeJoinResponse, error) {
+		return s.join(ctx, req, from)
+	}, func(a *api.JoinAnswer) *api.NodeJoinResponse {
+		return api.NodeJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join, as a producer's is.
+func (s coreNode) join(ctx context.Context, req *api.NodeJoinRequest, from string) (*api.NodeJoinResponse, error) {
+	hj := req.GetHost()
 	row, err := s.ent(ctx).Node.Query().
 		Where(node.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), node.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
+	}
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -1075,23 +1173,23 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 			answer.Message = ""
 		}
 	case decPending:
-		v, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
-			Ref:              api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			Interfaces:       req.GetInterfaces(),
-			ControlAddress:   z.Ptr(req.GetControlAddress()),
-			DataAddress:      z.Ptr(req.GetDataAddress()),
-			Version:          z.Ptr(hj.GetVersion()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build())
-		if err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
 		answer.Rejoin = js.join.GetRejoin()
+		v, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
+			Ref:            api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:           s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:       z.Ptr(hj.GetHostname()),
+			Interfaces:     req.GetInterfaces(),
+			ControlAddress: z.Ptr(req.GetControlAddress()),
+			DataAddress:    z.Ptr(req.GetDataAddress()),
+			Version:        z.Ptr(hj.GetVersion()),
+			DateUpdated:    js.version,
+		}.Build())
+		if err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 		if auto {
 			v, err = s.adoptNode(ctx, s.own(ctx), v, "", req.GetSinks(), req.GetDevices())
 			if err != nil {
@@ -1107,6 +1205,10 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 		answer.Alias = row.Alias
 		answer.Certificate = js.join.GetCertificate()
 	case decRejoin:
+		answer.Id = js.id.Bytes()
+		answer.Alias = row.Alias
+		answer.Rejoin = true
+		answer.Message = "known host, new key: waiting for adoption"
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || auto {
 			pem, serial, exp, err := s.issue(ctx, rec, js.id, s.nodeNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetDataAddress()))
@@ -1115,34 +1217,31 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 			}
 			rec.SetCertificate(pem)
 			if _, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
-				Ref:              api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				CertSerial:       z.Ptr(serial),
-				DateCertExpires:  timestamppb.New(exp),
-				Interfaces:       req.GetInterfaces(),
-				ControlAddress:   z.Ptr(req.GetControlAddress()),
-				DataAddress:      z.Ptr(req.GetDataAddress()),
-				Version:          z.Ptr(hj.GetVersion()),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:             api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:            rec,
+				CertSerial:      z.Ptr(serial),
+				DateCertExpires: timestamppb.New(exp),
+				Interfaces:      req.GetInterfaces(),
+				ControlAddress:  z.Ptr(req.GetControlAddress()),
+				DataAddress:     z.Ptr(req.GetDataAddress()),
+				Version:         z.Ptr(hj.GetVersion()),
+				DateUpdated:     js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
+			answer.Message = ""
 		} else {
 			if _, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
-				Ref:              api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				Interfaces:       req.GetInterfaces(),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:         api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:        rec,
+				Interfaces:  req.GetInterfaces(),
+				DateUpdated: js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
-			answer.Message = "known host, new key: waiting for adoption"
 		}
-		answer.Id = js.id.Bytes()
-		answer.Alias = row.Alias
-		answer.Rejoin = true
 	}
 
 	if answer.State == api.HostState_HOST_STATE_ADOPTED {
@@ -1401,15 +1500,28 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 	}
 	from, _ := peerAddr(ctx)
 
+	return polled(s.Core, "relay", func() (*api.RelayJoinResponse, error) {
+		return s.join(ctx, req, from)
+	}, func(a *api.JoinAnswer) *api.RelayJoinResponse {
+		return api.RelayJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join, as a producer's is.
+func (s coreRelay) join(ctx context.Context, req *api.RelayJoinRequest, from string) (*api.RelayJoinResponse, error) {
+	hj := req.GetHost()
 	row, err := s.ent(ctx).Relay.Query().
 		Where(relay.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), relay.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
+	}
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -1451,22 +1563,22 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 			answer.Message = ""
 		}
 	case decPending:
-		v, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
-			Ref:              api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			Interfaces:       req.GetInterfaces(),
-			IngestAddress:    z.Ptr(req.GetIngestAddress()),
-			WhepAddress:      z.Ptr(req.GetWhepAddress()),
-			Version:          z.Ptr(hj.GetVersion()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build())
-		if err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
+		v, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
+			Ref:           api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:          s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:      z.Ptr(hj.GetHostname()),
+			Interfaces:    req.GetInterfaces(),
+			IngestAddress: z.Ptr(req.GetIngestAddress()),
+			WhepAddress:   z.Ptr(req.GetWhepAddress()),
+			Version:       z.Ptr(hj.GetVersion()),
+			DateUpdated:   js.version,
+		}.Build())
+		if err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 		if auto {
 			v, err = s.adoptRelay(ctx, s.own(ctx), v, "")
 			if err != nil {
@@ -1482,6 +1594,10 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 		answer.Alias = row.Alias
 		answer.Certificate = js.join.GetCertificate()
 	case decRejoin:
+		answer.Id = js.id.Bytes()
+		answer.Alias = row.Alias
+		answer.Rejoin = true
+		answer.Message = "known host, new key: waiting for adoption"
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || auto {
 			pem, serial, exp, err := s.issue(ctx, rec, js.id, s.relayNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetIngestAddress(), req.GetWhepAddress()))
@@ -1490,32 +1606,29 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 			}
 			rec.SetCertificate(pem)
 			if _, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
-				Ref:              api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				CertSerial:       z.Ptr(serial),
-				DateCertExpires:  timestamppb.New(exp),
-				Interfaces:       req.GetInterfaces(),
-				IngestAddress:    z.Ptr(req.GetIngestAddress()),
-				WhepAddress:      z.Ptr(req.GetWhepAddress()),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:             api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:            rec,
+				CertSerial:      z.Ptr(serial),
+				DateCertExpires: timestamppb.New(exp),
+				Interfaces:      req.GetInterfaces(),
+				IngestAddress:   z.Ptr(req.GetIngestAddress()),
+				WhepAddress:     z.Ptr(req.GetWhepAddress()),
+				DateUpdated:     js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
+			answer.Message = ""
 		} else {
 			if _, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
-				Ref:              api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				DateUpdatedForce: z.Ptr(true),
+				Ref:         api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:        rec,
+				DateUpdated: js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
-			answer.Message = "known host, new key: waiting for adoption"
 		}
-		answer.Id = js.id.Bytes()
-		answer.Alias = row.Alias
-		answer.Rejoin = true
 	}
 
 	if answer.State == api.HostState_HOST_STATE_ADOPTED {

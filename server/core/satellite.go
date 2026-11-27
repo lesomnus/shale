@@ -68,15 +68,28 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 	}
 	from, _ := peerAddr(ctx)
 
+	return polled(s.Core, "satellite", func() (*api.SatelliteJoinResponse, error) {
+		return s.join(ctx, req, from)
+	}, func(a *api.JoinAnswer) *api.SatelliteJoinResponse {
+		return api.SatelliteJoinResponse_builder{Answer: a}.Build()
+	})
+}
+
+// join is one poll of Join, as a producer's is (host.go).
+func (s coreSatellite) join(ctx context.Context, req *api.SatelliteJoinRequest, from string) (*api.SatelliteJoinResponse, error) {
+	hj := req.GetHost()
 	row, err := s.ent(ctx).Satellite.Query().
 		Where(satellite.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), satellite.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	if s.d.joinHeld != nil {
+		s.d.joinHeld(ctx)
+	}
 	var js *joinState
 	if row != nil {
-		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
+		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial, version: timestamppb.New(row.DateUpdated)}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
@@ -117,22 +130,22 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 			answer.Message = ""
 		}
 	case decPending:
-		v, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
-			Ref:              api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
-			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
-			Hostname:         z.Ptr(hj.GetHostname()),
-			Interfaces:       req.GetInterfaces(),
-			UploadAddress:    z.Ptr(req.GetUploadAddress()),
-			Version:          z.Ptr(hj.GetVersion()),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build())
-		if err != nil {
-			return nil, err
-		}
 		answer.Id = js.id.Bytes()
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
 		answer.Rejoin = js.join.GetRejoin()
+		v, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
+			Ref:           api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
+			Join:          s.joinRecord(hj, from, js.join.GetRejoin()),
+			Hostname:      z.Ptr(hj.GetHostname()),
+			Interfaces:    req.GetInterfaces(),
+			UploadAddress: z.Ptr(req.GetUploadAddress()),
+			Version:       z.Ptr(hj.GetVersion()),
+			DateUpdated:   js.version,
+		}.Build())
+		if err != nil {
+			return nil, pollWrote(err, &answer)
+		}
 		if auto {
 			v, err = s.adoptSatellite(ctx, s.own(ctx), v, "")
 			if err != nil {
@@ -148,6 +161,10 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 		answer.Alias = row.Alias
 		answer.Certificate = js.join.GetCertificate()
 	case decRejoin:
+		answer.Id = js.id.Bytes()
+		answer.Alias = row.Alias
+		answer.Rejoin = true
+		answer.Message = "known host, new key: waiting for adoption"
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || auto {
 			pem, serial, exp, err := s.issue(ctx, rec, js.id, s.satelliteNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetUploadAddress()))
@@ -156,31 +173,28 @@ func (s coreSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) 
 			}
 			rec.SetCertificate(pem)
 			if _, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
-				Ref:              api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				CertSerial:       z.Ptr(serial),
-				DateCertExpires:  timestamppb.New(exp),
-				Interfaces:       req.GetInterfaces(),
-				UploadAddress:    z.Ptr(req.GetUploadAddress()),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:             api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:            rec,
+				CertSerial:      z.Ptr(serial),
+				DateCertExpires: timestamppb.New(exp),
+				Interfaces:      req.GetInterfaces(),
+				UploadAddress:   z.Ptr(req.GetUploadAddress()),
+				DateUpdated:     js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
+			answer.Message = ""
 		} else {
 			if _, err := s.own(ctx).Satellite().Patch(ctx, api.SatellitePatchRequest_builder{
-				Ref:              api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
-				Join:             rec,
-				DateUpdatedForce: z.Ptr(true),
+				Ref:         api.SatelliteRef_builder{Id: js.id.Bytes()}.Build(),
+				Join:        rec,
+				DateUpdated: js.version,
 			}.Build()); err != nil {
-				return nil, err
+				return nil, pollWrote(err, &answer)
 			}
-			answer.Message = "known host, new key: waiting for adoption"
 		}
-		answer.Id = js.id.Bytes()
-		answer.Alias = row.Alias
-		answer.Rejoin = true
 	}
 
 	if answer.State == api.HostState_HOST_STATE_ADOPTED {
