@@ -23,9 +23,9 @@ require (
 	github.com/lesomnus/mkot v0.0.0-20261102031530-c2e07a0dfebd
 	github.com/lesomnus/mkot/otlp v0.0.0-20261109051210-adf1656dc93b
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261127012945-54b72cf28e7d
+	github.com/lesomnus/payday v0.0.0-20261127130922-e84de67d3ec2
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
-	github.com/lesomnus/roster v0.1.2-0.20261127014608-ff6d86cee9b9
+	github.com/lesomnus/roster v0.1.2-0.20261127161608-cdbf583cb47d
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.4-0.20261123042429-3e6291b33598
 	github.com/lesomnus/z v0.0.0-20260907061127-c3858eb05878

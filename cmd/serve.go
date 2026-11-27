@@ -209,6 +209,25 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 	w := watch.New(b)
 
+	// A build that fails from here gives back the broker, and roster once
+	// it is open, and not the pool alone. Each failure below closes `db`,
+	// which was everything there was to close until a broker could be
+	// closed (lesomnus/payday#323): on `postgres` it is two connections
+	// outside the pool, and they stayed; so did an embedded roster's pool
+	// where the failure came after it opened and its line closed `db`
+	// alone. Said once here rather than beside each of those lines.
+	var s *Server
+	built := false
+	defer func() {
+		if built {
+			return
+		}
+		_ = w.Close()
+		if s != nil {
+			_ = s.Identity.Close()
+		}
+	}()
+
 	// The trail records what people do; the system's own writes are not
 	// evidence of anybody's decision (§26.5).
 	rec := bare.Recorders{core.TrailOfPeople(pd.Recorder(content)), pd.WatchRecorder(w)}
@@ -229,7 +248,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	s := &Server{Db: db, Ent: client, Drv: drv, Dialect: dia, Watch: w, Ungated: ungated, cfg: c, httpAddrs: map[Surface]string{}}
+	s = &Server{Db: db, Ent: client, Drv: drv, Dialect: dia, Watch: w, Ungated: ungated, cfg: c, httpAddrs: map[Surface]string{}}
 
 	// The CA and the KEK, when `shale init` has made them.
 	dir := c.StateDir("control")
@@ -264,7 +283,6 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	if c.Auth.Operators.On() {
 		s.Operators, err = identity.NewOperators(s.Identity, c.Auth.Operators, slog.Default())
 		if err != nil {
-			s.Identity.Close()
 			db.Close()
 			return nil, err
 		}
@@ -275,12 +293,10 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 
 	if err := c.Auth.Delegation.check(c.Auth); err != nil {
-		s.Identity.Close()
 		db.Close()
 		return nil, err
 	}
 	if c.Auth.SsoOnly && !c.Auth.Oidc.On() {
-		s.Identity.Close()
 		db.Close()
 		return nil, errors.New("auth.sso_only: there is no issuer to sign in through (auth.oidc.issuer), so nobody could sign in")
 	}
@@ -480,6 +496,8 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Auth[surface] = auth.Seq(hs...)
 	}
 
+	built = true
+
 	return s, nil
 }
 
@@ -601,6 +619,16 @@ func (s *Server) password(ctx context.Context, r *http.Request) (authsession.Ses
 	return issued(authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}), p, nil
 }
 
+// Close gives back what the server holds: the leader's lease, roster, the
+// Watch's broker and the pool, in that order. The broker is closed before
+// the pool, as payday's own scaffold does: on `watch.broker: postgres` it
+// is a listener and a publisher with a connection each, outside the pool,
+// which nothing ended until the process did (lesomnus/payday#323), so a
+// suite that builds a server a test ran out of PostgreSQL's connections.
+// A stream still open is cut as when the broker loses its database.
+//
+// Each is attempted and the first error is answered: a broker that would
+// not close is not a reason to keep the pool.
 func (s *Server) Close() error {
 	if s.Leader != nil {
 		s.Leader.Close()
@@ -608,8 +636,12 @@ func (s *Server) Close() error {
 	if s.Identity != nil {
 		s.Identity.Close()
 	}
+	err := s.Watch.Close()
+	if e := s.Db.Close(); err == nil {
+		err = e
+	}
 
-	return s.Db.Close()
+	return err
 }
 
 // tlsConfig is the CP's server TLS: external files when configured, else
