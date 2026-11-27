@@ -18,13 +18,15 @@ import { file_shale_payday_tenant_svc_g } from "./payday/tenant_svc_pb.js";
 import { file_shale_set } from "./set_pb.js";
 import type { SetLiveResponseSchema, SetRef, SourceRef } from "./set_svc_pb.js";
 import { file_shale_set_svc_g } from "./set_svc_pb.js";
+import type { SiteVisibility } from "./site_pb.js";
+import { file_shale_site } from "./site_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file shale/delegation_svc.g.proto.
  */
 export const file_shale_delegation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChxzaGFsZS9kZWxlZ2F0aW9uX3N2Yy5nLnByb3RvEgVzaGFsZSKxBAoURGVsZWdhdGlvbkFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSIAoGaG9sZGVyGAggASgLMhAuc2hhbGUuSG9sZGVyUmVmEhIKA2FwcBgJIAEoDEIFqgECCAISGAoJY2xpZW50X2lkGAogASgJQgWqAQIIAhIaCgtzZWNyZXRfaGFzaBgLIAEoDEIFqgECCAISEwoEbGl2ZRgMIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgQIAEoCEIFqgECCAISDAoEc2V0cxgRIAMoDBIPCgdzb3VyY2VzGBIgAygMEjMKD3JlY29yZGluZ3NfZnJvbRgTIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3Jldm9rZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KCWRhdGVfdXNlZBgXIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJiChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIhCgNyZWYYASABKAsyFC5zaGFsZS5EZWxlZ2F0aW9uUmVmEicKBnNlbGVjdBgCIAEoCzIXLnNoYWxlLkRlbGVnYXRpb25TZWxlY3QiLAoNRGVsZWdhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASABCBQoDa2V5IowDChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSIwoGaG9sZGVyGAggASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0EgsKA2FwcBgJIAEoCBIRCgljbGllbnRfaWQYCiABKAgSEwoLc2VjcmV0X2hhc2gYCyABKAgSDAoEbGl2ZRgMIAEoCBISCgpyZWNvcmRpbmdzGBAgASgIEgwKBHNldHMYESABKAgSDwoHc291cmNlcxgSIAEoCBIXCg9yZWNvcmRpbmdzX2Zyb20YEyABKAgSFQoNcmVjb3JkaW5nc190bxgUIAEoCBIRCglkYXRlX2VuZHMYFSABKAgSFAoMZGF0ZV9yZXZva2VkGBYgASgIEhEKCWRhdGVfdXNlZBgXIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIp0CChZEZWxlZ2F0aW9uUGF0Y2hSZXF1ZXN0EiEKA3JlZhgBIAEoCzIULnNoYWxlLkRlbGVnYXRpb25SZWYSMAoMZGF0ZV9yZXZva2VkGCwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX3Jldm9rZWRfbnVsbBgtIAEoCBItCglkYXRlX3VzZWQYLiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfdXNlZF9udWxsGC8gASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIrwCChZEZWxlZ2F0aW9uU3RhcnRSZXF1ZXN0EhsKDGFjY2Vzc190b2tlbhgBIAEoCUIFqgECCAISEwoEbGl2ZRgCIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgDIAEoCEIFqgECCAISGwoEc2V0cxgEIAMoCzINLnNoYWxlLlNldFJlZhIhCgdzb3VyY2VzGAUgAygLMhAuc2hhbGUuU291cmNlUmVmEjMKD3JlY29yZGluZ3NfZnJvbRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJXChdEZWxlZ2F0aW9uU3RhcnRSZXNwb25zZRIVCgZoYW5kbGUYASABKAlCBaoBAggCEiUKCmRlbGVnYXRpb24YAiABKAsyES5zaGFsZS5EZWxlZ2F0aW9uImwKFURlbGVnYXRpb25MaXZlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEhoKA3NldBgCIAEoCzINLnNoYWxlLlNldFJlZhIgCgZzb3VyY2UYAyABKAsyEC5zaGFsZS5Tb3VyY2VSZWYiYgoZRGVsZWdhdGlvblRpbWVsaW5lUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEi4KCHRpbWVsaW5lGAIgASgLMhwuc2hhbGUuTGFtaW5hVGltZWxpbmVSZXF1ZXN0IlwKF0RlbGVnYXRpb25FeHBvcnRSZXF1ZXN0EhUKBmhhbmRsZRgBIAEoCUIFqgECCAISKgoGZXhwb3J0GAIgASgLMhouc2hhbGUuTGFtaW5hRXhwb3J0UmVxdWVzdCIwChdEZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCIhoKGERlbGVnYXRpb25SZXZva2VSZXNwb25zZTKhBAoRRGVsZWdhdGlvblNlcnZpY2USNQoDQWRkEhsuc2hhbGUuRGVsZWdhdGlvbkFkZFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEjUKA0dldBIbLnNoYWxlLkRlbGVnYXRpb25HZXRSZXF1ZXN0GhEuc2hhbGUuRGVsZWdhdGlvbhI5CgVQYXRjaBIdLnNoYWxlLkRlbGVnYXRpb25QYXRjaFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEkYKBVN0YXJ0Eh0uc2hhbGUuRGVsZWdhdGlvblN0YXJ0UmVxdWVzdBoeLnNoYWxlLkRlbGVnYXRpb25TdGFydFJlc3BvbnNlEjwKBExpdmUSHC5zaGFsZS5EZWxlZ2F0aW9uTGl2ZVJlcXVlc3QaFi5zaGFsZS5TZXRMaXZlUmVzcG9uc2USSwoIVGltZWxpbmUSIC5zaGFsZS5EZWxlZ2F0aW9uVGltZWxpbmVSZXF1ZXN0Gh0uc2hhbGUuTGFtaW5hVGltZWxpbmVSZXNwb25zZRJFCgZFeHBvcnQSHi5zaGFsZS5EZWxlZ2F0aW9uRXhwb3J0UmVxdWVzdBobLnNoYWxlLkxhbWluYUV4cG9ydFJlc3BvbnNlEkkKBlJldm9rZRIeLnNoYWxlLkRlbGVnYXRpb25SZXZva2VSZXF1ZXN0Gh8uc2hhbGUuRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_shale_delegation, file_shale_lamina_svc_g, file_shale_payday_holder_svc_g, file_shale_payday_tenant_svc_g, file_shale_set, file_shale_set_svc_g]);
+  fileDesc("ChxzaGFsZS9kZWxlZ2F0aW9uX3N2Yy5nLnByb3RvEgVzaGFsZSKxBAoURGVsZWdhdGlvbkFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSIAoGaG9sZGVyGAggASgLMhAuc2hhbGUuSG9sZGVyUmVmEhIKA2FwcBgJIAEoDEIFqgECCAISGAoJY2xpZW50X2lkGAogASgJQgWqAQIIAhIaCgtzZWNyZXRfaGFzaBgLIAEoDEIFqgECCAISEwoEbGl2ZRgMIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgQIAEoCEIFqgECCAISDAoEc2V0cxgRIAMoDBIPCgdzb3VyY2VzGBIgAygMEjMKD3JlY29yZGluZ3NfZnJvbRgTIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3Jldm9rZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KCWRhdGVfdXNlZBgXIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJiChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIhCgNyZWYYASABKAsyFC5zaGFsZS5EZWxlZ2F0aW9uUmVmEicKBnNlbGVjdBgCIAEoCzIXLnNoYWxlLkRlbGVnYXRpb25TZWxlY3QiLAoNRGVsZWdhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASABCBQoDa2V5IowDChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIjCgZ0ZW5hbnQYAiABKAsyEy5zaGFsZS5UZW5hbnRTZWxlY3QSIwoGaG9sZGVyGAggASgLMhMuc2hhbGUuSG9sZGVyU2VsZWN0EgsKA2FwcBgJIAEoCBIRCgljbGllbnRfaWQYCiABKAgSEwoLc2VjcmV0X2hhc2gYCyABKAgSDAoEbGl2ZRgMIAEoCBISCgpyZWNvcmRpbmdzGBAgASgIEgwKBHNldHMYESABKAgSDwoHc291cmNlcxgSIAEoCBIXCg9yZWNvcmRpbmdzX2Zyb20YEyABKAgSFQoNcmVjb3JkaW5nc190bxgUIAEoCBIRCglkYXRlX2VuZHMYFSABKAgSFAoMZGF0ZV9yZXZva2VkGBYgASgIEhEKCWRhdGVfdXNlZBgXIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIp0CChZEZWxlZ2F0aW9uUGF0Y2hSZXF1ZXN0EiEKA3JlZhgBIAEoCzIULnNoYWxlLkRlbGVnYXRpb25SZWYSMAoMZGF0ZV9yZXZva2VkGCwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX3Jldm9rZWRfbnVsbBgtIAEoCBItCglkYXRlX3VzZWQYLiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfdXNlZF9udWxsGC8gASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIrwCChZEZWxlZ2F0aW9uU3RhcnRSZXF1ZXN0EhsKDGFjY2Vzc190b2tlbhgBIAEoCUIFqgECCAISEwoEbGl2ZRgCIAEoCEIFqgECCAISGQoKcmVjb3JkaW5ncxgDIAEoCEIFqgECCAISGwoEc2V0cxgEIAMoCzINLnNoYWxlLlNldFJlZhIhCgdzb3VyY2VzGAUgAygLMhAuc2hhbGUuU291cmNlUmVmEjMKD3JlY29yZGluZ3NfZnJvbRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNcmVjb3JkaW5nc190bxgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9lbmRzGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJXChdEZWxlZ2F0aW9uU3RhcnRSZXNwb25zZRIVCgZoYW5kbGUYASABKAlCBaoBAggCEiUKCmRlbGVnYXRpb24YAiABKAsyES5zaGFsZS5EZWxlZ2F0aW9uImwKFURlbGVnYXRpb25MaXZlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEhoKA3NldBgCIAEoCzINLnNoYWxlLlNldFJlZhIgCgZzb3VyY2UYAyABKAsyEC5zaGFsZS5Tb3VyY2VSZWYiYgoZRGVsZWdhdGlvblRpbWVsaW5lUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCEi4KCHRpbWVsaW5lGAIgASgLMhwuc2hhbGUuTGFtaW5hVGltZWxpbmVSZXF1ZXN0IlwKF0RlbGVnYXRpb25FeHBvcnRSZXF1ZXN0EhUKBmhhbmRsZRgBIAEoCUIFqgECCAISKgoGZXhwb3J0GAIgASgLMhouc2hhbGUuTGFtaW5hRXhwb3J0UmVxdWVzdCJ4ChhEZWxlZ2F0aW9uQ2F0YWxvZ1JlcXVlc3QSFQoGaGFuZGxlGAEgASgJQgWqAQIIAhIaCgNzZXQYAiABKAsyDS5zaGFsZS5TZXRSZWYSEwoEc2l6ZRgDIAEoBUIFqgECCAISFAoFYWZ0ZXIYBCABKAlCBaoBAggCIlwKGURlbGVnYXRpb25DYXRhbG9nUmVzcG9uc2USKgoFaXRlbXMYASADKAsyGy5zaGFsZS5EZWxlZ2F0aW9uQ2F0YWxvZ1NldBITCgRuZXh0GAIgASgJQgWqAQIIAiKZAgoURGVsZWdhdGlvbkNhdGFsb2dTZXQSEQoCaWQYASABKAxCBaoBAggCEhQKBWFsaWFzGAIgASgJQgWqAQIIAhITCgRuYW1lGAMgASgJQgWqAQIIAhI3CgZsYWJlbHMYBCADKAsyJy5zaGFsZS5EZWxlZ2F0aW9uQ2F0YWxvZ1NldC5MYWJlbHNFbnRyeRIqCgRzaXRlGAUgASgLMhwuc2hhbGUuRGVsZWdhdGlvbkNhdGFsb2dTaXRlEi8KB3NvdXJjZXMYBiADKAsyHi5zaGFsZS5EZWxlZ2F0aW9uQ2F0YWxvZ1NvdXJjZRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIocBChVEZWxlZ2F0aW9uQ2F0YWxvZ1NpdGUSEQoCaWQYASABKAxCBaoBAggCEhQKBWFsaWFzGAIgASgJQgWqAQIIAhITCgRuYW1lGAMgASgJQgWqAQIIAhIwCgp2aXNpYmlsaXR5GAQgASgOMhUuc2hhbGUuU2l0ZVZpc2liaWxpdHlCBaoBAggCIvcBChdEZWxlZ2F0aW9uQ2F0YWxvZ1NvdXJjZRIRCgJpZBgBIAEoDEIFqgECCAISFAoFYWxpYXMYAiABKAlCBaoBAggCEhMKBG5hbWUYAyABKAlCBaoBAggCEhYKB29yZGluYWwYBCABKAVCBaoBAggCEhsKDGNvbnRlbnRfdHlwZRgFIAEoCUIFqgECCAISOgoGbGFiZWxzGAYgAygLMiouc2hhbGUuRGVsZWdhdGlvbkNhdGFsb2dTb3VyY2UuTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIwChdEZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBIVCgZoYW5kbGUYASABKAlCBaoBAggCIhoKGERlbGVnYXRpb25SZXZva2VSZXNwb25zZTLvBAoRRGVsZWdhdGlvblNlcnZpY2USNQoDQWRkEhsuc2hhbGUuRGVsZWdhdGlvbkFkZFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEjUKA0dldBIbLnNoYWxlLkRlbGVnYXRpb25HZXRSZXF1ZXN0GhEuc2hhbGUuRGVsZWdhdGlvbhI5CgVQYXRjaBIdLnNoYWxlLkRlbGVnYXRpb25QYXRjaFJlcXVlc3QaES5zaGFsZS5EZWxlZ2F0aW9uEkYKBVN0YXJ0Eh0uc2hhbGUuRGVsZWdhdGlvblN0YXJ0UmVxdWVzdBoeLnNoYWxlLkRlbGVnYXRpb25TdGFydFJlc3BvbnNlEjwKBExpdmUSHC5zaGFsZS5EZWxlZ2F0aW9uTGl2ZVJlcXVlc3QaFi5zaGFsZS5TZXRMaXZlUmVzcG9uc2USSwoIVGltZWxpbmUSIC5zaGFsZS5EZWxlZ2F0aW9uVGltZWxpbmVSZXF1ZXN0Gh0uc2hhbGUuTGFtaW5hVGltZWxpbmVSZXNwb25zZRJFCgZFeHBvcnQSHi5zaGFsZS5EZWxlZ2F0aW9uRXhwb3J0UmVxdWVzdBobLnNoYWxlLkxhbWluYUV4cG9ydFJlc3BvbnNlEkwKB0NhdGFsb2cSHy5zaGFsZS5EZWxlZ2F0aW9uQ2F0YWxvZ1JlcXVlc3QaIC5zaGFsZS5EZWxlZ2F0aW9uQ2F0YWxvZ1Jlc3BvbnNlEkkKBlJldm9rZRIeLnNoYWxlLkRlbGVnYXRpb25SZXZva2VSZXF1ZXN0Gh8uc2hhbGUuRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_shale_delegation, file_shale_lamina_svc_g, file_shale_payday_holder_svc_g, file_shale_payday_tenant_svc_g, file_shale_set, file_shale_set_svc_g, file_shale_site]);
 
 /**
  * @generated from message shale.DelegationAddRequest
@@ -498,6 +500,198 @@ export const DelegationExportRequestSchema: GenMessage<DelegationExportRequest> 
   messageDesc(file_shale_delegation_svc_g, 9);
 
 /**
+ * @generated from message shale.DelegationCatalogRequest
+ */
+export type DelegationCatalogRequest = Message<"shale.DelegationCatalogRequest"> & {
+  /**
+   * @generated from field: string handle = 1 [features.field_presence = IMPLICIT];
+   */
+  handle: string;
+
+  /**
+   * One set, by id or alias: answered alone if the person sees it, and
+   * nothing if not or if there is none. Unset is every set, a page at a
+   * time.
+   *
+   * @generated from field: shale.SetRef set = 2;
+   */
+  set?: SetRef | undefined;
+
+  /**
+   * As `SetService.List`'s: how many sets a page holds (its default and
+   * its most), and the `next` of the page before.
+   *
+   * @generated from field: int32 size = 3 [features.field_presence = IMPLICIT];
+   */
+  size: number;
+
+  /**
+   * @generated from field: string after = 4 [features.field_presence = IMPLICIT];
+   */
+  after: string;
+};
+
+/**
+ * Describes the message shale.DelegationCatalogRequest.
+ * Use `create(DelegationCatalogRequestSchema)` to create a new message.
+ */
+export const DelegationCatalogRequestSchema: GenMessage<DelegationCatalogRequest> = /*@__PURE__*/
+  messageDesc(file_shale_delegation_svc_g, 10);
+
+/**
+ * @generated from message shale.DelegationCatalogResponse
+ */
+export type DelegationCatalogResponse = Message<"shale.DelegationCatalogResponse"> & {
+  /**
+   * In `SetService.List`'s order: oldest first, then by id.
+   *
+   * @generated from field: repeated shale.DelegationCatalogSet items = 1;
+   */
+  items: DelegationCatalogSet[];
+
+  /**
+   * What to ask for next, as `SetService.List` answers it; empty when this
+   * was the last page.
+   *
+   * @generated from field: string next = 2 [features.field_presence = IMPLICIT];
+   */
+  next: string;
+};
+
+/**
+ * Describes the message shale.DelegationCatalogResponse.
+ * Use `create(DelegationCatalogResponseSchema)` to create a new message.
+ */
+export const DelegationCatalogResponseSchema: GenMessage<DelegationCatalogResponse> = /*@__PURE__*/
+  messageDesc(file_shale_delegation_svc_g, 11);
+
+/**
+ * A set as a catalogue shows it.
+ *
+ * @generated from message shale.DelegationCatalogSet
+ */
+export type DelegationCatalogSet = Message<"shale.DelegationCatalogSet"> & {
+  /**
+   * @generated from field: bytes id = 1 [features.field_presence = IMPLICIT];
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: string alias = 2 [features.field_presence = IMPLICIT];
+   */
+  alias: string;
+
+  /**
+   * @generated from field: string name = 3 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * @generated from field: map<string, string> labels = 4;
+   */
+  labels: { [key: string]: string };
+
+  /**
+   * Unset for a set in no site, which only whoever sees every site sees.
+   *
+   * @generated from field: shale.DelegationCatalogSite site = 5;
+   */
+  site?: DelegationCatalogSite | undefined;
+
+  /**
+   * Its cameras the handle names, in the set's order (ordinal).
+   *
+   * @generated from field: repeated shale.DelegationCatalogSource sources = 6;
+   */
+  sources: DelegationCatalogSource[];
+};
+
+/**
+ * Describes the message shale.DelegationCatalogSet.
+ * Use `create(DelegationCatalogSetSchema)` to create a new message.
+ */
+export const DelegationCatalogSetSchema: GenMessage<DelegationCatalogSet> = /*@__PURE__*/
+  messageDesc(file_shale_delegation_svc_g, 12);
+
+/**
+ * @generated from message shale.DelegationCatalogSite
+ */
+export type DelegationCatalogSite = Message<"shale.DelegationCatalogSite"> & {
+  /**
+   * @generated from field: bytes id = 1 [features.field_presence = IMPLICIT];
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: string alias = 2 [features.field_presence = IMPLICIT];
+   */
+  alias: string;
+
+  /**
+   * @generated from field: string name = 3 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * Its kind: who sees it (§33.1).
+   *
+   * @generated from field: shale.SiteVisibility visibility = 4 [features.field_presence = IMPLICIT];
+   */
+  visibility: SiteVisibility;
+};
+
+/**
+ * Describes the message shale.DelegationCatalogSite.
+ * Use `create(DelegationCatalogSiteSchema)` to create a new message.
+ */
+export const DelegationCatalogSiteSchema: GenMessage<DelegationCatalogSite> = /*@__PURE__*/
+  messageDesc(file_shale_delegation_svc_g, 13);
+
+/**
+ * @generated from message shale.DelegationCatalogSource
+ */
+export type DelegationCatalogSource = Message<"shale.DelegationCatalogSource"> & {
+  /**
+   * @generated from field: bytes id = 1 [features.field_presence = IMPLICIT];
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: string alias = 2 [features.field_presence = IMPLICIT];
+   */
+  alias: string;
+
+  /**
+   * @generated from field: string name = 3 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * @generated from field: int32 ordinal = 4 [features.field_presence = IMPLICIT];
+   */
+  ordinal: number;
+
+  /**
+   * As the source says it; empty reads as `video/mp4` (§38.9).
+   *
+   * @generated from field: string content_type = 5 [features.field_presence = IMPLICIT];
+   */
+  contentType: string;
+
+  /**
+   * @generated from field: map<string, string> labels = 6;
+   */
+  labels: { [key: string]: string };
+};
+
+/**
+ * Describes the message shale.DelegationCatalogSource.
+ * Use `create(DelegationCatalogSourceSchema)` to create a new message.
+ */
+export const DelegationCatalogSourceSchema: GenMessage<DelegationCatalogSource> = /*@__PURE__*/
+  messageDesc(file_shale_delegation_svc_g, 14);
+
+/**
  * @generated from message shale.DelegationRevokeRequest
  */
 export type DelegationRevokeRequest = Message<"shale.DelegationRevokeRequest"> & {
@@ -512,7 +706,7 @@ export type DelegationRevokeRequest = Message<"shale.DelegationRevokeRequest"> &
  * Use `create(DelegationRevokeRequestSchema)` to create a new message.
  */
 export const DelegationRevokeRequestSchema: GenMessage<DelegationRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 10);
+  messageDesc(file_shale_delegation_svc_g, 15);
 
 /**
  * @generated from message shale.DelegationRevokeResponse
@@ -525,7 +719,7 @@ export type DelegationRevokeResponse = Message<"shale.DelegationRevokeResponse">
  * Use `create(DelegationRevokeResponseSchema)` to create a new message.
  */
 export const DelegationRevokeResponseSchema: GenMessage<DelegationRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_shale_delegation_svc_g, 11);
+  messageDesc(file_shale_delegation_svc_g, 16);
 
 /**
  * @generated from service shale.DelegationService
@@ -607,6 +801,21 @@ export const DelegationService: GenService<{
     methodKind: "unary";
     input: typeof DelegationExportRequestSchema;
     output: typeof LaminaExportResponseSchema;
+  },
+  /**
+   * Catalog is the sets the person may see now, each with its site and its
+   * cameras: `SetService.List` and `SourceService.List` for the person,
+   * within the handle, paged and ordered as `SetService.List` is, and
+   * nothing of a host. With a set, that set or nothing: an empty answer,
+   * never NOT_FOUND, is "not theirs" as it is "no such set". It mints
+   * nothing. The app is granted it by name, apart from Live and Timeline.
+   *
+   * @generated from rpc shale.DelegationService.Catalog
+   */
+  catalog: {
+    methodKind: "unary";
+    input: typeof DelegationCatalogRequestSchema;
+    output: typeof DelegationCatalogResponseSchema;
   },
   /**
    * Revoke ends a handle: what the app does when its own session ends.

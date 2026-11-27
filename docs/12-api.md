@@ -342,11 +342,19 @@ service ReaderService {
 - `Holder` has no custom RPCs. People sign in through payday
   ([§33.1](10-security.md#331-trust-model)).
 - `DelegationService` is an app's, viewing on a person's behalf
-  ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)). Its four
+  ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)). Its six
   verbs take the app's exchange token from roster as `authorization:
   Bearer rd_…` and nothing else: no session, no certificate, and its
-  generated verbs are served to nobody. `Live` and `Timeline` are also the
-  permission methods a tenant binds to the app's holder at roster.
+  generated verbs are served to nobody. `Live`, `Timeline` and `Catalog`
+  are also the permission methods a tenant binds to the app's holder at
+  roster; `Export` goes with `Timeline`. `Catalog` is `SetService.List`
+  and `SourceService.List` for the person, narrowed to the handle, as a
+  catalogue shows them: a set's id, alias, name, labels and site (id,
+  alias, name, `visibility`), and its cameras' id, alias, name, ordinal,
+  content type and labels in ordinal order -- nothing of a host. It is
+  paged by `SetService.List`'s cursor, `size` (20, at most 100) and order
+  (`date_created`, then `id`); with `set` it is that set or an empty
+  answer, never `NOT_FOUND`.
 
 ```proto
 service DelegationService {
@@ -360,6 +368,9 @@ service DelegationService {
   rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
   // Native MP4 download within the same delegated recording permission.
   rpc Export(DelegationExportRequest) returns (LaminaExportResponse);
+  // The sets the person sees now, with their sites and cameras, paged as
+  // SetService.List; with a set, it or nothing. Mints nothing.
+  rpc Catalog(DelegationCatalogRequest) returns (DelegationCatalogResponse);
   // Ends a handle.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 }

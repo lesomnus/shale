@@ -20956,6 +20956,14 @@ func (s guardedDelegation) Export(ctx context.Context, req *api.DelegationExport
 	return s.DelegationServiceServer.Export(ctx, req)
 }
 
+func (s guardedDelegation) Catalog(ctx context.Context, req *api.DelegationCatalogRequest) (*api.DelegationCatalogResponse, error) {
+	if err := gate.Direct(ctx, api.DelegationService_Catalog_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.DelegationServiceServer.Catalog(ctx, req)
+}
+
 func (s guardedDelegation) Revoke(ctx context.Context, req *api.DelegationRevokeRequest) (*api.DelegationRevokeResponse, error) {
 	if err := gate.Direct(ctx, api.DelegationService_Revoke_FullMethodName); err != nil {
 		return nil, err
@@ -27832,6 +27840,11 @@ func (s interceptDelegation) Timeline(ctx context.Context, req *api.DelegationTi
 func (s interceptDelegation) Export(ctx context.Context, req *api.DelegationExportRequest) (*api.LaminaExportResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
 		api.DelegationService_Export_FullMethodName, req, s.DelegationServiceServer.Export)
+}
+
+func (s interceptDelegation) Catalog(ctx context.Context, req *api.DelegationCatalogRequest) (*api.DelegationCatalogResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Catalog_FullMethodName, req, s.DelegationServiceServer.Catalog)
 }
 
 func (s interceptDelegation) Revoke(ctx context.Context, req *api.DelegationRevokeRequest) (*api.DelegationRevokeResponse, error) {

@@ -193,7 +193,7 @@ func granted(ctx context.Context, may func(context.Context, pdid.Id, pdid.Id, st
 // rule before it: a person may do anything inside their tenant, but for
 // what hands somebody a secret (May).
 //
-// DelegationService is an app's (§33.8): its four entries are served to
+// DelegationService is an app's (§33.8): its six entries are served to
 // nobody with a credential the interceptor knows, and its generated verbs
 // to nobody at all.
 type TenantPolicy struct {

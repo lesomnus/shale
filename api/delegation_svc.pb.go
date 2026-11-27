@@ -2007,6 +2007,577 @@ func (b0 DelegationExportRequest_builder) Build() *DelegationExportRequest {
 	return m0
 }
 
+type DelegationCatalogRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Handle string                 `protobuf:"bytes,1,opt,name=handle"`
+	xxx_hidden_Set    *SetRef                `protobuf:"bytes,2,opt,name=set"`
+	xxx_hidden_Size   int32                  `protobuf:"varint,3,opt,name=size"`
+	xxx_hidden_After  string                 `protobuf:"bytes,4,opt,name=after"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *DelegationCatalogRequest) Reset() {
+	*x = DelegationCatalogRequest{}
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationCatalogRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationCatalogRequest) ProtoMessage() {}
+
+func (x *DelegationCatalogRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationCatalogRequest) GetHandle() string {
+	if x != nil {
+		return x.xxx_hidden_Handle
+	}
+	return ""
+}
+
+func (x *DelegationCatalogRequest) GetSet() *SetRef {
+	if x != nil {
+		return x.xxx_hidden_Set
+	}
+	return nil
+}
+
+func (x *DelegationCatalogRequest) GetSize() int32 {
+	if x != nil {
+		return x.xxx_hidden_Size
+	}
+	return 0
+}
+
+func (x *DelegationCatalogRequest) GetAfter() string {
+	if x != nil {
+		return x.xxx_hidden_After
+	}
+	return ""
+}
+
+func (x *DelegationCatalogRequest) SetHandle(v string) {
+	x.xxx_hidden_Handle = v
+}
+
+func (x *DelegationCatalogRequest) SetSet(v *SetRef) {
+	x.xxx_hidden_Set = v
+}
+
+func (x *DelegationCatalogRequest) SetSize(v int32) {
+	x.xxx_hidden_Size = v
+}
+
+func (x *DelegationCatalogRequest) SetAfter(v string) {
+	x.xxx_hidden_After = v
+}
+
+func (x *DelegationCatalogRequest) HasSet() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Set != nil
+}
+
+func (x *DelegationCatalogRequest) ClearSet() {
+	x.xxx_hidden_Set = nil
+}
+
+type DelegationCatalogRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Handle string
+	// One set, by id or alias: answered alone if the person sees it, and
+	// nothing if not or if there is none. Unset is every set, a page at a
+	// time.
+	Set *SetRef
+	// As `SetService.List`'s: how many sets a page holds (its default and
+	// its most), and the `next` of the page before.
+	Size  int32
+	After string
+}
+
+func (b0 DelegationCatalogRequest_builder) Build() *DelegationCatalogRequest {
+	m0 := &DelegationCatalogRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Handle = b.Handle
+	x.xxx_hidden_Set = b.Set
+	x.xxx_hidden_Size = b.Size
+	x.xxx_hidden_After = b.After
+	return m0
+}
+
+type DelegationCatalogResponse struct {
+	state            protoimpl.MessageState   `protogen:"opaque.v1"`
+	xxx_hidden_Items *[]*DelegationCatalogSet `protobuf:"bytes,1,rep,name=items"`
+	xxx_hidden_Next  string                   `protobuf:"bytes,2,opt,name=next"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DelegationCatalogResponse) Reset() {
+	*x = DelegationCatalogResponse{}
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationCatalogResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationCatalogResponse) ProtoMessage() {}
+
+func (x *DelegationCatalogResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationCatalogResponse) GetItems() []*DelegationCatalogSet {
+	if x != nil {
+		if x.xxx_hidden_Items != nil {
+			return *x.xxx_hidden_Items
+		}
+	}
+	return nil
+}
+
+func (x *DelegationCatalogResponse) GetNext() string {
+	if x != nil {
+		return x.xxx_hidden_Next
+	}
+	return ""
+}
+
+func (x *DelegationCatalogResponse) SetItems(v []*DelegationCatalogSet) {
+	x.xxx_hidden_Items = &v
+}
+
+func (x *DelegationCatalogResponse) SetNext(v string) {
+	x.xxx_hidden_Next = v
+}
+
+type DelegationCatalogResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// In `SetService.List`'s order: oldest first, then by id.
+	Items []*DelegationCatalogSet
+	// What to ask for next, as `SetService.List` answers it; empty when this
+	// was the last page.
+	Next string
+}
+
+func (b0 DelegationCatalogResponse_builder) Build() *DelegationCatalogResponse {
+	m0 := &DelegationCatalogResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Items = &b.Items
+	x.xxx_hidden_Next = b.Next
+	return m0
+}
+
+// A set as a catalogue shows it.
+type DelegationCatalogSet struct {
+	state              protoimpl.MessageState      `protogen:"opaque.v1"`
+	xxx_hidden_Id      []byte                      `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias   string                      `protobuf:"bytes,2,opt,name=alias"`
+	xxx_hidden_Name    string                      `protobuf:"bytes,3,opt,name=name"`
+	xxx_hidden_Labels  map[string]string           `protobuf:"bytes,4,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Site    *DelegationCatalogSite      `protobuf:"bytes,5,opt,name=site"`
+	xxx_hidden_Sources *[]*DelegationCatalogSource `protobuf:"bytes,6,rep,name=sources"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *DelegationCatalogSet) Reset() {
+	*x = DelegationCatalogSet{}
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationCatalogSet) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationCatalogSet) ProtoMessage() {}
+
+func (x *DelegationCatalogSet) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationCatalogSet) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSet) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSet) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSet) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSet) GetSite() *DelegationCatalogSite {
+	if x != nil {
+		return x.xxx_hidden_Site
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSet) GetSources() []*DelegationCatalogSource {
+	if x != nil {
+		if x.xxx_hidden_Sources != nil {
+			return *x.xxx_hidden_Sources
+		}
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSet) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *DelegationCatalogSet) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *DelegationCatalogSet) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *DelegationCatalogSet) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *DelegationCatalogSet) SetSite(v *DelegationCatalogSite) {
+	x.xxx_hidden_Site = v
+}
+
+func (x *DelegationCatalogSet) SetSources(v []*DelegationCatalogSource) {
+	x.xxx_hidden_Sources = &v
+}
+
+func (x *DelegationCatalogSet) HasSite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Site != nil
+}
+
+func (x *DelegationCatalogSet) ClearSite() {
+	x.xxx_hidden_Site = nil
+}
+
+type DelegationCatalogSet_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id     []byte
+	Alias  string
+	Name   string
+	Labels map[string]string
+	// Unset for a set in no site, which only whoever sees every site sees.
+	Site *DelegationCatalogSite
+	// Its cameras the handle names, in the set's order (ordinal).
+	Sources []*DelegationCatalogSource
+}
+
+func (b0 DelegationCatalogSet_builder) Build() *DelegationCatalogSet {
+	m0 := &DelegationCatalogSet{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_Site = b.Site
+	x.xxx_hidden_Sources = &b.Sources
+	return m0
+}
+
+type DelegationCatalogSite struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id         []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias      string                 `protobuf:"bytes,2,opt,name=alias"`
+	xxx_hidden_Name       string                 `protobuf:"bytes,3,opt,name=name"`
+	xxx_hidden_Visibility SiteVisibility         `protobuf:"varint,4,opt,name=visibility,enum=shale.SiteVisibility"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *DelegationCatalogSite) Reset() {
+	*x = DelegationCatalogSite{}
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationCatalogSite) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationCatalogSite) ProtoMessage() {}
+
+func (x *DelegationCatalogSite) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationCatalogSite) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSite) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSite) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSite) GetVisibility() SiteVisibility {
+	if x != nil {
+		return x.xxx_hidden_Visibility
+	}
+	return SiteVisibility_SITE_VISIBILITY_UNSPECIFIED
+}
+
+func (x *DelegationCatalogSite) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *DelegationCatalogSite) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *DelegationCatalogSite) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *DelegationCatalogSite) SetVisibility(v SiteVisibility) {
+	x.xxx_hidden_Visibility = v
+}
+
+type DelegationCatalogSite_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id    []byte
+	Alias string
+	Name  string
+	// Its kind: who sees it (§33.1).
+	Visibility SiteVisibility
+}
+
+func (b0 DelegationCatalogSite_builder) Build() *DelegationCatalogSite {
+	m0 := &DelegationCatalogSite{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Visibility = b.Visibility
+	return m0
+}
+
+type DelegationCatalogSource struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias       string                 `protobuf:"bytes,2,opt,name=alias"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,3,opt,name=name"`
+	xxx_hidden_Ordinal     int32                  `protobuf:"varint,4,opt,name=ordinal"`
+	xxx_hidden_ContentType string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,6,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *DelegationCatalogSource) Reset() {
+	*x = DelegationCatalogSource{}
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationCatalogSource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationCatalogSource) ProtoMessage() {}
+
+func (x *DelegationCatalogSource) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationCatalogSource) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSource) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSource) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSource) GetOrdinal() int32 {
+	if x != nil {
+		return x.xxx_hidden_Ordinal
+	}
+	return 0
+}
+
+func (x *DelegationCatalogSource) GetContentType() string {
+	if x != nil {
+		return x.xxx_hidden_ContentType
+	}
+	return ""
+}
+
+func (x *DelegationCatalogSource) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *DelegationCatalogSource) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *DelegationCatalogSource) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *DelegationCatalogSource) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *DelegationCatalogSource) SetOrdinal(v int32) {
+	x.xxx_hidden_Ordinal = v
+}
+
+func (x *DelegationCatalogSource) SetContentType(v string) {
+	x.xxx_hidden_ContentType = v
+}
+
+func (x *DelegationCatalogSource) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+type DelegationCatalogSource_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id      []byte
+	Alias   string
+	Name    string
+	Ordinal int32
+	// As the source says it; empty reads as `video/mp4` (§38.9).
+	ContentType string
+	Labels      map[string]string
+}
+
+func (b0 DelegationCatalogSource_builder) Build() *DelegationCatalogSource {
+	m0 := &DelegationCatalogSource{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Ordinal = b.Ordinal
+	x.xxx_hidden_ContentType = b.ContentType
+	x.xxx_hidden_Labels = b.Labels
+	return m0
+}
+
 type DelegationRevokeRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Handle string                 `protobuf:"bytes,1,opt,name=handle"`
@@ -2016,7 +2587,7 @@ type DelegationRevokeRequest struct {
 
 func (x *DelegationRevokeRequest) Reset() {
 	*x = DelegationRevokeRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2028,7 +2599,7 @@ func (x *DelegationRevokeRequest) String() string {
 func (*DelegationRevokeRequest) ProtoMessage() {}
 
 func (x *DelegationRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[10]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2072,7 +2643,7 @@ type DelegationRevokeResponse struct {
 
 func (x *DelegationRevokeResponse) Reset() {
 	*x = DelegationRevokeResponse{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2084,7 +2655,7 @@ func (x *DelegationRevokeResponse) String() string {
 func (*DelegationRevokeResponse) ProtoMessage() {}
 
 func (x *DelegationRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2111,7 +2682,7 @@ var File_shale_delegation_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1cshale/delegation_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x16shale/delegation.proto\x1a\x18shale/lamina_svc.g.proto\x1a\x1fshale/payday/holder_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x0fshale/set.proto\x1a\x15shale/set_svc.g.proto\"\xcd\x05\n" +
+	"\x1cshale/delegation_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x16shale/delegation.proto\x1a\x18shale/lamina_svc.g.proto\x1a\x1fshale/payday/holder_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x0fshale/set.proto\x1a\x15shale/set_svc.g.proto\x1a\x10shale/site.proto\"\xcd\x05\n" +
 	"\x14DelegationAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12(\n" +
@@ -2196,10 +2767,45 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\btimeline\x18\x02 \x01(\v2\x1c.shale.LaminaTimelineRequestR\btimeline\"l\n" +
 	"\x17DelegationExportRequest\x12\x1d\n" +
 	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\x122\n" +
-	"\x06export\x18\x02 \x01(\v2\x1a.shale.LaminaExportRequestR\x06export\"8\n" +
+	"\x06export\x18\x02 \x01(\v2\x1a.shale.LaminaExportRequestR\x06export\"\x92\x01\n" +
+	"\x18DelegationCatalogRequest\x12\x1d\n" +
+	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\x12\x1f\n" +
+	"\x03set\x18\x02 \x01(\v2\r.shale.SetRefR\x03set\x12\x19\n" +
+	"\x04size\x18\x03 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
+	"\x05after\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"i\n" +
+	"\x19DelegationCatalogResponse\x121\n" +
+	"\x05items\x18\x01 \x03(\v2\x1b.shale.DelegationCatalogSetR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xcd\x02\n" +
+	"\x14DelegationCatalogSet\x12\x15\n" +
+	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\x12\x1b\n" +
+	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
+	"\x04name\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12?\n" +
+	"\x06labels\x18\x04 \x03(\v2'.shale.DelegationCatalogSet.LabelsEntryR\x06labels\x120\n" +
+	"\x04site\x18\x05 \x01(\v2\x1c.shale.DelegationCatalogSiteR\x04site\x128\n" +
+	"\asources\x18\x06 \x03(\v2\x1e.shale.DelegationCatalogSourceR\asources\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa4\x01\n" +
+	"\x15DelegationCatalogSite\x12\x15\n" +
+	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\x12\x1b\n" +
+	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
+	"\x04name\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12<\n" +
+	"\n" +
+	"visibility\x18\x04 \x01(\x0e2\x15.shale.SiteVisibilityB\x05\xaa\x01\x02\b\x02R\n" +
+	"visibility\"\xb2\x02\n" +
+	"\x17DelegationCatalogSource\x12\x15\n" +
+	"\x02id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x02id\x12\x1b\n" +
+	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
+	"\x04name\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x1f\n" +
+	"\aordinal\x18\x04 \x01(\x05B\x05\xaa\x01\x02\b\x02R\aordinal\x12(\n" +
+	"\fcontent_type\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentType\x12B\n" +
+	"\x06labels\x18\x06 \x03(\v2*.shale.DelegationCatalogSource.LabelsEntryR\x06labels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"8\n" +
 	"\x17DelegationRevokeRequest\x12\x1d\n" +
 	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\x1a\n" +
-	"\x18DelegationRevokeResponse2\xa1\x04\n" +
+	"\x18DelegationRevokeResponse2\xef\x04\n" +
 	"\x11DelegationService\x125\n" +
 	"\x03Add\x12\x1b.shale.DelegationAddRequest\x1a\x11.shale.Delegation\x125\n" +
 	"\x03Get\x12\x1b.shale.DelegationGetRequest\x1a\x11.shale.Delegation\x129\n" +
@@ -2207,10 +2813,11 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\x05Start\x12\x1d.shale.DelegationStartRequest\x1a\x1e.shale.DelegationStartResponse\x12<\n" +
 	"\x04Live\x12\x1c.shale.DelegationLiveRequest\x1a\x16.shale.SetLiveResponse\x12K\n" +
 	"\bTimeline\x12 .shale.DelegationTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse\x12E\n" +
-	"\x06Export\x12\x1e.shale.DelegationExportRequest\x1a\x1b.shale.LaminaExportResponse\x12I\n" +
+	"\x06Export\x12\x1e.shale.DelegationExportRequest\x1a\x1b.shale.LaminaExportResponse\x12L\n" +
+	"\aCatalog\x12\x1f.shale.DelegationCatalogRequest\x1a .shale.DelegationCatalogResponse\x12I\n" +
 	"\x06Revoke\x12\x1e.shale.DelegationRevokeRequest\x1a\x1f.shale.DelegationRevokeResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_shale_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_shale_delegation_svc_g_proto_goTypes = []any{
 	(*DelegationAddRequest)(nil),      // 0: shale.DelegationAddRequest
 	(*DelegationGetRequest)(nil),      // 1: shale.DelegationGetRequest
@@ -2222,70 +2829,87 @@ var file_shale_delegation_svc_g_proto_goTypes = []any{
 	(*DelegationLiveRequest)(nil),     // 7: shale.DelegationLiveRequest
 	(*DelegationTimelineRequest)(nil), // 8: shale.DelegationTimelineRequest
 	(*DelegationExportRequest)(nil),   // 9: shale.DelegationExportRequest
-	(*DelegationRevokeRequest)(nil),   // 10: shale.DelegationRevokeRequest
-	(*DelegationRevokeResponse)(nil),  // 11: shale.DelegationRevokeResponse
-	(*TenantRef)(nil),                 // 12: shale.TenantRef
-	(*HolderRef)(nil),                 // 13: shale.HolderRef
-	(*timestamppb.Timestamp)(nil),     // 14: google.protobuf.Timestamp
-	(*TenantSelect)(nil),              // 15: shale.TenantSelect
-	(*HolderSelect)(nil),              // 16: shale.HolderSelect
-	(*SetRef)(nil),                    // 17: shale.SetRef
-	(*SourceRef)(nil),                 // 18: shale.SourceRef
-	(*Delegation)(nil),                // 19: shale.Delegation
-	(*LaminaTimelineRequest)(nil),     // 20: shale.LaminaTimelineRequest
-	(*LaminaExportRequest)(nil),       // 21: shale.LaminaExportRequest
-	(*SetLiveResponse)(nil),           // 22: shale.SetLiveResponse
-	(*LaminaTimelineResponse)(nil),    // 23: shale.LaminaTimelineResponse
-	(*LaminaExportResponse)(nil),      // 24: shale.LaminaExportResponse
+	(*DelegationCatalogRequest)(nil),  // 10: shale.DelegationCatalogRequest
+	(*DelegationCatalogResponse)(nil), // 11: shale.DelegationCatalogResponse
+	(*DelegationCatalogSet)(nil),      // 12: shale.DelegationCatalogSet
+	(*DelegationCatalogSite)(nil),     // 13: shale.DelegationCatalogSite
+	(*DelegationCatalogSource)(nil),   // 14: shale.DelegationCatalogSource
+	(*DelegationRevokeRequest)(nil),   // 15: shale.DelegationRevokeRequest
+	(*DelegationRevokeResponse)(nil),  // 16: shale.DelegationRevokeResponse
+	nil,                               // 17: shale.DelegationCatalogSet.LabelsEntry
+	nil,                               // 18: shale.DelegationCatalogSource.LabelsEntry
+	(*TenantRef)(nil),                 // 19: shale.TenantRef
+	(*HolderRef)(nil),                 // 20: shale.HolderRef
+	(*timestamppb.Timestamp)(nil),     // 21: google.protobuf.Timestamp
+	(*TenantSelect)(nil),              // 22: shale.TenantSelect
+	(*HolderSelect)(nil),              // 23: shale.HolderSelect
+	(*SetRef)(nil),                    // 24: shale.SetRef
+	(*SourceRef)(nil),                 // 25: shale.SourceRef
+	(*Delegation)(nil),                // 26: shale.Delegation
+	(*LaminaTimelineRequest)(nil),     // 27: shale.LaminaTimelineRequest
+	(*LaminaExportRequest)(nil),       // 28: shale.LaminaExportRequest
+	(SiteVisibility)(0),               // 29: shale.SiteVisibility
+	(*SetLiveResponse)(nil),           // 30: shale.SetLiveResponse
+	(*LaminaTimelineResponse)(nil),    // 31: shale.LaminaTimelineResponse
+	(*LaminaExportResponse)(nil),      // 32: shale.LaminaExportResponse
 }
 var file_shale_delegation_svc_g_proto_depIdxs = []int32{
-	12, // 0: shale.DelegationAddRequest.tenant:type_name -> shale.TenantRef
-	13, // 1: shale.DelegationAddRequest.holder:type_name -> shale.HolderRef
-	14, // 2: shale.DelegationAddRequest.recordings_from:type_name -> google.protobuf.Timestamp
-	14, // 3: shale.DelegationAddRequest.recordings_to:type_name -> google.protobuf.Timestamp
-	14, // 4: shale.DelegationAddRequest.date_ends:type_name -> google.protobuf.Timestamp
-	14, // 5: shale.DelegationAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	14, // 6: shale.DelegationAddRequest.date_used:type_name -> google.protobuf.Timestamp
-	14, // 7: shale.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	19, // 0: shale.DelegationAddRequest.tenant:type_name -> shale.TenantRef
+	20, // 1: shale.DelegationAddRequest.holder:type_name -> shale.HolderRef
+	21, // 2: shale.DelegationAddRequest.recordings_from:type_name -> google.protobuf.Timestamp
+	21, // 3: shale.DelegationAddRequest.recordings_to:type_name -> google.protobuf.Timestamp
+	21, // 4: shale.DelegationAddRequest.date_ends:type_name -> google.protobuf.Timestamp
+	21, // 5: shale.DelegationAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	21, // 6: shale.DelegationAddRequest.date_used:type_name -> google.protobuf.Timestamp
+	21, // 7: shale.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 8: shale.DelegationGetRequest.ref:type_name -> shale.DelegationRef
 	3,  // 9: shale.DelegationGetRequest.select:type_name -> shale.DelegationSelect
-	15, // 10: shale.DelegationSelect.tenant:type_name -> shale.TenantSelect
-	16, // 11: shale.DelegationSelect.holder:type_name -> shale.HolderSelect
+	22, // 10: shale.DelegationSelect.tenant:type_name -> shale.TenantSelect
+	23, // 11: shale.DelegationSelect.holder:type_name -> shale.HolderSelect
 	2,  // 12: shale.DelegationPatchRequest.ref:type_name -> shale.DelegationRef
-	14, // 13: shale.DelegationPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	14, // 14: shale.DelegationPatchRequest.date_used:type_name -> google.protobuf.Timestamp
-	14, // 15: shale.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	17, // 16: shale.DelegationStartRequest.sets:type_name -> shale.SetRef
-	18, // 17: shale.DelegationStartRequest.sources:type_name -> shale.SourceRef
-	14, // 18: shale.DelegationStartRequest.recordings_from:type_name -> google.protobuf.Timestamp
-	14, // 19: shale.DelegationStartRequest.recordings_to:type_name -> google.protobuf.Timestamp
-	14, // 20: shale.DelegationStartRequest.date_ends:type_name -> google.protobuf.Timestamp
-	19, // 21: shale.DelegationStartResponse.delegation:type_name -> shale.Delegation
-	17, // 22: shale.DelegationLiveRequest.set:type_name -> shale.SetRef
-	18, // 23: shale.DelegationLiveRequest.source:type_name -> shale.SourceRef
-	20, // 24: shale.DelegationTimelineRequest.timeline:type_name -> shale.LaminaTimelineRequest
-	21, // 25: shale.DelegationExportRequest.export:type_name -> shale.LaminaExportRequest
-	0,  // 26: shale.DelegationService.Add:input_type -> shale.DelegationAddRequest
-	1,  // 27: shale.DelegationService.Get:input_type -> shale.DelegationGetRequest
-	4,  // 28: shale.DelegationService.Patch:input_type -> shale.DelegationPatchRequest
-	5,  // 29: shale.DelegationService.Start:input_type -> shale.DelegationStartRequest
-	7,  // 30: shale.DelegationService.Live:input_type -> shale.DelegationLiveRequest
-	8,  // 31: shale.DelegationService.Timeline:input_type -> shale.DelegationTimelineRequest
-	9,  // 32: shale.DelegationService.Export:input_type -> shale.DelegationExportRequest
-	10, // 33: shale.DelegationService.Revoke:input_type -> shale.DelegationRevokeRequest
-	19, // 34: shale.DelegationService.Add:output_type -> shale.Delegation
-	19, // 35: shale.DelegationService.Get:output_type -> shale.Delegation
-	19, // 36: shale.DelegationService.Patch:output_type -> shale.Delegation
-	6,  // 37: shale.DelegationService.Start:output_type -> shale.DelegationStartResponse
-	22, // 38: shale.DelegationService.Live:output_type -> shale.SetLiveResponse
-	23, // 39: shale.DelegationService.Timeline:output_type -> shale.LaminaTimelineResponse
-	24, // 40: shale.DelegationService.Export:output_type -> shale.LaminaExportResponse
-	11, // 41: shale.DelegationService.Revoke:output_type -> shale.DelegationRevokeResponse
-	34, // [34:42] is the sub-list for method output_type
-	26, // [26:34] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	21, // 13: shale.DelegationPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	21, // 14: shale.DelegationPatchRequest.date_used:type_name -> google.protobuf.Timestamp
+	21, // 15: shale.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	24, // 16: shale.DelegationStartRequest.sets:type_name -> shale.SetRef
+	25, // 17: shale.DelegationStartRequest.sources:type_name -> shale.SourceRef
+	21, // 18: shale.DelegationStartRequest.recordings_from:type_name -> google.protobuf.Timestamp
+	21, // 19: shale.DelegationStartRequest.recordings_to:type_name -> google.protobuf.Timestamp
+	21, // 20: shale.DelegationStartRequest.date_ends:type_name -> google.protobuf.Timestamp
+	26, // 21: shale.DelegationStartResponse.delegation:type_name -> shale.Delegation
+	24, // 22: shale.DelegationLiveRequest.set:type_name -> shale.SetRef
+	25, // 23: shale.DelegationLiveRequest.source:type_name -> shale.SourceRef
+	27, // 24: shale.DelegationTimelineRequest.timeline:type_name -> shale.LaminaTimelineRequest
+	28, // 25: shale.DelegationExportRequest.export:type_name -> shale.LaminaExportRequest
+	24, // 26: shale.DelegationCatalogRequest.set:type_name -> shale.SetRef
+	12, // 27: shale.DelegationCatalogResponse.items:type_name -> shale.DelegationCatalogSet
+	17, // 28: shale.DelegationCatalogSet.labels:type_name -> shale.DelegationCatalogSet.LabelsEntry
+	13, // 29: shale.DelegationCatalogSet.site:type_name -> shale.DelegationCatalogSite
+	14, // 30: shale.DelegationCatalogSet.sources:type_name -> shale.DelegationCatalogSource
+	29, // 31: shale.DelegationCatalogSite.visibility:type_name -> shale.SiteVisibility
+	18, // 32: shale.DelegationCatalogSource.labels:type_name -> shale.DelegationCatalogSource.LabelsEntry
+	0,  // 33: shale.DelegationService.Add:input_type -> shale.DelegationAddRequest
+	1,  // 34: shale.DelegationService.Get:input_type -> shale.DelegationGetRequest
+	4,  // 35: shale.DelegationService.Patch:input_type -> shale.DelegationPatchRequest
+	5,  // 36: shale.DelegationService.Start:input_type -> shale.DelegationStartRequest
+	7,  // 37: shale.DelegationService.Live:input_type -> shale.DelegationLiveRequest
+	8,  // 38: shale.DelegationService.Timeline:input_type -> shale.DelegationTimelineRequest
+	9,  // 39: shale.DelegationService.Export:input_type -> shale.DelegationExportRequest
+	10, // 40: shale.DelegationService.Catalog:input_type -> shale.DelegationCatalogRequest
+	15, // 41: shale.DelegationService.Revoke:input_type -> shale.DelegationRevokeRequest
+	26, // 42: shale.DelegationService.Add:output_type -> shale.Delegation
+	26, // 43: shale.DelegationService.Get:output_type -> shale.Delegation
+	26, // 44: shale.DelegationService.Patch:output_type -> shale.Delegation
+	6,  // 45: shale.DelegationService.Start:output_type -> shale.DelegationStartResponse
+	30, // 46: shale.DelegationService.Live:output_type -> shale.SetLiveResponse
+	31, // 47: shale.DelegationService.Timeline:output_type -> shale.LaminaTimelineResponse
+	32, // 48: shale.DelegationService.Export:output_type -> shale.LaminaExportResponse
+	11, // 49: shale.DelegationService.Catalog:output_type -> shale.DelegationCatalogResponse
+	16, // 50: shale.DelegationService.Revoke:output_type -> shale.DelegationRevokeResponse
+	42, // [42:51] is the sub-list for method output_type
+	33, // [33:42] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_shale_delegation_svc_g_proto_init() }
@@ -2299,6 +2923,7 @@ func file_shale_delegation_svc_g_proto_init() {
 	file_shale_payday_tenant_svc_g_proto_init()
 	file_shale_set_proto_init()
 	file_shale_set_svc_g_proto_init()
+	file_shale_site_proto_init()
 	file_shale_delegation_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*delegationRef_Id)(nil),
 	}
@@ -2308,7 +2933,7 @@ func file_shale_delegation_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_delegation_svc_g_proto_rawDesc), len(file_shale_delegation_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
