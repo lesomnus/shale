@@ -54,9 +54,17 @@ A site says who sees it, its `visibility`, one of three kinds:
 
 - `MEMBERS`: the people and readers its **SiteMember** rows name. A site
   that says nothing is this, and so is every site from before the field.
-- `COMPANY`: the company's people, and those it names. Who is of the
-  company is told by a rule that is still to come; until it is, nobody is,
-  and a `COMPANY` site is seen as a `MEMBERS` one.
+- `COMPANY`: the company's people, and those it names. **The company's
+  people** are those of the tenant with a proved address at a mail domain
+  the tenant names at roster: an address roster stamped as checked (a
+  directory's word, or a link they confirmed), whose domain is one of the
+  tenant's `MailDomain` rows, exactly. Somebody whose address is not
+  proved, or is elsewhere, sees the sites said `EVERYBODY` and the ones
+  that name them. Where roster runs inside Shale everybody of the tenant is
+  of the company, so `COMPANY` and `EVERYBODY` show the same people: such a
+  deployment has no outsiders to tell apart, and its roster holds no
+  addresses and no mail domains
+  ([§33.1](10-security.md#331-trust-model)).
 - `EVERYBODY`: every person signed in to the tenant, and the readers it
   names. A reader is a host and nobody: a kind gives it nothing.
 

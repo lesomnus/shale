@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/roster/rstr"
+
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/identity"
@@ -48,10 +50,11 @@ func setSeen(ctx context.Context, conn *grpc.ClientConn, ref *api.SetRef) error 
 
 // Where roster says what people may change, a person roster does not
 // grant all of Shale sees a site by its kind and by its members (§33.1):
-// a MEMBERS site they are not in, a COMPANY site (nobody is of the company
-// yet) and a set in no site are outside the wall for every read -- a set,
-// a source, a lamina, Live, the timeline, an export; an EVERYBODY site is
-// seen; a membership adds a site; a kind patched and a membership added
+// a MEMBERS site they are not in and a set in no site are outside the wall
+// for every read -- a set, a source, a lamina, Live, the timeline, an
+// export; an EVERYBODY site is seen, and so is a COMPANY one, since where
+// roster runs inside Shale everybody of the tenant is of the company; a
+// membership adds a site; a kind patched and a membership added
 // are seen within the time an answer is kept, and by a key with no list
 // made before; whoever is granted all of Shale sees all of it; and a kind
 // there is none of is refused.
@@ -103,16 +106,19 @@ func TestSiteVisibilityWithOperators(t *testing.T) {
 	_, err = api.NewLaminaServiceClient(asBob).Export(ctx, ex)
 	require.Equal(t, codes.NotFound, status.Code(err), "an export")
 
-	// The EVERYBODY site is his; the COMPANY site is not, since nobody is
-	// of the company yet; a set in no site is nobody's but whoever sees
-	// every site.
+	// The EVERYBODY site is his, and so is the COMPANY one: roster runs
+	// inside Shale here, and everybody of the tenant is of the company. A
+	// set in no site is nobody's but whoever sees every site.
 	require.NoError(t, setSeen(ctx, asBob, hall))
-	require.Equal(t, codes.NotFound, status.Code(setSeen(ctx, asBob, office)), "COMPANY, and nobody is of the company")
+	require.NoError(t, setSeen(ctx, asBob, office), "COMPANY, and everybody is of the company")
 	require.Equal(t, codes.NotFound, status.Code(setSeen(ctx, asBob, loose)), "in no site")
 	sites, err := api.NewSiteServiceClient(asBob).List(ctx, api.SiteListRequest_builder{}.Build())
 	require.NoError(t, err)
-	require.Len(t, sites.GetItems(), 1)
-	require.Equal(t, "hall", sites.GetItems()[0].GetAlias())
+	var aliases []string
+	for _, v := range sites.GetItems() {
+		aliases = append(aliases, v.GetAlias())
+	}
+	require.ElementsMatch(t, []string{"hall", "office"}, aliases)
 
 	// Whoever is granted all of Shale sees all of it, in no site too.
 	for _, ref := range []*api.SetRef{recorded, hall, office, loose} {
@@ -128,14 +134,18 @@ func TestSiteVisibilityWithOperators(t *testing.T) {
 	byKey := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+key)
 	conn := plainConn(t, c.running.TenantAddr)
 	require.NoError(t, setSeen(byKey, conn, hall))
-	require.Equal(t, codes.NotFound, status.Code(setSeen(byKey, conn, office)))
+	require.NoError(t, setSeen(byKey, conn, office))
+	require.Equal(t, codes.NotFound, status.Code(setSeen(byKey, conn, recorded)))
 
 	// A site made EVERYBODY after the key was made, and a kind patched,
 	// are seen by it and by him within the time an answer is kept; a
 	// membership adds the site it names, whatever its kind.
 	later := setIn(t, ctx, admin, "later", siteOf(t, ctx, admin, "later", api.SiteVisibility_SITE_VISIBILITY_EVERYBODY))
+	annexSite := siteOf(t, ctx, admin, "annex", api.SiteVisibility_SITE_VISIBILITY_MEMBERS)
+	annex := setIn(t, ctx, admin, "annex", annexSite)
+	require.Equal(t, codes.NotFound, status.Code(setSeen(byKey, conn, annex)))
 	_, err = api.NewSiteServiceClient(admin).Patch(ctx, api.SitePatchRequest_builder{
-		Ref: company, Visibility: z.Ptr(api.SiteVisibility_SITE_VISIBILITY_EVERYBODY), DateUpdatedForce: z.Ptr(true),
+		Ref: annexSite, Visibility: z.Ptr(api.SiteVisibility_SITE_VISIBILITY_COMPANY), DateUpdatedForce: z.Ptr(true),
 	}.Build())
 	require.NoError(t, err)
 	_, err = api.NewSiteMemberServiceClient(admin).Add(ctx, api.SiteMemberAddRequest_builder{
@@ -143,9 +153,9 @@ func TestSiteVisibilityWithOperators(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 	require.Eventually(t, func() bool {
-		return setSeen(byKey, conn, later) == nil && setSeen(byKey, conn, office) == nil
+		return setSeen(byKey, conn, later) == nil && setSeen(byKey, conn, annex) == nil
 	}, sitesSeenWithin, 200*time.Millisecond, "the key sees the site made after it and the site patched")
-	require.NoError(t, setSeen(ctx, asBob, office), "and so does he: one answer for his session and his keys")
+	require.NoError(t, setSeen(ctx, asBob, annex), "and so does he: one answer for his session and his keys")
 	require.NoError(t, setSeen(ctx, asBob, recorded), "a member")
 	_, err = api.NewLaminaServiceClient(asBob).Export(ctx, ex)
 	require.NoError(t, err, "a member exports")
@@ -179,4 +189,76 @@ func TestSiteVisibilityWithoutOperators(t *testing.T) {
 	require.NoError(t, setSeen(ctx, asBob, hall))
 	require.Equal(t, codes.NotFound, status.Code(setSeen(ctx, asBob, vault)))
 	require.Equal(t, codes.NotFound, status.Code(setSeen(ctx, asBob, loose)))
+}
+
+// With roster elsewhere, who is of the company is roster's answer
+// (§33.1): a person with a proved address at a mail domain the tenant
+// names there sees a COMPANY site's set, its Live and its timeline, and so
+// does a key of theirs that carries no list; a person whose address there
+// is not proved, and whose proved one is elsewhere, is NOT_FOUND for each,
+// and sees the EVERYBODY site as the other does. A roster that refuses
+// Shale the two reads is nobody of the company.
+func TestCompanyWithAnOutsideRoster(t *testing.T) {
+	r := newOutsideRoster(t, "acme")
+	r.person("admin", identity.Everything)
+	alice := r.person("alice")
+	r.email(alice, "alice@acme.example", true)
+	bob := r.person("bob")
+	r.email(bob, "bob@acme.example", false)
+	r.email(bob, "bob@elsewhere.example", true)
+	r.domain("acme.example")
+
+	c := start(t, func(c *cmd.Config) {
+		c.Auth.Roster = identity.Config{Addr: r.addr, Insecure: true, Keys: map[string]string{"acme": r.key}}
+		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme", Ttl: time.Second}
+	})
+	ctx := context.Background()
+	admin := c.dial("@acme/admin")
+
+	// A recording, in a site said COMPANY.
+	src, ex := exportRecording(t, c, admin)
+	_, err := api.NewSiteServiceClient(admin).Patch(ctx, api.SitePatchRequest_builder{
+		Ref:        api.SiteRef_builder{Id: src.GetSite().GetId()}.Build(),
+		Visibility: z.Ptr(api.SiteVisibility_SITE_VISIBILITY_COMPANY), DateUpdatedForce: z.Ptr(true),
+	}.Build())
+	require.NoError(t, err)
+	recorded := api.SetRef_builder{Id: src.GetSet().GetId()}.Build()
+	hall := setIn(t, ctx, admin, "hall", siteOf(t, ctx, admin, "hall", api.SiteVisibility_SITE_VISIBILITY_EVERYBODY))
+
+	asAlice, asBob := c.dial("@acme/alice"), c.dial("@acme/bob")
+	for _, conn := range []*grpc.ClientConn{asAlice, asBob} {
+		require.NoError(t, setSeen(ctx, conn, hall), "EVERYBODY")
+	}
+	require.NoError(t, setSeen(ctx, asAlice, recorded), "of the company")
+	require.Equal(t, codes.NotFound, status.Code(setSeen(ctx, asBob, recorded)), "not proved at the domain")
+
+	_, err = api.NewSetServiceClient(asAlice).Live(ctx, api.SetLiveRequest_builder{Ref: recorded}.Build())
+	require.NotEqual(t, codes.NotFound, status.Code(err), "Live, seen")
+	_, err = api.NewSetServiceClient(asBob).Live(ctx, api.SetLiveRequest_builder{Ref: recorded}.Build())
+	require.Equal(t, codes.NotFound, status.Code(err), "Live")
+	timeline := api.LaminaTimelineRequest_builder{Source: ex.GetSource(), From: ex.GetFrom(), To: ex.GetTo(), Size: 10}.Build()
+	got, err := api.NewLaminaServiceClient(asAlice).Timeline(ctx, timeline)
+	require.NoError(t, err, "the timeline")
+	require.NotEmpty(t, got.GetSources())
+	_, err = api.NewLaminaServiceClient(asBob).Timeline(ctx, timeline)
+	require.Equal(t, codes.NotFound, status.Code(err), "the timeline")
+
+	// A key of each that carries no list sees what they see.
+	methods := []string{api.SetService_Get_FullMethodName, api.SetService_List_FullMethodName}
+	conn := plainConn(t, c.running.TenantAddr)
+	byAlice := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+r.apiKey(alice, methods...))
+	byBob := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+r.apiKey(bob, methods...))
+	require.NoError(t, setSeen(byAlice, conn, recorded))
+	require.Equal(t, codes.NotFound, status.Code(setSeen(byBob, conn, recorded)))
+	require.NoError(t, setSeen(byBob, conn, hall))
+
+	// Somebody arriving while roster refuses Shale the reads is nobody of
+	// the company: the answer is no, and the EVERYBODY site is still theirs.
+	r.refuse(rstr.EmailService_List_FullMethodName, true)
+	carol := r.person("carol")
+	r.email(carol, "carol@acme.example", true)
+	asCarol := c.dial("@acme/carol")
+	require.NoError(t, setSeen(ctx, asCarol, hall))
+	require.Equal(t, codes.NotFound, status.Code(setSeen(ctx, asCarol, recorded)), "refused is no")
+	require.Positive(t, r.emailLists.Load())
 }

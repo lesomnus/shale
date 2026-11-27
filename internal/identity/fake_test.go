@@ -2,8 +2,10 @@ package identity
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
@@ -24,8 +27,13 @@ import (
 )
 
 // fakeRoster is an external roster's data plane, as much of it as Shale
-// asks: tenants and the people in them, what each person is granted, and
-// two keys answered the way roster answers them. The tenant key (`rt_`) is
+// asks: tenants and the people in them, what each person is granted, their
+// addresses and each tenant's mail domains (listed as roster's generated
+// lists answer: by holder, an erased address never read, `date_verified`
+// absent where nobody proved it, only what the select names), and two
+// keys answered the way roster answers them. A method refused is
+// PermissionDenied, as roster's gate answers a caller whose roles do not
+// name it. The tenant key (`rt_`) is
 // the home tenant's holder and takes no `roster-at`; the deployment key
 // (`rk_`) lists its own nominations as itself, and otherwise names a
 // tenant that nominated it with `roster-at` or is refused. Every read is
@@ -41,6 +49,17 @@ type fakeRoster struct {
 	nominated map[string]bool
 	holders   map[string]*rstr.Holder
 	grants    map[string][]string
+	// emails are the people's addresses, and domains each tenant's mail
+	// domains by its alias; refused are the methods Shale's holder is not
+	// allowed, answered PermissionDenied as roster's gate does.
+	emails  []fakeEmail
+	domains map[string][]string
+	refused map[string]bool
+	// emailSelects are the selects EmailService.List was asked with, and
+	// emailLists and domainLists how many times each list was asked.
+	emailSelects []*rstr.EmailSelect
+	emailLists   atomic.Int32
+	domainLists  atomic.Int32
 
 	// exchanged is the holder each exchange token names, issued to Shale.
 	exchanged map[string][]byte
@@ -68,6 +87,8 @@ func newFakeRoster(t *testing.T, tenantAlias string) *fakeRoster {
 		holders:   map[string]*rstr.Holder{},
 		grants:    map[string][]string{},
 		exchanged: map[string][]byte{},
+		domains:   map[string][]string{},
+		refused:   map[string]bool{},
 		sync:      make(chan *rstr.SyncEvent, 16),
 	}
 	f.tenant = f.addTenant(tenantAlias)
@@ -80,6 +101,8 @@ func newFakeRoster(t *testing.T, tenantAlias string) *fakeRoster {
 	rstr.RegisterMeServiceServer(g, me{fakeRoster: f})
 	pdpb.RegisterTokenServiceServer(g, tokens{fakeRoster: f})
 	rstr.RegisterSyncServiceServer(g, syncs{fakeRoster: f})
+	rstr.RegisterEmailServiceServer(g, emails{fakeRoster: f})
+	rstr.RegisterMailDomainServiceServer(g, mailDomains{fakeRoster: f})
 	go g.Serve(l)
 	t.Cleanup(g.Stop)
 	f.addr = l.Addr().String()
@@ -111,6 +134,14 @@ func (f *fakeRoster) check(ctx context.Context, req any, info *grpc.UnaryServerI
 	f.calls.Add(1)
 	if f.down.Load() {
 		return nil, status.Error(codes.Unavailable, "roster is down")
+	}
+	f.mu.Lock()
+	refused := f.refused[info.FullMethod]
+	f.mu.Unlock()
+	if refused {
+		next = func(context.Context, any) (any, error) {
+			return nil, status.Errorf(codes.PermissionDenied, "%s: not a method the caller's roles name", info.FullMethod)
+		}
 	}
 	md, _ := metadata.FromIncomingContext(ctx)
 	at := md.Get(front.HeaderAt)
@@ -327,4 +358,143 @@ func (f syncs) Watch(_ *rstr.SyncWatchRequest, st rstr.SyncService_WatchServer) 
 			}
 		}
 	}
+}
+
+// fakeEmail is an address of a person's, as roster keeps it: proved when
+// verified is set, and never read once erased.
+type fakeEmail struct {
+	holder   []byte
+	tenant   []byte
+	address  string
+	verified *timestamppb.Timestamp
+	erased   bool
+}
+
+// addEmail is an address of a person's, proved or not.
+func (f *fakeRoster) addEmail(holder []byte, address string, proved bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	v := fakeEmail{holder: holder, tenant: f.holders[string(holder)].GetTenant().GetId(), address: address}
+	if proved {
+		v.verified = timestamppb.Now()
+	}
+	f.emails = append(f.emails, v)
+}
+
+// eraseEmails erases a person's addresses.
+func (f *fakeRoster) eraseEmails(holder []byte) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for i := range f.emails {
+		if string(f.emails[i].holder) == string(holder) {
+			f.emails[i].erased = true
+		}
+	}
+}
+
+// addDomain is a mail domain a tenant names, written as roster writes it:
+// lower-cased.
+func (f *fakeRoster) addDomain(tenant, name string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.domains[tenant] = append(f.domains[tenant], strings.ToLower(name))
+}
+
+// refuse makes Shale's holder not allowed a method, or allowed it again.
+func (f *fakeRoster) refuse(method string, on bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.refused[method] = on
+}
+
+// page is a list's page of n rows from after, as roster cuts one: the
+// schema's size when nothing is said, never more than the cap.
+func page(n int, size int32, after string, def, max int) (from, to int, next string) {
+	k := int(size)
+	if k <= 0 {
+		k = def
+	}
+	k = min(k, max)
+	if after != "" {
+		fmt.Sscan(after, &from)
+	}
+	from = min(from, n)
+	to = min(from+k, n)
+	if to < n {
+		next = fmt.Sprint(to)
+	}
+
+	return from, to, next
+}
+
+type emails struct {
+	rstr.UnimplementedEmailServiceServer
+	*fakeRoster
+}
+
+// List is roster's generated List: the rows of the caller's tenant (the
+// wall), never an erased one, those of the holder a filter names -- every
+// one of the tenant's with no filter, which is what a grant bound with no
+// site sees -- and of each, only what the select names.
+func (f emails) List(ctx context.Context, req *rstr.EmailListRequest) (*rstr.EmailListResponse, error) {
+	f.emailLists.Add(1)
+	t := walled(ctx)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.emailSelects = append(f.emailSelects, req.GetSelect())
+	var rows []fakeEmail
+	for _, v := range f.emails {
+		if v.erased || string(v.tenant) != string(t.GetId()) {
+			continue
+		}
+		if fs := req.GetFilters(); len(fs) > 0 && !slices.ContainsFunc(fs, func(x *rstr.EmailFilter) bool { return string(x.GetHolder().GetId()) == string(v.holder) }) {
+			continue
+		}
+		rows = append(rows, v)
+	}
+	from, to, next := page(len(rows), req.GetSize(), req.GetAfter(), 20, 100)
+	sel := req.GetSelect()
+	out := make([]*rstr.Email, 0, to-from)
+	for _, v := range rows[from:to] {
+		b := rstr.Email_builder{}
+		if sel == nil || sel.GetAll() || sel.GetAddress() {
+			b.Address = v.address
+		}
+		if sel == nil || sel.GetAll() || sel.GetDateVerified() {
+			b.DateVerified = v.verified
+		}
+		if sel == nil || sel.GetAll() || sel.GetHolder() != nil {
+			b.Holder = rstr.Holder_builder{Id: v.holder}.Build()
+		}
+		out = append(out, b.Build())
+	}
+
+	return rstr.EmailListResponse_builder{Items: out, Next: next}.Build(), nil
+}
+
+type mailDomains struct {
+	rstr.UnimplementedMailDomainServiceServer
+	*fakeRoster
+}
+
+// List is roster's generated List: the caller's tenant's mail domains, of
+// the tenant a filter names.
+func (f mailDomains) List(ctx context.Context, req *rstr.MailDomainListRequest) (*rstr.MailDomainListResponse, error) {
+	f.domainLists.Add(1)
+	t := walled(ctx)
+	if fs := req.GetFilters(); len(fs) > 0 && !slices.ContainsFunc(fs, func(x *rstr.MailDomainFilter) bool {
+		return string(x.GetTenant().GetId()) == string(t.GetId()) || x.GetTenant().GetAlias() == t.GetAlias()
+	}) {
+		return rstr.MailDomainListResponse_builder{}.Build(), nil
+	}
+	f.mu.Lock()
+	names := slices.Clone(f.domains[t.GetAlias()])
+	f.mu.Unlock()
+	from, to, next := page(len(names), req.GetSize(), req.GetAfter(), 20, 100)
+	out := make([]*rstr.MailDomain, 0, to-from)
+	for _, n := range names[from:to] {
+		out = append(out, rstr.MailDomain_builder{Name: n}.Build())
+	}
+
+	return rstr.MailDomainListResponse_builder{Items: out, Next: next}.Build(), nil
 }

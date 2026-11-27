@@ -630,6 +630,15 @@ What to do, so that nobody loses a camera they should keep:
   everybody signed in should see, `COMPANY` for the company's people, and
   `MEMBERS`, which every site starts as, for one only the people it names
   see (who is of the company: [§7](02-data-model.md#7-source-set-zone-epoch)).
+- **For `COMPANY`, at a roster elsewhere**, roster's operator adds
+  `/roster.EmailService/List` and `/roster.MailDomainService/List` to what
+  Shale may call in the tenant (`roster app install --allow`, beside the
+  methods named there already, [§33.1](10-security.md#331-trust-model)),
+  and the tenant names its mail domains at roster (a `MailDomain`, by
+  name, with the connection it routes to). Until both are so, nobody is of
+  the company, a `COMPANY` site is seen by the people it names, and the
+  log says which methods are missing. Where roster runs inside Shale,
+  everybody of the tenant is of the company and nothing is added.
 - **Cameras in no site** are not shown to anybody else by any kind. A
   set's site is said when the set is added; a set that exists cannot yet
   be moved into one.
