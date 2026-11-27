@@ -120,12 +120,12 @@ github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155 h1:6+fiPhbQ3o6yA/LT8S
 github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155/go.mod h1:pELV84QKdWnj9caf3Gjo7Q05Y72nXIcwO7O6wLrSpd4=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155 h1:LNWU02jDM4qnDL0H0riFbxueEyipl+Ww7rHGw6FtXFc=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155/go.mod h1:4f44cLB2NM6g+O4Fr5PHDdHNuL91EfbUosAipbDXSwo=
-github.com/lesomnus/payday v0.0.0-20261126111838-dc958082a988 h1:pKS5zvZ9fKZJkBzMpLCEUEQmSWjmILWjr3GNgTFUy84=
-github.com/lesomnus/payday v0.0.0-20261126111838-dc958082a988/go.mod h1:Z9CvTwDq4iKI7pOhI0a5eUs5VyVQ8o+gO65kDvEsdzE=
+github.com/lesomnus/payday v0.0.0-20261127012945-54b72cf28e7d h1:pzuR6vBDw875ayNFntV9YD/PhqzFiT5qfBfZpUu1FXg=
+github.com/lesomnus/payday v0.0.0-20261127012945-54b72cf28e7d/go.mod h1:Z9CvTwDq4iKI7pOhI0a5eUs5VyVQ8o+gO65kDvEsdzE=
 github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da h1:qPsmOLxmKDgZHCggUNE4pv5Ay1TtO1Chn/OzN5JNKqQ=
 github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
-github.com/lesomnus/roster v0.1.2-0.20261126135548-cddc67534d7b h1:oyUmo4dUrhT7ArTr8ijrVr2FekxVfWWbdmqrSDqdjSY=
-github.com/lesomnus/roster v0.1.2-0.20261126135548-cddc67534d7b/go.mod h1:7/fNpYvI3IFV49wSYWEvmnrRbtFW15IkKV0074hTOZE=
+github.com/lesomnus/roster v0.1.2-0.20261127014608-ff6d86cee9b9 h1:0ZkyuisE6fixHWQ9Eb/HtB28Mva7H8jOhfgEj1e8x9A=
+github.com/lesomnus/roster v0.1.2-0.20261127014608-ff6d86cee9b9/go.mod h1:Fho4VN/cYMRx8UAmg6J3W3eRIaAQMt3pQBpq52jpowc=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e h1:S272MwPLsKMFJ7Xl75vVixiZ6QpN9tLuJXH4Q3GsKJk=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e/go.mod h1:OT2wkw6444ni+rf0+zlh9T8IQhOWy5x04ArBbqv3Lu0=
 github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c h1:C3QoREkgt4tivmakukKKPdfaVUZb5zy3gF+LOsMoybY=
