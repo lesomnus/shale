@@ -179,11 +179,11 @@ through in [the Kubernetes tutorial](docs/tutorial-k8s.md). `go test ./...`
 runs the end-to-end harness (`internal/e2e`), which allocates, uploads, and
 reads back through `Timeline`, on SQLite, or on PostgreSQL with
 `SHALE_E2E_DB_DSN` set. CI runs both: the `test` job everything on SQLite, the `postgres` job
-`internal/e2e` and `cli` on a PostgreSQL 17, one package after the other,
+`cli`, `server/core` and `internal/e2e` on a PostgreSQL 17, one package after the other,
 since every control plane the harness starts empties the database first.
-The same here, on a database that holds nothing else, on a server started
-with `-c max_connections=1000` (the postgres watch broker leaves its
-connections open when a control plane stops, so the default hundred runs
-out): `SHALE_E2E_DB_DSN='postgres://user:pass@localhost:5432/db?sslmode=disable' go test -p 1 -count=1 ./cli ./internal/e2e`.
+The same here, on a database that holds nothing else, with the server's
+default hundred connections (a control plane that stops gives its
+connections back):
+`SHALE_E2E_DB_DSN='postgres://user:pass@localhost:5432/db?sslmode=disable' go test -p 1 -count=1 ./cli ./server/core ./internal/e2e`.
 `CLAUDE.md` says how the generated code and
 the hand-written layers fit.
