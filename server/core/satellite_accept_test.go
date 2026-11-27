@@ -44,8 +44,12 @@ type acceptFixture struct {
 }
 
 func newAcceptFixture(t *testing.T) *acceptFixture {
+	return newAcceptFixtureOn(t, config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "shale.db") + "?_pragma=foreign_keys(1)"})
+}
+
+// newAcceptFixtureOn is the fixture over the database cfg names.
+func newAcceptFixtureOn(t *testing.T, cfg config.DbConfig) *acceptFixture {
 	ctx := t.Context()
-	cfg := config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "shale.db") + "?_pragma=foreign_keys(1)"}
 	db, dialect, err := cfg.Open(ctx)
 	require.NoError(t, err)
 	driver := sql.OpenDB(dialect, db)

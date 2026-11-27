@@ -803,12 +803,24 @@ func (s Core) satelliteName(ctx context.Context, id pdid.Id) string {
 // lamina's row keeps the satellite it was lost by, and the loss is counted
 // as the satellite's. lost says which of its laminae are; a late
 // LaminaStored still brings one back (§14).
+//
+// Every write tests the version of the row as this read it, so that a
+// node's stored event that landed after the read is not written over: a
+// lamina that moved is read again and lost only if it is still PENDING
+// through this satellite and still one `lost` says is. Refused a second
+// time, it is left as it is: the leader's jobs ask again of a satellite
+// that is down, a minute on; a restart asks once (satelliteRestarted), and
+// a lamina it left PENDING is removed by the jobs as one nobody stored
+// once its attempts expired and abandon_grace passed (§12.1).
 func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost func(*ent.Lamina) bool) (int, error) {
 	os, err := s.ent(ctx).Lamina.Query().
 		Where(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_PENDING)), lamina.SatelliteIdEQ(sat.Uuid())).
 		All(ctx)
 	if err != nil || len(os) == 0 {
 		return 0, err
+	}
+	if s.d.lostHeld != nil {
+		s.d.lostHeld(ctx)
 	}
 	name := s.satelliteName(ctx, sat)
 	reason := "satellite " + name + " lost what it accepted: " + why
@@ -818,6 +830,26 @@ func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost f
 		if lost != nil && !lost(o) {
 			continue
 		}
+		done, err := s.loseLamina(ctx, sat, o, reason, now, lost)
+		if err != nil {
+			s.d.log().Warn("lose a satellite's lamina", "satellite", name, "err", err.Error())
+			continue
+		}
+		if !done {
+			continue
+		}
+		n++
+		s.d.metrics().Lost.Add(ctx, 1, metric.WithAttributes(attribute.String("by", "satellite")))
+		s.d.log().Warn("lamina lost with the satellite that held it", "satellite", name, "lamina", pdid.Id(o.Id).String(), "key", o.LaminaKey, "why", why)
+	}
+
+	return n, nil
+}
+
+// loseLamina makes one lamina of satelliteLost LOST and its open attempts
+// FAILED, each with the version it was read at, and says whether it did.
+func (s Core) loseLamina(ctx context.Context, sat pdid.Id, o *ent.Lamina, reason string, now time.Time, lost func(*ent.Lamina) bool) (bool, error) {
+	for again := false; ; again = true {
 		err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 			open, err := s.ent(ctx).Attempt.Query().
 				Where(attempt.LaminaIdEQ(o.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
@@ -828,35 +860,43 @@ func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost f
 			for _, a := range open {
 				st := api.AttemptState_ATTEMPT_STATE_FAILED
 				if _, err := own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
-					Ref:              api.AttemptRef_builder{Id: a.Id[:]}.Build(),
-					State:            &st,
-					FailureReason:    z.Ptr(reason),
-					DateFinished:     timestamppb.New(now),
-					DateUpdatedForce: z.Ptr(true),
+					Ref:           api.AttemptRef_builder{Id: a.Id[:]}.Build(),
+					State:         &st,
+					FailureReason: z.Ptr(reason),
+					DateFinished:  timestamppb.New(now),
+					DateUpdated:   timestamppb.New(a.DateUpdated),
 				}.Build()); err != nil {
 					return err
 				}
 			}
 			st := api.LaminaState_LAMINA_STATE_LOST
 			_, err = own.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
-				Ref:              api.LaminaRef_builder{Id: o.Id[:]}.Build(),
-				State:            &st,
-				DateFinished:     timestamppb.New(now),
-				DateUpdatedForce: z.Ptr(true),
+				Ref:          api.LaminaRef_builder{Id: o.Id[:]}.Build(),
+				State:        &st,
+				DateFinished: timestamppb.New(now),
+				DateUpdated:  timestamppb.New(o.DateUpdated),
 			}.Build())
 
 			return err
 		})
-		if err != nil {
-			s.d.log().Warn("lose a satellite's lamina", "satellite", name, "err", err.Error())
-			continue
+		if !moved(err) {
+			return err == nil, err
 		}
-		n++
-		s.d.metrics().Lost.Add(ctx, 1, metric.WithAttributes(attribute.String("by", "satellite")))
-		s.d.log().Warn("lamina lost with the satellite that held it", "satellite", name, "lamina", pdid.Id(o.Id).String(), "key", o.LaminaKey, "why", why)
+		if again {
+			s.d.log().Warn("a satellite's lamina moved twice while it was lost; left as it is", "satellite", sat.String(), "lamina", pdid.Id(o.Id).String())
+			return false, nil
+		}
+		o, err = s.ent(ctx).Lamina.Get(ctx, o.Id)
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		if o.State != int32(api.LaminaState_LAMINA_STATE_PENDING) || o.SatelliteId != sat.Uuid() || (lost != nil && !lost(o)) {
+			return false, nil
+		}
 	}
-
-	return n, nil
 }
 
 // satelliteRestarted makes LOST what a satellite held before it restarted

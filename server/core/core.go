@@ -196,6 +196,12 @@ type Deps struct {
 	// the host's row is read and before it is written, each time the poll
 	// reads it.
 	joinHeld func(context.Context)
+	// lostHeld, set by a test, runs inside satelliteLost once the
+	// satellite's PENDING laminae are read and before any is written.
+	lostHeld func(context.Context)
+	// abandonHeld, set by a test, runs inside the leader's jobs once the
+	// expired attempts are read and before any is abandoned.
+	abandonHeld func(context.Context)
 
 	// cas is the CA set as this process read it (§33.5).
 	casOnce sync.Once

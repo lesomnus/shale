@@ -279,6 +279,11 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	if len(ev.GetChecksum()) > 0 {
 		patch.Checksum = ev.GetChecksum()
 	}
+	// A lamina a producer skipped and a node stored after all is stored,
+	// and no longer says why it was skipped.
+	if obj.SkipReason != 0 {
+		patch.SkipReason = z.Ptr(api.LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED)
+	}
 	if _, err := own.Lamina().Patch(ctx, patch.Build()); err != nil {
 		return err
 	}

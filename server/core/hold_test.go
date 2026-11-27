@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,6 +15,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/ent"
+	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/pki"
 )
 
@@ -408,4 +411,118 @@ func testJoinMovedTwiceWaits(t *testing.T, f *capFixture) {
 	require.Equal(t, "waiting for adoption", got.GetMessage())
 	require.Empty(t, got.GetCertificate())
 	require.Equal(t, 1, strings.Count(f.logs.String(), "moved twice while it polled"))
+}
+
+// store is a node's stored event for an attempt of a lamina on a sink, as
+// it pushes it, required applied.
+func store(core Core, node, sink, lamina, at pdid.Id) error {
+	resp, err := core.Node().PushEvents(as(node), api.NodePushEventsRequest_builder{Events: []*api.Event{api.Event_builder{Stored: api.LaminaStored_builder{
+		LaminaId: lamina.Bytes(), AttemptId: at.Bytes(), SinkId: sink.Bytes(), LaminaKey: "laminae/" + lamina.String(), Size: 1,
+	}.Build()}.Build()}}.Build())
+	if err != nil {
+		return err
+	}
+	if resp.GetApplied() != 1 {
+		return fmt.Errorf("the stored event was refused")
+	}
+
+	return nil
+}
+
+// satelliteLost, held after it read a restarted satellite's PENDING
+// laminae, does not write over a node's stored event for one of them
+// that landed meanwhile: that lamina is COMMITTED and its attempt STORED,
+// and the others are LOST as before. Before, the forced LOST landed on
+// the stored lamina, and no later event brought it back (#341).
+func TestSatelliteLostKeepsWhatANodeStored(t *testing.T) {
+	t.Run("SQLite", func(t *testing.T) { testSatelliteLostKeepsWhatANodeStored(t, newAcceptFixture(t)) })
+	t.Run("PostgreSQL", func(t *testing.T) { testSatelliteLostKeepsWhatANodeStored(t, newAcceptFixtureOn(t, pgConfig(t))) })
+}
+
+func testSatelliteLostKeepsWhatANodeStored(t *testing.T, f *acceptFixture) {
+	stored, storedAt := f.lamina(time.Hour)
+	lost, lostAt := f.lamina(time.Hour)
+	for _, id := range []pdid.Id{stored, lost} {
+		_, err := f.core.Satellite().Accept(as(f.ours), api.SatelliteAcceptRequest_builder{LaminaId: id.Bytes()}.Build())
+		require.NoError(t, err)
+	}
+
+	last := api.SatelliteStatus_builder{Incarnation: "one", Held: [][]byte{stored.Bytes(), lost.Bytes()}}.Build()
+	require.NoError(t, heldBeside(t, func(fn func(context.Context)) { f.core.d.lostHeld = fn }, func() error {
+		f.core.satelliteRestarted(t.Context(), f.ours, last, api.SatelliteStatus_builder{Incarnation: "two"}.Build())
+		return nil
+	}, func() error { return store(f.core, f.node, f.sinkId, stored, storedAt) }))
+
+	require.Equal(t, api.LaminaState_LAMINA_STATE_COMMITTED, f.get(stored).GetState())
+	require.Equal(t, api.AttemptState_ATTEMPT_STATE_STORED, f.attempt(storedAt).GetState())
+	require.Equal(t, api.LaminaState_LAMINA_STATE_LOST, f.get(lost).GetState())
+	require.Equal(t, api.AttemptState_ATTEMPT_STATE_FAILED, f.attempt(lostAt).GetState())
+}
+
+// The leader's sweep of expired attempts, held after it read them, does
+// not write over a node's stored event or a renewal that landed
+// meanwhile: the stored attempt stays STORED and the renewed one
+// ALLOCATED with its new expiry. Before, both were ABANDONED (#341).
+func TestAbandonKeepsWhatLanded(t *testing.T) {
+	t.Run("SQLite", func(t *testing.T) { testAbandonKeepsWhatLanded(t, newCapFixture(t)) })
+	t.Run("PostgreSQL", func(t *testing.T) { testAbandonKeepsWhatLanded(t, newCapFixtureOn(t, pgConfig(t))) })
+}
+
+func testAbandonKeepsWhatLanded(t *testing.T, f *capFixture) {
+	ctx := t.Context()
+	jobs := NewJobs(f.core.d)
+	hold := func(fn func(context.Context)) { f.core.d.abandonHeld = fn }
+	first := func(id pdid.Id) *ent.Attempt {
+		v, err := f.client.Attempt.Query().Where(attempt.LaminaIdEQ(id.Uuid()), attempt.RankEQ(0)).Only(ctx)
+		require.NoError(t, err)
+		return v
+	}
+	base := f.now
+
+	// Stored while the sweep is held.
+	id := f.pending(f.srcs[0], f.slot(f.srcs[0]))
+	at := first(id)
+	sweep := base.Add(time.Hour + time.Second)
+	require.NoError(t, heldBeside(t, hold, func() error { return jobs.abandonExpired(ctx, sweep) },
+		func() error { return store(f.core, f.nodes[0], f.sinks[0], id, pdid.Id(at.Id)) }))
+	got, err := f.client.Attempt.Get(ctx, at.Id)
+	require.NoError(t, err)
+	require.Equal(t, int32(api.AttemptState_ATTEMPT_STATE_STORED), got.State)
+
+	// Renewed while the sweep is held: just before it expired, by the
+	// renewal's clock.
+	id = f.pending(f.srcs[1], f.slot(f.srcs[1]))
+	at = first(id)
+	require.NoError(t, heldBeside(t, hold, func() error { return jobs.abandonExpired(ctx, sweep) }, func() error {
+		f.now = base.Add(time.Hour - time.Second)
+		_, err := f.core.Lamina().Renew(f.ctx, api.LaminaRenewRequest_builder{
+			Ref: api.LaminaRef_builder{Id: id.Bytes()}.Build(), Attempt: api.AttemptRef_builder{Id: at.Id[:]}.Build(),
+		}.Build())
+		return err
+	}))
+	f.now = base
+	got, err = f.client.Attempt.Get(ctx, at.Id)
+	require.NoError(t, err)
+	require.Equal(t, int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED), got.State)
+	require.True(t, got.DateExpires.After(sweep), "the renewal is kept")
+}
+
+// A lamina a producer skipped and a node then stored is COMMITTED, and no
+// longer says why it was skipped.
+func TestStoredAfterASkipIsNotSkipped(t *testing.T) {
+	t.Run("SQLite", func(t *testing.T) { testStoredAfterASkipIsNotSkipped(t, newAcceptFixture(t)) })
+	t.Run("PostgreSQL", func(t *testing.T) { testStoredAfterASkipIsNotSkipped(t, newAcceptFixtureOn(t, pgConfig(t))) })
+}
+
+func testStoredAfterASkipIsNotSkipped(t *testing.T, f *acceptFixture) {
+	id, at := f.lamina(time.Hour)
+	_, err := f.core.Lamina().Skip(as(f.producer), api.LaminaSkipRequest_builder{Ref: api.LaminaRef_builder{Id: id.Bytes()}.Build(), Reason: api.LaminaSkipReason_LAMINA_SKIP_REASON_DARK}.Build())
+	require.NoError(t, err)
+	require.Equal(t, api.LaminaState_LAMINA_STATE_SKIPPED, f.get(id).GetState())
+	require.Equal(t, api.LaminaSkipReason_LAMINA_SKIP_REASON_DARK, f.get(id).GetSkipReason())
+
+	require.NoError(t, store(f.core, f.node, f.sinkId, id, at))
+	v := f.get(id)
+	require.Equal(t, api.LaminaState_LAMINA_STATE_COMMITTED, v.GetState())
+	require.Equal(t, api.LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED, v.GetSkipReason())
 }
