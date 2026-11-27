@@ -147,15 +147,15 @@ func TestPersonsKey(t *testing.T) {
 // view tokens that end no later than it, at whose end the relay ends the
 // view.
 func TestPersonsKeyEnds(t *testing.T) {
-	// Where roster says what people may change, a person arriving sees
-	// every site: Dave is no member of any.
+	// Dave sees the set as everybody does: its site is said EVERYBODY,
+	// and he is no member of it.
 	c := start(t, func(c *cmd.Config) {
 		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme"}
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	admin := c.dial("@acme/admin")
-	set, _ := liveSource(t, ctx, c, admin, "av.mp4")
+	set, _ := liveSourceAt(t, ctx, c, admin, "av.mp4", everybody(t, ctx, admin, "lobby"))
 	id := c.running.CP.Identity
 	conn := plainConn(t, c.running.TenantAddr)
 
@@ -224,7 +224,7 @@ func TestPersonsKeyEndedAtRosterEndsItsStreams(t *testing.T) {
 	conn := plainConn(t, c.running.TenantAddr)
 	admin := c.dial("@acme/admin")
 	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
-		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "watched",
+		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "watched", Site: everybody(t, ctx, admin, "lobby"),
 	}.Build())
 	require.NoError(t, err)
 	ref := api.SetRef_builder{Id: set.GetId()}.Build()

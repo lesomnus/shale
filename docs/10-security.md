@@ -15,7 +15,7 @@ holds a credential.
 |---|---|---|---|---|
 | **Producer** | host, tenant entity | tenant API | host certificate (mTLS) | negotiate and allocate for its set; upload with the access tokens it is given |
 | **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read laminae of its sites |
-| **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read its tenant's sets, cameras, live video, laminae, sites and hosts; where roster says what people may change (below), the rest as far as roster grants them |
+| **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read its tenant's hosts, and the sets, cameras, live video, laminae and sites of the sites it sees (*Sites*, below); where roster says what people may change (below), the rest as far as roster grants them |
 | **Person, by a key** | person (Holder) | tenant API | `Authorization: Bearer rt_…`, a key for Shale roster minted them (below) | what the person may, and of it only the methods the key names |
 | **Tenant admin** | person (Holder) | tenant API | a session, after roster vouched for them | manage its tenant's sites, sets, sources, producers, readers, and retention dates: every person of the tenant where operators are a tenant; where roster says, a person it grants all of Shale (`/shale.*/*`) |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
@@ -29,10 +29,43 @@ holds a credential.
   deployment is a cluster with one tenant, so the wall is always on, and
   multi-tenancy needs no code change
   ([§7](02-data-model.md#7-source-set-zone-epoch)).
-- **Sites.** Within a tenant, a person or a reader can be limited to the
-  sites it is a member of (payday's second axis, field 3). Tenant admins see
-  every site. A producer is issued *within* the site of the set it was adopted
-  for, so it is useless anywhere else
+- **Sites.** Within a tenant, what a person or a reader sees of cameras is
+  the sites it may see (payday's second axis, field 3), decided in one
+  place, `Sites.Of` (`server/core/gatepolicy.go`):
+
+  | caller | sees |
+  |---|---|
+  | a person who sees every site | every site, and every row in no site |
+  | any other person | the sites said `EVERYBODY`; the sites said `COMPANY` if they are of the company; the sites whose `SiteMember` rows name them, whatever they say |
+  | a reader | every site with `all_sites`; otherwise the sites it is a member of, and no site by its kind: a reader is a host and nobody |
+  | a producer | the site of its set, or every site when its set has none |
+  | a camera worker | the site it was adopted for, or none |
+  | a node, a relay, a satellite | every site; they read no camera of a tenant's |
+
+  **Who sees every site**: where roster says what people may change
+  (`auth.operators`, below), whoever roster grants all of Shale
+  (`/shale.*/*`), and nobody by their row; where it does not, whoever's row
+  has `all_sites` (the tenant's first person, and whom `holder add` or a
+  patch gives it). A site's kind is written when it is added and by a patch,
+  by whoever may write a site; one said nothing, and every site from before
+  the field, is `MEMBERS` ([§7](02-data-model.md#7-source-set-zone-epoch)).
+  Who is of the company is said in [§7](02-data-model.md#7-source-set-zone-epoch).
+
+  **A row in no site** -- a set added without one, its sources, laminae,
+  attempts and producer -- matches no site, so it is seen by whoever sees
+  every site and by nobody else; no kind and no membership reaches it. A
+  camera is shown to others by its set being in a site, which is said when
+  the set is added; a set that exists cannot yet be moved into one.
+
+  The answer is kept per caller for 10 seconds and not forgotten when a
+  site or a membership is written, so a kind changed, a membership added
+  or taken away, is seen within them (a grant at roster within
+  `auth.operators.ttl` besides): it is an administrator's change, and
+  somebody who loses a site reads it for those seconds at the most. A
+  person's session, their keys without a list, and an app viewing in their
+  name ([§33.8](#338-viewing-on-a-persons-behalf)) are the person, and see
+  the same. A producer is issued *within* the site of the set it was
+  adopted for, so it is useless anywhere else
   ([§7](02-data-model.md#7-source-set-zone-epoch)).
 - **Two surfaces.** Anything that must span tenants (Storage Nodes, cluster
   operators) uses the cluster API, which is a separate entry point on the
@@ -49,8 +82,10 @@ holds a credential.
   The rows are made **on demand**, the first time a credential roster
   vouched for names the person, and no other way: `holder add` makes the
   person at roster and then here, and a tenant is made at roster and its
-  row here follows its first person. The first person of a tenant sees every
-  site; everyone after sees what a Shale admin gives them.
+  row here follows its first person. Where roster does not say what people
+  may change, the first person of a tenant's row has `all_sites`, so they
+  see every site; everyone after sees what the sites' kinds and members
+  give them (*Sites*, above).
 - **Signing in with a password** is `POST /session {tenant, alias,
   password}` on the tenant API's HTTP listener: Shale asks roster
   (`VouchService.Verify`), and mints its own session cookie once roster said
@@ -400,13 +435,16 @@ holds a credential.
   source pins. A new RPC whose answer hands a person a secret goes beside
   these two in `TenantPolicy.May`.
 
-  **Sites, where roster says.** Reading is tenant-wide by default: a
-  person's row is made with `all_sites` on (not only the tenant's first
-  person's), so a new person reads every site. An administrator narrows
-  somebody the way it is done anywhere else -- `all_sites` off and
-  `SiteMember` rows for the sites they may see -- and the wall then narrows
-  their reads to those sites; it never widens what they may call. A person
-  roster grants all of Shale sees every site whatever their own row says.
+  **Sites, where roster says.** Whoever roster grants all of Shale sees
+  every site, and nobody else does, whatever their row's `all_sites` says:
+  it is not read here, and a person's row is made without it, the tenant's
+  first person's too. Everybody else sees the sites a site's kind and its
+  members give them (*Sites*, above), and the wall narrows their reads to
+  those; it never widens what they may call. Before this, every person's
+  row was made with `all_sites` on and read: such a person, not granted all
+  of Shale, now sees what the kinds give them, and with no site said
+  `EVERYBODY` or `COMPANY` and no membership, no camera
+  ([§32.3](09-operations.md#323-upgrading-to-sites-that-say-who-sees-them)).
 
   **With the embedded roster** Shale installs itself in each tenant as an
   app, as `roster app install` does (roster's `cli.InstallApp`): its holder

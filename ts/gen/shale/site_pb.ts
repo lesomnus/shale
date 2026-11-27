@@ -3,8 +3,8 @@
 // option features.field_presence = IMPLICIT;
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/site.proto.
  */
 export const file_shale_site: GenFile = /*@__PURE__*/
-  fileDesc("ChBzaGFsZS9zaXRlLnByb3RvEgVzaGFsZSKABgoEU2l0ZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEicKBmxhYmVscxgHIAMoCzIXLnNoYWxlLlNpdGUuTGFiZWxzRW50cnkSNgoOcmVsYXlfc2VsZWN0b3IYCCADKAsyHi5zaGFsZS5TaXRlLlJlbGF5U2VsZWN0b3JFbnRyeRI+ChJzYXRlbGxpdGVfc2VsZWN0b3IYCSADKAsyIi5zaGFsZS5TaXRlLlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaNAoSUmVsYXlTZWxlY3RvckVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaOAoWU2F0ZWxsaXRlU2VsZWN0b3JFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOpoByvwVXRIMggEAigEAkgEAmgEAGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FjUIEzIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGQ6AEIkWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant]);
+  fileDesc("ChBzaGFsZS9zaXRlLnByb3RvEgVzaGFsZSK0BgoEU2l0ZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEicKBmxhYmVscxgHIAMoCzIXLnNoYWxlLlNpdGUuTGFiZWxzRW50cnkSNgoOcmVsYXlfc2VsZWN0b3IYCCADKAsyHi5zaGFsZS5TaXRlLlJlbGF5U2VsZWN0b3JFbnRyeRI+ChJzYXRlbGxpdGVfc2VsZWN0b3IYCSADKAsyIi5zaGFsZS5TaXRlLlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSMgoKdmlzaWJpbGl0eRgKIAEoDjIVLnNoYWxlLlNpdGVWaXNpYmlsaXR5QgfqghYDggEAEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGjQKElJlbGF5U2VsZWN0b3JFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGjgKFlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqaAcr8FV0SDIIBAIoBAJIBAJoBABosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY1CBMyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkOgAqigEKDlNpdGVWaXNpYmlsaXR5Eh8KG1NJVEVfVklTSUJJTElUWV9VTlNQRUNJRklFRBAAEhsKF1NJVEVfVklTSUJJTElUWV9NRU1CRVJTEAESGwoXU0lURV9WSVNJQklMSVRZX0NPTVBBTlkQAhIdChlTSVRFX1ZJU0lCSUxJVFlfRVZFUllCT0RZEANCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant]);
 
 /**
  * Site groups sets within a tenant, e.g. a building or a branch (§7). It is
@@ -75,6 +75,15 @@ export type Site = Message<"shale.Site"> & {
   satelliteSelector: { [key: string]: string };
 
   /**
+   * Who sees it (§33.1); unspecified is MEMBERS. A default, so the column is
+   * added to a database that predates it, and its rows read as MEMBERS:
+   * nobody sees more than before until somebody says so.
+   *
+   * @generated from field: shale.SiteVisibility visibility = 10;
+   */
+  visibility: SiteVisibility;
+
+  /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
   dateUpdated?: Timestamp | undefined;
@@ -96,4 +105,47 @@ export type Site = Message<"shale.Site"> & {
  */
 export const SiteSchema: GenMessage<Site> = /*@__PURE__*/
   messageDesc(file_shale_site, 0);
+
+/**
+ * SiteVisibility says who sees a site's cameras (§7, §33.1). Whoever sees
+ * every site sees it whatever it says.
+ *
+ * @generated from enum shale.SiteVisibility
+ */
+export enum SiteVisibility {
+  /**
+   * Nothing said: the people and readers it names, as MEMBERS. What every
+   * site from before the field reads as.
+   *
+   * @generated from enum value: SITE_VISIBILITY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The people and readers its SiteMember rows name, and nobody else.
+   *
+   * @generated from enum value: SITE_VISIBILITY_MEMBERS = 1;
+   */
+  MEMBERS = 1,
+
+  /**
+   * The company's people, and those it names.
+   *
+   * @generated from enum value: SITE_VISIBILITY_COMPANY = 2;
+   */
+  COMPANY = 2,
+
+  /**
+   * Every person signed in to the tenant, and the readers it names.
+   *
+   * @generated from enum value: SITE_VISIBILITY_EVERYBODY = 3;
+   */
+  EVERYBODY = 3,
+}
+
+/**
+ * Describes the enum shale.SiteVisibility.
+ */
+export const SiteVisibilitySchema: GenEnum<SiteVisibility> = /*@__PURE__*/
+  enumDesc(file_shale_site, 0);
 

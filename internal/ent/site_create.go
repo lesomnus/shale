@@ -60,6 +60,20 @@ func (_c *SiteCreate) SetSatelliteSelector(v map[string]string) *SiteCreate {
 	return _c
 }
 
+// SetVisibility sets the "visibility" field.
+func (_c *SiteCreate) SetVisibility(v int32) *SiteCreate {
+	_c.mutation.SetVisibility(v)
+	return _c
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (_c *SiteCreate) SetNillableVisibility(v *int32) *SiteCreate {
+	if v != nil {
+		_c.SetVisibility(*v)
+	}
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *SiteCreate) SetDateUpdated(v time.Time) *SiteCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -118,6 +132,7 @@ func (_c *SiteCreate) Mutation() *SiteMutation {
 
 // Save creates the Site in the database.
 func (_c *SiteCreate) Save(ctx context.Context) (*Site, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -140,6 +155,16 @@ func (_c *SiteCreate) Exec(ctx context.Context) error {
 func (_c *SiteCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *SiteCreate) defaults() {
+	if _, ok := _c.mutation.Visibility(); !ok {
+		if _, ok := _c.mutation.FieldExpr(site.FieldVisibility); !ok {
+			v := site.DefaultVisibility
+			_c.mutation.SetVisibility(v)
+		}
 	}
 }
 
@@ -241,6 +266,10 @@ func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 		_spec.SetField(site.FieldSatelliteSelector, field.TypeJson, value)
 		_node.SatelliteSelector = value
 	}
+	if value, ok := _c.mutation.Visibility(); ok {
+		_spec.SetField(site.FieldVisibility, field.TypeInt32, value)
+		_node.Visibility = value
+	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
@@ -317,6 +346,7 @@ func (_c *SiteCreateBulk) Save(ctx context.Context) ([]*Site, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*SiteMutation)
 				if !ok {

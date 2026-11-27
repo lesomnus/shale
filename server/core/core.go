@@ -127,6 +127,9 @@ type Deps struct {
 	// what people read is granted too (`auth.operators.reads`).
 	Operators Operators
 	Reads     bool
+	// Company says who is of the company, whom a COMPANY site shows its
+	// cameras (§33.1); nil is nobody, as NoCompany.
+	Company Company
 	// Delegations proves an app and a person for viewing on the person's
 	// behalf (§33.8); nil where nothing is configured for it.
 	Delegations      Delegations

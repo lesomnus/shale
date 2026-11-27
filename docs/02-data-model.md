@@ -42,14 +42,36 @@ operator; relays are cluster infrastructure like nodes
 ([§35.3](12-api.md#353-entities)).
 
 A **Site** groups sets within a tenant, e.g. a building or a branch. It is
-payday's second permission axis (field 3): a person or a reader can be
-limited to the sites it is a member of, so a guard at one building cannot
-read another's cameras ([§33.1](10-security.md#331-trust-model)). A set
-belongs to at most one site, fixed when the set is added. Its sources,
+payday's second permission axis (field 3): a person or a reader sees the
+cameras of the sites it may see and no others, so a guard at one building
+cannot read another's cameras ([§33.1](10-security.md#331-trust-model)). A
+set belongs to at most one site, fixed when the set is added. Its sources,
 laminae, attempts, and producer carry the same site. A site may also name,
 by labels, which relays its producers should use
-([§39.2](16-relay.md#392-assignment)). A tenant that does not use sites
-leaves the field empty and sees no difference.
+([§39.2](16-relay.md#392-assignment)).
+
+A site says who sees it, its `visibility`, one of three kinds:
+
+- `MEMBERS`: the people and readers its **SiteMember** rows name. A site
+  that says nothing is this, and so is every site from before the field.
+- `COMPANY`: the company's people, and those it names. Who is of the
+  company is told by a rule that is still to come; until it is, nobody is,
+  and a `COMPANY` site is seen as a `MEMBERS` one.
+- `EVERYBODY`: every person signed in to the tenant, and the readers it
+  names. A reader is a host and nobody: a kind gives it nothing.
+
+Whoever sees every site sees each of them whatever it says
+([§33.1](10-security.md#331-trust-model)). The kind is written when the
+site is added and by a patch, by whoever may write a site; a kind there is
+none of is refused.
+
+**A row with no site** -- a set added without one, and its sources,
+laminae, attempts and producer -- is seen by whoever sees every site and
+by nobody else: no kind and no membership reaches it. A tenant that does
+not use sites therefore shows its cameras only to whoever sees every site.
+To show a camera to others, its set is put in a site: a set's site is
+said when the set is added, and moving a set that exists into a site is
+not yet possible.
 
 A **Reach** is a person's own list of cameras: a `name`, the person
 (`holder`), and `cameras`, the sites and the sources it names by

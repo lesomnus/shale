@@ -107,6 +107,33 @@ func (_u *SiteUpdate) ClearSatelliteSelector() *SiteUpdate {
 	return _u
 }
 
+// SetVisibility sets the "visibility" field.
+func (_u *SiteUpdate) SetVisibility(v int32) *SiteUpdate {
+	_u.mutation.ResetVisibility()
+	_u.mutation.SetVisibility(v)
+	return _u
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (_u *SiteUpdate) SetNillableVisibility(v *int32) *SiteUpdate {
+	if v != nil {
+		_u.SetVisibility(*v)
+	}
+	return _u
+}
+
+// AddVisibility adds value to the "visibility" field.
+func (_u *SiteUpdate) AddVisibility(v int32) *SiteUpdate {
+	_u.mutation.AddVisibility(v)
+	return _u
+}
+
+// ClearVisibility clears the value of the "visibility" field.
+func (_u *SiteUpdate) ClearVisibility() *SiteUpdate {
+	_u.mutation.ClearVisibility()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *SiteUpdate) SetDateUpdated(v time.Time) *SiteUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -244,6 +271,18 @@ func (_u *SiteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.SatelliteSelectorCleared() {
 		_spec.ClearField(site.FieldSatelliteSelector, field.TypeJson)
 	}
+	if value, ok := _u.mutation.Visibility(); ok {
+		_spec.SetField(site.FieldVisibility, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldVisibility); ok {
+		_spec.SetField(site.FieldVisibility, field.TypeInt32, e)
+	}
+	if value, ok := _u.mutation.AddedVisibility(); ok {
+		_spec.AddField(site.FieldVisibility, field.TypeInt32, value)
+	}
+	if _u.mutation.VisibilityCleared() {
+		_spec.ClearField(site.FieldVisibility, field.TypeInt32)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -359,6 +398,33 @@ func (_u *SiteUpdateOne) SetSatelliteSelector(v map[string]string) *SiteUpdateOn
 // ClearSatelliteSelector clears the value of the "satellite_selector" field.
 func (_u *SiteUpdateOne) ClearSatelliteSelector() *SiteUpdateOne {
 	_u.mutation.ClearSatelliteSelector()
+	return _u
+}
+
+// SetVisibility sets the "visibility" field.
+func (_u *SiteUpdateOne) SetVisibility(v int32) *SiteUpdateOne {
+	_u.mutation.ResetVisibility()
+	_u.mutation.SetVisibility(v)
+	return _u
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (_u *SiteUpdateOne) SetNillableVisibility(v *int32) *SiteUpdateOne {
+	if v != nil {
+		_u.SetVisibility(*v)
+	}
+	return _u
+}
+
+// AddVisibility adds value to the "visibility" field.
+func (_u *SiteUpdateOne) AddVisibility(v int32) *SiteUpdateOne {
+	_u.mutation.AddVisibility(v)
+	return _u
+}
+
+// ClearVisibility clears the value of the "visibility" field.
+func (_u *SiteUpdateOne) ClearVisibility() *SiteUpdateOne {
+	_u.mutation.ClearVisibility()
 	return _u
 }
 
@@ -528,6 +594,18 @@ func (_u *SiteUpdateOne) sqlSave(ctx context.Context) (_node *Site, err error) {
 	}
 	if _u.mutation.SatelliteSelectorCleared() {
 		_spec.ClearField(site.FieldSatelliteSelector, field.TypeJson)
+	}
+	if value, ok := _u.mutation.Visibility(); ok {
+		_spec.SetField(site.FieldVisibility, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldVisibility); ok {
+		_spec.SetField(site.FieldVisibility, field.TypeInt32, e)
+	}
+	if value, ok := _u.mutation.AddedVisibility(); ok {
+		_spec.AddField(site.FieldVisibility, field.TypeInt32, value)
+	}
+	if _u.mutation.VisibilityCleared() {
+		_spec.ClearField(site.FieldVisibility, field.TypeInt32)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)

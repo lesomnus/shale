@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/schema"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
+	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/lesomnus/shale/internal/ent/source"
 	"github.com/lesomnus/shale/internal/ent/uploadpolicy"
 
@@ -239,6 +240,12 @@ func init() {
 	// sinkDescCapabilities is the schema descriptor for capabilities field.
 	sinkDescCapabilities := sinkFields[12].Descriptor()
 	sink.ValueScanner.Capabilities = sinkDescCapabilities.ValueScanner.(field.TypeValueScanner[*api.SinkCapabilities])
+	siteFields := schema.Site{}.Fields()
+	_ = siteFields
+	// siteDescVisibility is the schema descriptor for visibility field.
+	siteDescVisibility := siteFields[7].Descriptor()
+	// site.DefaultVisibility holds the default value on creation for the visibility field.
+	site.DefaultVisibility = siteDescVisibility.Default.(int32)
 	sourceFields := schema.Source{}.Fields()
 	_ = sourceFields
 	// sourceDescProfile is the schema descriptor for profile field.

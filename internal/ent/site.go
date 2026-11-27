@@ -32,6 +32,8 @@ type Site struct {
 	RelaySelector map[string]string `json:"relay_selector,omitempty"`
 	// SatelliteSelector holds the value of the "satellite_selector" field.
 	SatelliteSelector map[string]string `json:"satellite_selector,omitempty"`
+	// Visibility holds the value of the "visibility" field.
+	Visibility int32 `json:"visibility,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -73,6 +75,8 @@ func (*Site) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case site.FieldLabels, site.FieldRelaySelector, site.FieldSatelliteSelector:
 			values[i] = new([]byte)
+		case site.FieldVisibility:
+			values[i] = new(sql.NullInt64)
 		case site.FieldAlias, site.FieldName, site.FieldDesc:
 			values[i] = new(sql.NullString)
 		case site.FieldDateUpdated, site.FieldDateErased, site.FieldDateCreated:
@@ -141,6 +145,12 @@ func (_m *Site) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.SatelliteSelector); err != nil {
 					return fmt.Errorf("unmarshal field satellite_selector: %w", err)
 				}
+			}
+		case site.FieldVisibility:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field visibility", values[i])
+			} else if value.Valid {
+				_m.Visibility = int32(value.Int64)
 			}
 		case site.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -225,6 +235,9 @@ func (_m *Site) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("satellite_selector=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SatelliteSelector))
+	builder.WriteString(", ")
+	builder.WriteString("visibility=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Visibility))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

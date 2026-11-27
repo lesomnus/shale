@@ -1845,6 +1845,7 @@ var (
 		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "relay_selector", Type: field.TypeJson, Nullable: true},
 		{Name: "satellite_selector", Type: field.TypeJson, Nullable: true},
+		{Name: "visibility", Type: field.TypeInt32, Nullable: true, Default: 0},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -1858,7 +1859,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "site_tenant_tenant",
-				Columns:    []*schema.Column{SiteColumns[10]},
+				Columns:    []*schema.Column{SiteColumns[11]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1867,12 +1868,12 @@ var (
 			{
 				Name:    "site_page",
 				Unique:  false,
-				Columns: []*schema.Column{SiteColumns[10], SiteColumns[9], SiteColumns[0]},
+				Columns: []*schema.Column{SiteColumns[11], SiteColumns[10], SiteColumns[0]},
 			},
 			{
 				Name:    "site_slug",
 				Unique:  true,
-				Columns: []*schema.Column{SiteColumns[1], SiteColumns[10]},
+				Columns: []*schema.Column{SiteColumns[1], SiteColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

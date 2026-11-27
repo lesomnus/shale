@@ -71,6 +71,11 @@ func Desc(v string) predicate.Site {
 	return predicate.Site(sql.FieldEQ(FieldDesc, v))
 }
 
+// Visibility applies equality check predicate on the "visibility" field. It's identical to VisibilityEQ.
+func Visibility(v int32) predicate.Site {
+	return predicate.Site(sql.FieldEQ(FieldVisibility, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Site {
 	return predicate.Site(sql.FieldEQ(FieldDateUpdated, v))
@@ -314,6 +319,56 @@ func SatelliteSelectorIsNil() predicate.Site {
 // SatelliteSelectorNotNil applies the NotNil predicate on the "satellite_selector" field.
 func SatelliteSelectorNotNil() predicate.Site {
 	return predicate.Site(sql.FieldNotNull(FieldSatelliteSelector))
+}
+
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v int32) predicate.Site {
+	return predicate.Site(sql.FieldEQ(FieldVisibility, v))
+}
+
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v int32) predicate.Site {
+	return predicate.Site(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...int32) predicate.Site {
+	return predicate.Site(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...int32) predicate.Site {
+	return predicate.Site(sql.FieldNotIn(FieldVisibility, vs...))
+}
+
+// VisibilityGT applies the GT predicate on the "visibility" field.
+func VisibilityGT(v int32) predicate.Site {
+	return predicate.Site(sql.FieldGT(FieldVisibility, v))
+}
+
+// VisibilityGTE applies the GTE predicate on the "visibility" field.
+func VisibilityGTE(v int32) predicate.Site {
+	return predicate.Site(sql.FieldGTE(FieldVisibility, v))
+}
+
+// VisibilityLT applies the LT predicate on the "visibility" field.
+func VisibilityLT(v int32) predicate.Site {
+	return predicate.Site(sql.FieldLT(FieldVisibility, v))
+}
+
+// VisibilityLTE applies the LTE predicate on the "visibility" field.
+func VisibilityLTE(v int32) predicate.Site {
+	return predicate.Site(sql.FieldLTE(FieldVisibility, v))
+}
+
+// VisibilityIsNil applies the IsNil predicate on the "visibility" field.
+func VisibilityIsNil() predicate.Site {
+	return predicate.Site(sql.FieldIsNull(FieldVisibility))
+}
+
+// VisibilityNotNil applies the NotNil predicate on the "visibility" field.
+func VisibilityNotNil() predicate.Site {
+	return predicate.Site(sql.FieldNotNull(FieldVisibility))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

@@ -16,8 +16,8 @@ import (
 )
 
 // Operators are what roster grants, not a tenant (§33.1): init grants the
-// first admin all of Shale; everybody else in the tenant reads every site
-// and changes nothing; the cluster tenant's people are no longer
+// first admin all of Shale; everybody else in the tenant reads the sites
+// everybody sees, and no set in no site, and changes nothing; the cluster tenant's people are no longer
 // operators; a grant of one service is that service, on the tenant API
 // and nothing on the cluster's; and a grant of all of Shale makes somebody
 // an operator on both surfaces once the answer about them lapses.
@@ -40,13 +40,17 @@ func TestOperatorsAreWhatRosterGrants(t *testing.T) {
 	_, err = api.NewNodeServiceClient(c.dialCluster("@cluster/ops")).List(ctx, api.NodeListRequest_builder{}.Build())
 	require.Equal(t, codes.PermissionDenied, status.Code(err))
 
-	// Somebody else in the tenant reads, every site, and writes nothing.
+	// Somebody else in the tenant reads the sites everybody sees, and
+	// writes nothing.
+	_, err = api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{Tenant: acme, Alias: "hall", Site: everybody(t, ctx, admin, "hall")}.Build())
+	require.NoError(t, err)
 	bob, err := c.running.CP.Identity.AddPerson(ctx, "acme", "bob", "Bob")
 	require.NoError(t, err)
 	asBob := c.dial("@acme/bob")
 	sets, err := api.NewSetServiceClient(asBob).List(ctx, api.SetListRequest_builder{}.Build())
 	require.NoError(t, err)
-	require.Len(t, sets.GetItems(), 1, "the set in no site, which is every person's to read")
+	require.Len(t, sets.GetItems(), 1, "the set of the site everybody sees, and not the set in no site, which is whoever's roster grants all of Shale")
+	require.Equal(t, "hall", sets.GetItems()[0].GetAlias())
 	_, err = api.NewSourceServiceClient(asBob).List(ctx, api.SourceListRequest_builder{}.Build())
 	require.NoError(t, err)
 	_, err = api.NewSiteServiceClient(asBob).List(ctx, api.SiteListRequest_builder{}.Build())
@@ -60,7 +64,7 @@ func TestOperatorsAreWhatRosterGrants(t *testing.T) {
 
 	row, err := api.NewHolderServiceClient(admin).Get(ctx, api.HolderGetRequest_builder{Ref: api.HolderRef_builder{Id: bob.Id.Bytes()}.Build()}.Build())
 	require.NoError(t, err)
-	require.True(t, row.GetAllSites(), "read is tenant-wide by default")
+	require.False(t, row.GetAllSites(), "nobody's row is made with all_sites where roster says who sees every site")
 
 	// Granted the set service, Bob makes sets once the answer about him
 	// lapses -- and still nothing else, and nothing on the cluster API.

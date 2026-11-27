@@ -150,10 +150,12 @@ never reused.
   ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
   nullable and immutable. `Source`, `Lamina`, `Attempt`, and `Producer` carry
   a copy, because payday narrows each row by its own field 3. A reader may see
-  several sites, so its sites are `SiteMember` rows, like a person's, or all
-  of them (`all_sites`) when it was adopted with none. Tenant admins see all
-  sites. A row in no site is in none of anybody's sites: only a caller that
-  sees all of them reads a set of no site and its sources and laminae.
+  several sites, so its sites are `SiteMember` rows, or all of them
+  (`all_sites`) when it was adopted with none. A person sees the sites a
+  site's `visibility` and its `SiteMember` rows give them, or every site
+  when they see every site ([§33.1](10-security.md#331-trust-model)). A row
+  in no site is in none of anybody's sites: only a caller that sees all of
+  them reads a set of no site and its sources and laminae.
 - **Erasure.** A `Set` or `Source` is soft-erased (`date_erased`): its cameras
   stop being allocated for, and their recorded laminae stay readable until
   retention removes them. A host is soft-erased too, and an erased host's
@@ -173,7 +175,8 @@ Key fields, beyond payday's `id`, `tenant`, `alias`, and `date_*`:
 ```text
 Tenant           capacity_share (overlay on payday's Tenant, §21.4)
 Site             name, description, relay_selector (labels, §39.2),
-                 satellite_selector (labels, §41.2)
+                 satellite_selector (labels, §41.2), visibility (members |
+                 company | everybody; unspecified is members, §7)
 SiteMember       site, and one of holder | reader
 Set              site, epoch, set_spread, retention (expire, delete), checksum,
                  max_bitrate_total (optional cap, §12.6), auto_raise (§38.5),

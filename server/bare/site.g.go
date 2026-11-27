@@ -157,6 +157,11 @@ func (st SiteServiceServer) create(ctx context.Context, req *api.SiteAddRequest)
 	if u := req.GetSatelliteSelector(); len(u) > 0 {
 		q.SetSatelliteSelector(u)
 	}
+	if req.HasVisibility() {
+		q.SetVisibility(int32(req.GetVisibility()))
+	} else {
+		q.SetVisibility(0)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -314,6 +319,9 @@ func SiteSelectedFields(m *api.SiteSelect) []string {
 	if m.GetSatelliteSelector() {
 		vs = append(vs, site.FieldSatelliteSelector)
 	}
+	if m.GetVisibility() {
+		vs = append(vs, site.FieldVisibility)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, site.FieldDateUpdated)
 	}
@@ -413,7 +421,7 @@ func SiteGetKey(ctx context.Context, db *ent.Client, ref *api.SiteRef) (uuid.UUI
 var siteOrmEntity = ormpatch.MustEntityOf(api.File_shale_site_proto, "Site")
 
 var sitePatchColumns = entpatch.Columns{
-	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 8: site.FieldRelaySelector, 9: site.FieldSatelliteSelector, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
+	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 8: site.FieldRelaySelector, 9: site.FieldSatelliteSelector, 10: site.FieldVisibility, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
 
 func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *patchpb.Patch, by string) (*api.Site, error) {
 	plan := &ormpatch.Plan{Entity: siteOrmEntity}

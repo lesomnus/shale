@@ -20,11 +20,13 @@ import (
 // Provision makes Shale's rows for a person roster vouched for (§33.1):
 // the tenant and the holder, anchored on roster's identifiers, so that
 // `Holder.id` is the `sub` every product knows them by. The first person
-// of a tenant sees every site; the rest see what a Shale admin gives
-// them -- unless roster says what people may change (`auth.operators`),
-// where everybody reads the whole tenant by default and an administrator
-// narrows somebody by clearing all_sites and giving them sites. A row that is there already is
-// refreshed where its names drifted. Rows are made no other way.
+// of a tenant sees every site, by their row's all_sites; the rest see the
+// sites a site's kind and its members give them. Where roster says what
+// people may change (`auth.operators`), nobody's row is made with
+// all_sites, the first person's neither: who sees every site there is whom
+// roster grants all of Shale, and a row's all_sites is not read (Sites).
+// A row that is there already is refreshed where its names drifted, and
+// its all_sites left as it is. Rows are made no other way.
 func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder, error) {
 	s.provisionMu.Lock()
 	defer s.provisionMu.Unlock()
@@ -71,7 +73,8 @@ func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder,
 		return nil, err
 	}
 
-	// The first person of a tenant administers it.
+	// The first person of a tenant administers it, where roster does not
+	// say who does.
 	others, err := own.Holder().List(ctx, api.HolderListRequest_builder{
 		Filters: []*api.HolderFilter{api.HolderFilter_builder{Tenant: api.TenantRef_builder{Id: p.Tenant.Bytes()}.Build()}.Build()},
 		Size:    1,
@@ -80,7 +83,7 @@ func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder,
 		return nil, err
 	}
 	first := len(others.GetItems()) == 0
-	all := first || s.cfg.Auth.Operators.On()
+	all := first && !s.cfg.Auth.Operators.On()
 	h, err = own.Holder().Add(ctx, api.HolderAddRequest_builder{
 		Id:       p.Id.Bytes(),
 		Tenant:   api.TenantRef_builder{Id: p.Tenant.Bytes()}.Build(),

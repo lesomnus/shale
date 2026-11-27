@@ -10,6 +10,20 @@ import "shale/payday/tenant.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
+// SiteVisibility says who sees a site's cameras (§7, §33.1). Whoever sees
+// every site sees it whatever it says.
+enum SiteVisibility {
+  // Nothing said: the people and readers it names, as MEMBERS. What every
+  // site from before the field reads as.
+  SITE_VISIBILITY_UNSPECIFIED = 0;
+  // The people and readers its SiteMember rows name, and nobody else.
+  SITE_VISIBILITY_MEMBERS = 1;
+  // The company's people, and those it names.
+  SITE_VISIBILITY_COMPANY = 2;
+  // Every person signed in to the tenant, and the readers it names.
+  SITE_VISIBILITY_EVERYBODY = 3;
+}
+
 // Site groups sets within a tenant, e.g. a building or a branch (§7). It is
 // payday's second permission axis: field 3 of Set, Source, Lamina, Attempt,
 // Producer, and SiteMember names one, so a person or a reader limited to the
@@ -32,6 +46,10 @@ message Site {
   // Labels a satellite must carry to take this site's producers' uploads
   // (§41.2). Empty means any satellite.
   map<string, string> satellite_selector = 9;
+  // Who sees it (§33.1); unspecified is MEMBERS. A default, so the column is
+  // added to a database that predates it, and its rows read as MEMBERS:
+  // nobody sees more than before until somebody says so.
+  SiteVisibility visibility = 10 [(orm.field) = {default: ""}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

@@ -23,6 +23,60 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// SiteVisibility says who sees a site's cameras (§7, §33.1). Whoever sees
+// every site sees it whatever it says.
+type SiteVisibility int32
+
+const (
+	// Nothing said: the people and readers it names, as MEMBERS. What every
+	// site from before the field reads as.
+	SiteVisibility_SITE_VISIBILITY_UNSPECIFIED SiteVisibility = 0
+	// The people and readers its SiteMember rows name, and nobody else.
+	SiteVisibility_SITE_VISIBILITY_MEMBERS SiteVisibility = 1
+	// The company's people, and those it names.
+	SiteVisibility_SITE_VISIBILITY_COMPANY SiteVisibility = 2
+	// Every person signed in to the tenant, and the readers it names.
+	SiteVisibility_SITE_VISIBILITY_EVERYBODY SiteVisibility = 3
+)
+
+// Enum value maps for SiteVisibility.
+var (
+	SiteVisibility_name = map[int32]string{
+		0: "SITE_VISIBILITY_UNSPECIFIED",
+		1: "SITE_VISIBILITY_MEMBERS",
+		2: "SITE_VISIBILITY_COMPANY",
+		3: "SITE_VISIBILITY_EVERYBODY",
+	}
+	SiteVisibility_value = map[string]int32{
+		"SITE_VISIBILITY_UNSPECIFIED": 0,
+		"SITE_VISIBILITY_MEMBERS":     1,
+		"SITE_VISIBILITY_COMPANY":     2,
+		"SITE_VISIBILITY_EVERYBODY":   3,
+	}
+)
+
+func (x SiteVisibility) Enum() *SiteVisibility {
+	p := new(SiteVisibility)
+	*p = x
+	return p
+}
+
+func (x SiteVisibility) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SiteVisibility) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_site_proto_enumTypes[0].Descriptor()
+}
+
+func (SiteVisibility) Type() protoreflect.EnumType {
+	return &file_shale_site_proto_enumTypes[0]
+}
+
+func (x SiteVisibility) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // Site groups sets within a tenant, e.g. a building or a branch (§7). It is
 // payday's second permission axis: field 3 of Set, Source, Lamina, Attempt,
 // Producer, and SiteMember names one, so a person or a reader limited to the
@@ -37,6 +91,7 @@ type Site struct {
 	xxx_hidden_Labels            map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_RelaySelector     map[string]string      `protobuf:"bytes,8,rep,name=relay_selector,json=relaySelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_SatelliteSelector map[string]string      `protobuf:"bytes,9,rep,name=satellite_selector,json=satelliteSelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Visibility        SiteVisibility         `protobuf:"varint,10,opt,name=visibility,enum=shale.SiteVisibility"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -125,6 +180,13 @@ func (x *Site) GetSatelliteSelector() map[string]string {
 	return nil
 }
 
+func (x *Site) GetVisibility() SiteVisibility {
+	if x != nil {
+		return x.xxx_hidden_Visibility
+	}
+	return SiteVisibility_SITE_VISIBILITY_UNSPECIFIED
+}
+
 func (x *Site) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -179,6 +241,10 @@ func (x *Site) SetRelaySelector(v map[string]string) {
 
 func (x *Site) SetSatelliteSelector(v map[string]string) {
 	x.xxx_hidden_SatelliteSelector = v
+}
+
+func (x *Site) SetVisibility(v SiteVisibility) {
+	x.xxx_hidden_Visibility = v
 }
 
 func (x *Site) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -252,9 +318,13 @@ type Site_builder struct {
 	// Labels a satellite must carry to take this site's producers' uploads
 	// (§41.2). Empty means any satellite.
 	SatelliteSelector map[string]string
-	DateUpdated       *timestamppb.Timestamp
-	DateErased        *timestamppb.Timestamp
-	DateCreated       *timestamppb.Timestamp
+	// Who sees it (§33.1); unspecified is MEMBERS. A default, so the column is
+	// added to a database that predates it, and its rows read as MEMBERS:
+	// nobody sees more than before until somebody says so.
+	Visibility  SiteVisibility
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
 }
 
 func (b0 Site_builder) Build() *Site {
@@ -269,6 +339,7 @@ func (b0 Site_builder) Build() *Site {
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_RelaySelector = b.RelaySelector
 	x.xxx_hidden_SatelliteSelector = b.SatelliteSelector
+	x.xxx_hidden_Visibility = b.Visibility
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -279,7 +350,7 @@ var File_shale_site_proto protoreflect.FileDescriptor
 
 const file_shale_site_proto_rawDesc = "" +
 	"\n" +
-	"\x10shale/site.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\"\x93\a\n" +
+	"\x10shale/site.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\"\xd3\a\n" +
 	"\x04Site\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -288,7 +359,11 @@ const file_shale_site_proto_rawDesc = "" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12/\n" +
 	"\x06labels\x18\a \x03(\v2\x17.shale.Site.LabelsEntryR\x06labels\x12E\n" +
 	"\x0erelay_selector\x18\b \x03(\v2\x1e.shale.Site.RelaySelectorEntryR\rrelaySelector\x12Q\n" +
-	"\x12satellite_selector\x18\t \x03(\v2\".shale.Site.SatelliteSelectorEntryR\x11satelliteSelector\x12F\n" +
+	"\x12satellite_selector\x18\t \x03(\v2\".shale.Site.SatelliteSelectorEntryR\x11satelliteSelector\x12>\n" +
+	"\n" +
+	"visibility\x18\n" +
+	" \x01(\x0e2\x15.shale.SiteVisibilityB\a\xea\x82\x16\x03\x82\x01\x00R\n" +
+	"visibility\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -316,30 +391,38 @@ const file_shale_site_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06tenant \x14(d:\x00B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x06tenant \x14(d:\x00*\x8a\x01\n" +
+	"\x0eSiteVisibility\x12\x1f\n" +
+	"\x1bSITE_VISIBILITY_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17SITE_VISIBILITY_MEMBERS\x10\x01\x12\x1b\n" +
+	"\x17SITE_VISIBILITY_COMPANY\x10\x02\x12\x1d\n" +
+	"\x19SITE_VISIBILITY_EVERYBODY\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
+var file_shale_site_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_shale_site_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_shale_site_proto_goTypes = []any{
-	(*Site)(nil),                  // 0: shale.Site
-	nil,                           // 1: shale.Site.LabelsEntry
-	nil,                           // 2: shale.Site.RelaySelectorEntry
-	nil,                           // 3: shale.Site.SatelliteSelectorEntry
-	(*Tenant)(nil),                // 4: shale.Tenant
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(SiteVisibility)(0),           // 0: shale.SiteVisibility
+	(*Site)(nil),                  // 1: shale.Site
+	nil,                           // 2: shale.Site.LabelsEntry
+	nil,                           // 3: shale.Site.RelaySelectorEntry
+	nil,                           // 4: shale.Site.SatelliteSelectorEntry
+	(*Tenant)(nil),                // 5: shale.Tenant
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_shale_site_proto_depIdxs = []int32{
-	4, // 0: shale.Site.tenant:type_name -> shale.Tenant
-	1, // 1: shale.Site.labels:type_name -> shale.Site.LabelsEntry
-	2, // 2: shale.Site.relay_selector:type_name -> shale.Site.RelaySelectorEntry
-	3, // 3: shale.Site.satellite_selector:type_name -> shale.Site.SatelliteSelectorEntry
-	5, // 4: shale.Site.date_updated:type_name -> google.protobuf.Timestamp
-	5, // 5: shale.Site.date_erased:type_name -> google.protobuf.Timestamp
-	5, // 6: shale.Site.date_created:type_name -> google.protobuf.Timestamp
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	5, // 0: shale.Site.tenant:type_name -> shale.Tenant
+	2, // 1: shale.Site.labels:type_name -> shale.Site.LabelsEntry
+	3, // 2: shale.Site.relay_selector:type_name -> shale.Site.RelaySelectorEntry
+	4, // 3: shale.Site.satellite_selector:type_name -> shale.Site.SatelliteSelectorEntry
+	0, // 4: shale.Site.visibility:type_name -> shale.SiteVisibility
+	6, // 5: shale.Site.date_updated:type_name -> google.protobuf.Timestamp
+	6, // 6: shale.Site.date_erased:type_name -> google.protobuf.Timestamp
+	6, // 7: shale.Site.date_created:type_name -> google.protobuf.Timestamp
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_shale_site_proto_init() }
@@ -353,13 +436,14 @@ func file_shale_site_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_site_proto_rawDesc), len(file_shale_site_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_shale_site_proto_goTypes,
 		DependencyIndexes: file_shale_site_proto_depIdxs,
+		EnumInfos:         file_shale_site_proto_enumTypes,
 		MessageInfos:      file_shale_site_proto_msgTypes,
 	}.Build()
 	File_shale_site_proto = out.File

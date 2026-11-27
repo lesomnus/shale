@@ -14173,6 +14173,23 @@ func (m *SiteMutation) OldSatelliteSelector(ctx context.Context) (v map[string]s
 	return oldValue.SatelliteSelector, nil
 }
 
+// OldVisibility returns the old "visibility" field's value of the Site entity.
+// If the Site object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SiteMutation) OldVisibility(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Site entity.
 // If the Site object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -14258,6 +14275,8 @@ func (m *SiteMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldRelaySelector(ctx)
 	case site.FieldSatelliteSelector:
 		return m.OldSatelliteSelector(ctx)
+	case site.FieldVisibility:
+		return m.OldVisibility(ctx)
 	case site.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case site.FieldDateErased:

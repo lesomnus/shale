@@ -23,6 +23,8 @@ type Mutation struct {
 	labels             *map[string]string
 	relay_selector     *map[string]string
 	satellite_selector *map[string]string
+	visibility         *int32
+	addvisibility      *int32
 	date_updated       *time.Time
 	date_erased        *time.Time
 	date_created       *time.Time
@@ -218,6 +220,63 @@ func (m *Mutation) ResetSatelliteSelector() {
 	delete(m.exprs, FieldSatelliteSelector)
 }
 
+// SetVisibility sets the "visibility" field.
+func (m *Mutation) SetVisibility(i int32) {
+	m.visibility = &i
+	m.addvisibility = nil
+	delete(m.clearedFields, FieldVisibility)
+	delete(m.exprs, FieldVisibility)
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *Mutation) Visibility() (r int32, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddVisibility adds i to the "visibility" field.
+func (m *Mutation) AddVisibility(i int32) {
+	if m.addvisibility != nil {
+		*m.addvisibility += i
+	} else {
+		m.addvisibility = &i
+	}
+}
+
+// AddedVisibility returns the value that was added to the "visibility" field in this mutation.
+func (m *Mutation) AddedVisibility() (r int32, exists bool) {
+	v := m.addvisibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearVisibility clears the value of the "visibility" field.
+func (m *Mutation) ClearVisibility() {
+	m.visibility = nil
+	m.addvisibility = nil
+	delete(m.exprs, FieldVisibility)
+	m.clearedFields[FieldVisibility] = struct{}{}
+}
+
+// VisibilityCleared returns if the "visibility" field was cleared in this mutation.
+func (m *Mutation) VisibilityCleared() bool {
+	_, ok := m.clearedFields[FieldVisibility]
+	return ok
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *Mutation) ResetVisibility() {
+	m.visibility = nil
+	m.addvisibility = nil
+	delete(m.clearedFields, FieldVisibility)
+	delete(m.exprs, FieldVisibility)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -388,7 +447,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -406,6 +465,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.satellite_selector != nil || m.exprs[FieldSatelliteSelector] != nil {
 		fields = append(fields, FieldSatelliteSelector)
+	}
+	if m.visibility != nil || m.exprs[FieldVisibility] != nil {
+		fields = append(fields, FieldVisibility)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -445,6 +507,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.RelaySelector()
 	case FieldSatelliteSelector:
 		return m.SatelliteSelector()
+	case FieldVisibility:
+		return m.Visibility()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -532,6 +596,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSatelliteSelector(v)
 		return nil
+	case FieldVisibility:
+		v, ok := value.(int32)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -606,6 +680,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetRelaySelector()
 	case FieldSatelliteSelector:
 		m.ResetSatelliteSelector()
+	case FieldVisibility:
+		m.ResetVisibility()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -653,6 +729,9 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldSatelliteSelector]; ok {
 		fields = append(fields, FieldSatelliteSelector)
 	}
+	if _, ok := m.exprs[FieldVisibility]; ok {
+		fields = append(fields, FieldVisibility)
+	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -665,13 +744,21 @@ func (m *Mutation) ExprFields() []string {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *Mutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addvisibility != nil {
+		fields = append(fields, FieldVisibility)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *Mutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case FieldVisibility:
+		return m.AddedVisibility()
+	}
 	return nil, false
 }
 
@@ -680,6 +767,13 @@ func (m *Mutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *Mutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case FieldVisibility:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVisibility(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Site numeric field %s", name)
 }
@@ -696,6 +790,9 @@ func (m *Mutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(FieldSatelliteSelector) {
 		fields = append(fields, FieldSatelliteSelector)
+	}
+	if m.FieldCleared(FieldVisibility) {
+		fields = append(fields, FieldVisibility)
 	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
@@ -725,6 +822,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldSatelliteSelector:
 		m.ClearSatelliteSelector()
+		return nil
+	case FieldVisibility:
+		m.ClearVisibility()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -757,6 +857,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldSatelliteSelector:
 		m.ResetSatelliteSelector()
+		return nil
+	case FieldVisibility:
+		m.ResetVisibility()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
