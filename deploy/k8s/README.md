@@ -375,6 +375,23 @@ in front (§33.1), Shale runs no roster of its own and takes no password:
    at -- to say yes, signed in there; nothing is minted without it. With
    neither, the page says a key is made on the identity service's account
    page instead.
+
+   **What everybody holds, so that anybody can make a token.** Where
+   `auth.operators` is set and its `reads` are `everybody`, Shale makes
+   once in each tenant, as its holder there, its role `shale-basics` (the
+   reads and views of cameras and sites), its group `shale-people` and the
+   one bound to the other, which are the operator's to change after, and
+   puts each person it sees into the group
+   ([§33.1](../../docs/10-security.md#331-trust-model)). That needs nothing
+   more of the installation above: `--serves '/shale.*/*'` binds Shale's
+   holder `app-administrator` for itself, whose `ForAnApp` names the
+   `RoleService`, `GroupService`, `BindingService` and
+   `GroupMembershipService` verbs it uses, held to Shale's own rows, and
+   nothing is added to `--allow`. Installed without `--serves`, Shale says
+   so in its log once, and a token offers only what roles are bound by
+   hand. The hosts' reads (`ProducerService`, `ReaderService`) are not
+   among the basics: whoever looks after the hosts is given a role naming
+   them.
 2. **Two Secrets** in the `shale` namespace: the key, and the console
    client's secret, each mounted as a file in both API Deployments
    (`/run/shale/roster/key`, `/run/shale/oidc/client-secret`).

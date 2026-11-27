@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"errors"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -64,11 +66,11 @@ func (f *fakeOperators) Administers(ctx context.Context, tenant, holder pdid.Id)
 }
 
 // The tenant API where roster says what people may change (§33.1): every
-// person reads what the console's pages read and nothing of people,
-// membership, the trail or passwords; the rest is called as far as a
-// pattern roster grants covers it -- all of Shale, or one service; a
-// roster that does not answer is a refusal, as Unavailable; and hosts are
-// untouched.
+// person calls the basics -- the reads and views about cameras and sites
+// -- and nothing of hosts, people, membership, the trail or passwords; the
+// rest is called as far as a pattern roster grants covers it -- all of
+// Shale, or one service; a roster that does not answer is a refusal, as
+// Unavailable; and hosts are untouched.
 func TestTenantPolicyByWhatRosterGrants(t *testing.T) {
 	tenant := pdid.New(DomTenant)
 	op, person, cameras := pdid.New(DomHolder), pdid.New(DomHolder), pdid.New(DomHolder)
@@ -84,10 +86,11 @@ func TestTenantPolicyByWhatRosterGrants(t *testing.T) {
 		api.LaminaService_Get_FullMethodName, api.LaminaService_List_FullMethodName, api.LaminaService_Watch_FullMethodName, api.LaminaService_Timeline_FullMethodName,
 		api.AttemptService_Get_FullMethodName, api.AttemptService_List_FullMethodName,
 		api.SiteService_Get_FullMethodName, api.SiteService_List_FullMethodName, api.SiteService_Watch_FullMethodName,
-		api.ProducerService_Get_FullMethodName, api.ProducerService_List_FullMethodName, api.ProducerService_Watch_FullMethodName,
-		api.ReaderService_Get_FullMethodName, api.ReaderService_List_FullMethodName, api.ReaderService_Watch_FullMethodName,
 	}
 	granted := []string{
+		// The hosts' reads, which the console reads and everybody does not.
+		api.ProducerService_Get_FullMethodName, api.ProducerService_List_FullMethodName, api.ProducerService_Watch_FullMethodName,
+		api.ReaderService_Get_FullMethodName, api.ReaderService_List_FullMethodName, api.ReaderService_Watch_FullMethodName,
 		// Writes of every kind a person could reach before.
 		api.SetService_Add_FullMethodName, api.SetService_Patch_FullMethodName, api.SetService_Erase_FullMethodName,
 		api.SourceService_Add_FullMethodName, api.SourceService_Patch_FullMethodName, api.SourceService_Erase_FullMethodName,
@@ -110,12 +113,12 @@ func TestTenantPolicyByWhatRosterGrants(t *testing.T) {
 	for _, m := range reads {
 		require.NoError(t, p.May(ctx, call(person, m)), "a person reads %s", m)
 		require.NoError(t, p.May(ctx, call(op, m)), "an operator reads %s", m)
-		require.True(t, PersonMay(m), m)
+		require.True(t, Basic(m), m)
 	}
 	for _, m := range granted {
 		require.Equal(t, codes.PermissionDenied, status.Code(p.May(ctx, call(person, m))), "a person granted nothing may not call %s", m)
 		require.NoError(t, p.May(ctx, call(op, m)), "a person granted all of Shale calls %s", m)
-		require.False(t, PersonMay(m), m)
+		require.False(t, Basic(m), m)
 	}
 
 	// A grant of one service is that service and no other.
@@ -147,6 +150,72 @@ func TestTenantPolicyByWhatRosterGrants(t *testing.T) {
 	require.NoError(t, p.May(ctx, call(prod, api.SetService_Negotiate_FullMethodName)))
 	require.Equal(t, codes.PermissionDenied, status.Code(p.May(ctx, call(prod, api.SetService_Add_FullMethodName))))
 	require.NoError(t, p.May(ctx, call(rdr, api.LaminaService_Timeline_FullMethodName)))
+}
+
+// The basics are one list (§33.1): what a list of cameras confines
+// (keyScopeMay) and the three reads of SiteService, eighteen, all of them
+// among the console's reads (personMay) and none of them a host's -- a
+// producer's or a reader's rows show its hardware, its address and its
+// certificate, which are an operator's to hand out.
+func TestBasicsAreCamerasAndSites(t *testing.T) {
+	want := []string{
+		api.SiteService_Get_FullMethodName, api.SiteService_List_FullMethodName, api.SiteService_Watch_FullMethodName,
+	}
+	want = append(want, KeyScopeMethods()...)
+	require.ElementsMatch(t, want, BasicMethods())
+	require.Len(t, BasicMethods(), 18)
+	require.True(t, slices.IsSorted(BasicMethods()))
+
+	cameras := []string{"/shale.SetService/", "/shale.SourceService/", "/shale.LaminaService/", "/shale.AttemptService/", "/shale.SiteService/"}
+	for _, m := range BasicMethods() {
+		require.True(t, PersonMay(m), "%s is one of the console's reads", m)
+		require.True(t, IsTenantService(m), m)
+		require.True(t, slices.ContainsFunc(cameras, func(p string) bool { return strings.HasPrefix(m, p) }),
+			"%s: the basics are about cameras and sites; a host's reads are granted", m)
+		require.False(t, closedToEveryone(m), m)
+	}
+	for m := range personMay {
+		if strings.HasPrefix(m, "/shale.ProducerService/") || strings.HasPrefix(m, "/shale.ReaderService/") {
+			require.False(t, Basic(m), m)
+			continue
+		}
+		require.True(t, Basic(m), "%s: every other read of the console's is a basic one", m)
+	}
+}
+
+// Under `reads: everybody` the gate lets a person with no role call a basic
+// method without asking roster, and refuses a host's read but where roster
+// grants it, as any other call; under `granted` each is a grant, as before.
+func TestEverybodyCallsTheBasics(t *testing.T) {
+	ctx := context.Background()
+	tenant := pdid.New(DomTenant)
+	nobody, hosts := pdid.New(DomHolder), pdid.New(DomHolder)
+	ops := &fakeOperators{}
+	ops.grant(tenant, hosts, api.ProducerService_List_FullMethodName, "/shale.ReaderService/*")
+	call := func(actor pdid.Id, m string) gate.Call { return gate.Call{Actor: actor, Tenant: tenant, Action: m} }
+
+	everybody := TenantPolicy{Operators: ops}
+	for _, m := range BasicMethods() {
+		require.NoError(t, everybody.May(ctx, call(nobody, m)), m)
+	}
+	require.Zero(t, ops.asked, "a basic method asks roster nothing")
+	for _, m := range []string{api.ProducerService_List_FullMethodName, api.ProducerService_Get_FullMethodName, api.ReaderService_List_FullMethodName, api.ReaderService_Watch_FullMethodName} {
+		err := everybody.May(ctx, call(nobody, m))
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "%s with no role: %v", m, err)
+		require.Contains(t, status.Convert(err).Message(), "a role of Shale's at roster naming it")
+	}
+	require.NoError(t, everybody.May(ctx, call(hosts, api.ProducerService_List_FullMethodName)), "a role naming it")
+	require.NoError(t, everybody.May(ctx, call(hosts, api.ReaderService_Get_FullMethodName)), "a role naming it")
+	require.Equal(t, codes.PermissionDenied, status.Code(everybody.May(ctx, call(hosts, api.ProducerService_Get_FullMethodName))), "a role naming another")
+
+	granted := TenantPolicy{Operators: ops, Reads: true}
+	for _, m := range BasicMethods() {
+		require.Equal(t, codes.PermissionDenied, status.Code(granted.May(ctx, call(nobody, m))), m)
+	}
+	require.NoError(t, granted.May(ctx, call(hosts, api.ProducerService_List_FullMethodName)))
+	ops.grant(tenant, nobody, api.SetService_List_FullMethodName)
+	require.NoError(t, granted.May(ctx, call(nobody, api.SetService_List_FullMethodName)))
+	require.Equal(t, codes.PermissionDenied, status.Code(granted.May(ctx, call(nobody, api.SetService_Live_FullMethodName))))
 }
 
 // Without operators the tenant API is the rule before it: a person may do

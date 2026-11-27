@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"sync"
 
 	"github.com/lesomnus/z"
@@ -27,7 +28,83 @@ import (
 // roster grants all of Shale, and a row's all_sites is not read (Sites).
 // A row that is there already is refreshed where its names drifted, and
 // its all_sites left as it is. Rows are made no other way.
+//
+// Where everybody holds the basics, the person is then put in Shale's
+// group at roster (seen), whether their row was made now or was there.
 func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder, error) {
+	h, err := s.provision(ctx, p)
+	if err == nil {
+		s.seen(ctx, p.Tenant, p.Id)
+	}
+
+	return h, err
+}
+
+// seen is a person arriving by any road -- a sign-in by password or
+// through the issuer, the CLI's token, a key, a delegation, a session's
+// call, the plain header -- where everybody holds the basics (§33.1): put
+// in Shale's group at roster, remembered a while, and never in the way of
+// the call (identity.Basics). Without it, nothing.
+func (s *Server) seen(ctx context.Context, tenant, holder pdid.Id) {
+	if s.Basics != nil {
+		s.Basics.Seen(ctx, tenant, holder)
+	}
+}
+
+// basicsMade remembers on Shale's own row of a tenant, by the label
+// identity.BasicsLabel, that Shale made the basics there (§33.1): roster
+// cannot tell a role, a group or a binding it never had from one an
+// operator removed, and Shale does not make again what was removed.
+type basicsMade struct{ s *Server }
+
+func (m basicsMade) Made(ctx context.Context, tenant pdid.Id) (bool, error) {
+	t, err := m.s.Ungated.Tenant().Get(ctx, api.TenantGetRequest_builder{
+		Ref: api.TenantRef_builder{Id: tenant.Bytes()}.Build(), Select: api.TenantSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	switch {
+	case status.Code(err) == codes.NotFound:
+		return false, nil
+	case err != nil:
+		return false, err
+	}
+	_, ok := t.GetLabels()[identity.BasicsLabel]
+
+	return ok, nil
+}
+
+// SetMade writes the label, the tenant's row made first where there is
+// none yet (a tenant nobody of has signed in, kept at start), under the
+// version it read: another write of the row in between -- its stored
+// bytes, another process's label -- is read again.
+func (m basicsMade) SetMade(ctx context.Context, tenant pdid.Id, alias string) error {
+	if _, err := m.s.ProvisionTenant(ctx, alias); err != nil {
+		return err
+	}
+	own := m.s.Ungated
+	ref := api.TenantRef_builder{Id: tenant.Bytes()}.Build()
+	for range 5 {
+		t, err := own.Tenant().Get(ctx, api.TenantGetRequest_builder{Ref: ref, Select: api.TenantSelect_builder{All: z.Ptr(true)}.Build()}.Build())
+		if err != nil {
+			return err
+		}
+		if _, ok := t.GetLabels()[identity.BasicsLabel]; ok {
+			return nil
+		}
+		labels := maps.Clone(t.GetLabels())
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[identity.BasicsLabel] = "made"
+		_, err = own.Tenant().Patch(ctx, api.TenantPatchRequest_builder{Ref: ref, Labels: labels, DateUpdated: t.GetDateUpdated()}.Build())
+		if status.Code(err) != codes.FailedPrecondition {
+			return err
+		}
+	}
+
+	return fmt.Errorf("tenant @%s: its row kept changing while the label %s was written", alias, identity.BasicsLabel)
+}
+
+func (s *Server) provision(ctx context.Context, p identity.Person) (*api.Holder, error) {
 	s.provisionMu.Lock()
 	defer s.provisionMu.Unlock()
 	if err := s.provisionTenant(ctx, p.Tenant, p.TenantAlias, p.TenantName); err != nil {

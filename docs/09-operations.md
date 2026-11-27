@@ -648,3 +648,56 @@ shale set ls                     # a set with no site is seen by whoever is gran
 shale site-member add '{"tenant":{"alias":"acme"},"site":{"id":"<site>"},"holder":{"id":"<person>"}}'
 shale site patch <site> '{"visibility":"SITE_VISIBILITY_EVERYBODY","date_updated_force":true}'
 ```
+
+**Everybody holds the basics, at roster too, where `auth.operators` is
+set and its reads are everybody's** (the default,
+[§33.1](10-security.md#331-trust-model)). Two things change on the
+upgrade:
+
+- **Somebody who read hosts with no role no longer does.** What every
+  person calls with no role is now the basics -- the reads and views of
+  cameras and sites -- and the hosts' reads are not among them:
+  `Get`, `List` and `Watch` of `ProducerService` and `ReaderService`,
+  which the console's *Hosts* page reads, and *Cameras* for whether a
+  set's producer is up. They are refused `PERMISSION_DENIED`, and the two
+  pages say what it takes. Give whoever looks after the hosts a role of
+  Shale's naming them, bound to them or to a group of Shale's they are in:
+
+  ```sh
+  roster --as <operator> role add @acme/shale-hosts \
+    '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}, "methods": ["/shale.ProducerService/Get", "/shale.ProducerService/List", "/shale.ProducerService/Watch", "/shale.ReaderService/Get", "/shale.ReaderService/List", "/shale.ReaderService/Watch"]}'
+  roster --as <operator> binding add \
+    '{"role": {"slug": {"alias": "shale-hosts", "tenant": {"alias": "acme"}}}, "holder": {"slug": {"alias": "olive", "tenant": {"alias": "acme"}}}}'
+  ```
+
+  Whoever is granted all of Shale reads them as before. A producer's and a
+  reader's own calls are unchanged.
+- **Shale writes at roster**, as its own holder, in each tenant it serves:
+  the role `shale-basics` (Shale's, naming the eighteen methods of the
+  basics), the group `shale-people` (Shale's), the role bound to the
+  group in no site -- each made once, at start or when a tenant is first
+  served, and remembered on Shale's row of the tenant (`shale.basics`) --
+  and a place in `shale-people` for each person it sees, from their next
+  call. Each says in its `desc` that Shale made it. Nothing is asked of
+  roster's operator: it is what `roster app install --serves '/shale.*/*'`
+  lets an app write already. A roster that refuses (Shale installed
+  without `--serves`) is one line in the log, and a token then offers only
+  what roles an operator binds by hand.
+- **After that the three are the operator's.** Shale does not write the
+  role's methods again: `roster role widen` and `roster role narrow`
+  change them, and where they differ from the build's list Shale says so
+  once at start, naming the methods each way and the commands that would
+  bring the role to the list, and changes nothing. A later upgrade that
+  adds a method to the basics is said the same way and is the operator's
+  to widen. What an operator removes -- the role, the group, the binding --
+  is not made again, and said once at start. **Taking the basics away from
+  the group** without changing `reads` is removing the binding of
+  `shale-basics` to `shale-people` at roster (a token then offers only
+  roles bound by hand, and the gate still lets everybody call the basics);
+  **from everybody**, `auth.operators.reads: granted` as well, with which
+  Shale writes none of it, and says once at start what an earlier
+  `everybody` left there.
+
+```sh
+roster --as <operator> holder reaches @acme/vic '{"app": {"slug": {"alias": "shale", "tenant": {"alias": "acme"}}}}'   # the basics, once vic has called Shale
+```

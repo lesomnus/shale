@@ -32,10 +32,12 @@ type OperatorsConfig struct {
 	// everywhere or suspended there, and a key for Shale ended there,
 	// whether or not the rest is set.
 	Ttl time.Duration `yaml:"ttl"`
-	// Reads is who reads what the console's pages read: `everybody` of
-	// the tenant (the default), or `granted`, as far as a role at roster
-	// covers it like any other call -- so a person who should only view
-	// through an app (§33.8) is granted nothing here.
+	// Reads is who calls the basics, the reads and views of cameras and
+	// sites: `everybody` of the tenant (the default), who hold them at
+	// roster too, through Shale's group there (Basics); or `granted`, as
+	// far as a role at roster covers it like any other call -- so a person
+	// who should only view through an app (§33.8) is granted nothing here
+	// -- and Shale writes nothing at roster for it.
 	Reads string `yaml:"reads"`
 
 	// Team and Site named the team operators were, before a team stopped
