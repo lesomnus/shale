@@ -210,6 +210,10 @@ jobs:
           sudo chmod 1777 /mnt/shale-tmp
           export TMPDIR=/mnt/shale-tmp
           go test -count=1 -timeout 10m ./cli
+          # The core's own tests that have a PostgreSQL case (a row held for
+          # update, a set placed while it is allocated for): they skip
+          # without the variable, so this is the one place they run.
+          go test -count=1 -timeout 20m ./server/core
           go test -count=1 -timeout 60m ./internal/e2e
       - name: postgresql's log
         if: failure()
