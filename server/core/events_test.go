@@ -160,6 +160,42 @@ func testStoredBytesCountTheLaminaFile(t *testing.T, f *acceptFixture) {
 	f.applies(f.stored(id, again, "again", 150, false))
 	require.Equal(t, api.LaminaState_LAMINA_STATE_COMMITTED, f.get(id).GetState())
 	require.Equal(t, int64(1250), f.storedBytes())
+
+	// A lost lamina whose file the node still has, and proposes: approved,
+	// it is DELETING and counts as every DELETING lamina does, so that the
+	// deletion's confirmation takes its bytes away once and not a second
+	// time (lesomnus/shale#345).
+	id, at = f.lamina(time.Hour)
+	f.applies(f.stored(id, at, "found", 300, false))
+	require.Equal(t, int64(1550), f.storedBytes())
+	f.applies(f.missing("found"))
+	require.Equal(t, api.LaminaState_LAMINA_STATE_LOST, f.get(id).GetState())
+	require.Equal(t, int64(1250), f.storedBytes())
+	propose := func() {
+		t.Helper()
+		resp, err := f.core.Sink().ProposeGc(as(f.node), api.SinkProposeGcRequest_builder{
+			Ref:        api.SinkRef_builder{Id: f.sinkId.Bytes()}.Build(),
+			Reason:     api.GcReason_GC_REASON_SWEEP,
+			Candidates: []*api.GcCandidate{api.GcCandidate_builder{LaminaKey: "found", Size: 300}.Build()},
+		}.Build())
+		require.NoError(t, err)
+		require.Len(t, resp.GetDecisions(), 1)
+		require.True(t, resp.GetDecisions()[0].GetApproved(), "the proposal was not approved, so this proves nothing")
+	}
+	// Due for deletion, so that a sweep approves it.
+	_, err := f.sink.Lamina().Patch(t.Context(), api.LaminaPatchRequest_builder{
+		Ref: api.LaminaRef_builder{Id: id.Bytes()}.Build(), DateDeleted: timestamppb.New(f.now.Add(-time.Minute)), DateUpdatedForce: z.Ptr(true),
+	}.Build())
+	require.NoError(t, err)
+	propose()
+	require.Equal(t, api.LaminaState_LAMINA_STATE_DELETING, f.get(id).GetState())
+	require.Equal(t, int64(1550), f.storedBytes(), "its file is there after all, and counts until it is deleted")
+	propose()
+	require.Equal(t, int64(1550), f.storedBytes(), "proposed again, it is DELETING already and nothing moves")
+	f.applies(f.deleted(at, "found", 300))
+	f.applies(f.deleted(at, "found", 300))
+	require.Equal(t, api.LaminaState_LAMINA_STATE_DELETED, f.get(id).GetState())
+	require.Equal(t, int64(1250), f.storedBytes(), "taken away once")
 }
 
 // logged gives the fixture's core a log to read.
