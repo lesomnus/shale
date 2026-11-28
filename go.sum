@@ -120,12 +120,12 @@ github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155 h1:6+fiPhbQ3o6yA/LT8S
 github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155/go.mod h1:pELV84QKdWnj9caf3Gjo7Q05Y72nXIcwO7O6wLrSpd4=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155 h1:LNWU02jDM4qnDL0H0riFbxueEyipl+Ww7rHGw6FtXFc=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155/go.mod h1:4f44cLB2NM6g+O4Fr5PHDdHNuL91EfbUosAipbDXSwo=
-github.com/lesomnus/payday v0.0.0-20261127183626-099c03d0f0ba h1:1E9x8DsLW90/iyRa/5UZi5rEHts7g8rbTeUUnDny70M=
-github.com/lesomnus/payday v0.0.0-20261127183626-099c03d0f0ba/go.mod h1:wMEXfFdssYuy6ZuDSiwacUXew4IM50IM41Uv5V8ohEA=
+github.com/lesomnus/payday v0.0.0-20261128025659-b240d0cacfb6 h1:IVQB2yM1glpPbymE321HDwY1QbIDzOvqJRALeAQFuZU=
+github.com/lesomnus/payday v0.0.0-20261128025659-b240d0cacfb6/go.mod h1:pWq1YbcEG3UHNaxceAqv9j15YRIK2a/eMpKB6OxxWXA=
 github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da h1:qPsmOLxmKDgZHCggUNE4pv5Ay1TtO1Chn/OzN5JNKqQ=
 github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
-github.com/lesomnus/roster v0.1.2-0.20261127185118-20e830246287 h1:ML3a/brISi6ZmTFrFc5wvJiFQq1BMmekdCOMXHKPo+0=
-github.com/lesomnus/roster v0.1.2-0.20261127185118-20e830246287/go.mod h1:MuI0R9ZjP9yE8aXkW8afAPXTOrDhyAYXk25JwBwUmZs=
+github.com/lesomnus/roster v0.1.2-0.20261128031604-dd7c362def58 h1:jCWEazJjK5SU1tQ+8EBCTbea91rA64HndXLcB1UyqBU=
+github.com/lesomnus/roster v0.1.2-0.20261128031604-dd7c362def58/go.mod h1:bLCWOuIMJjH7dUVKM1TGTAVnzhHhyewxFWaE0GBvzhY=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e h1:S272MwPLsKMFJ7Xl75vVixiZ6QpN9tLuJXH4Q3GsKJk=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e/go.mod h1:OT2wkw6444ni+rf0+zlh9T8IQhOWy5x04ArBbqv3Lu0=
 github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c h1:C3QoREkgt4tivmakukKKPdfaVUZb5zy3gF+LOsMoybY=
@@ -195,8 +195,8 @@ github.com/protobuf-orm/protobuf-merge v0.0.0-20261125032619-9acf880182c7 h1:8L6
 github.com/protobuf-orm/protobuf-merge v0.0.0-20261125032619-9acf880182c7/go.mod h1:gxSIttLrIbNDMqEDXqWMvtKWiW1izopNkZhmIj0PZ6A=
 github.com/protobuf-orm/protobuf-orm v0.0.0-20261125011452-a062a5dd25fc h1:LAoozbacow/JnVvm4RS/RUHZUPE1oKpaOQb1s8nyC2g=
 github.com/protobuf-orm/protobuf-orm v0.0.0-20261125011452-a062a5dd25fc/go.mod h1:OYlbo4/9t+Hgj/XZwdgN8Z9MyViTLPHxBWLUR4+j52o=
-github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261127181046-80ed333182e8 h1:/i3CRQJ8av6mT+/+xVGz0NjthKyTlWfFuGPjdAJos0w=
-github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261127181046-80ed333182e8/go.mod h1:jfG40qXKAOousvgOa595MBc7hggU5+zTT5mu89bDw6M=
+github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261128022808-7cf4f3348db4 h1:5O+J2CPZ2NJ+yZvt259yQtAwDuvwthfiW2ROkmsZeA8=
+github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261128022808-7cf4f3348db4/go.mod h1:jfG40qXKAOousvgOa595MBc7hggU5+zTT5mu89bDw6M=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261125034236-6d3766bf5cdb h1:QvOUUIZDLyrmCA0XbJJWOJzB55BB+ws4ziTNrlHV1cU=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261125034236-6d3766bf5cdb/go.mod h1:9qiBCu1UYB0l5NVyU70mOjwqR0+JiM1EvO97iie01Pc=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261125034134-c681581d9964 h1:OhpLcE9DxKhwtx3WdhbccNUv7KRHQMDS+xtAKoil0sI=

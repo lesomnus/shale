@@ -185,23 +185,23 @@ func (st CameraWorkerServiceServer) create(ctx context.Context, req *api.CameraW
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateAdopted() {
-		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+		q.SetDateAdopted(written(req.GetDateAdopted().AsTime()))
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	if req.HasDateCertExpires() {
-		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+		q.SetDateCertExpires(written(req.GetDateCertExpires().AsTime()))
 	}
 	q.SetVersion(req.GetVersion())
 	q.SetApprovedKeyFingerprint(req.GetApprovedKeyFingerprint())
 	if req.HasDateCertIssued() {
-		q.SetDateCertIssued(req.GetDateCertIssued().AsTime())
+		q.SetDateCertIssued(written(req.GetDateCertIssued().AsTime()))
 	}
 	if req.HasCertificate() {
 		q.SetCertificate(req.GetCertificate())
@@ -532,6 +532,14 @@ func (s CameraWorkerServiceServer) apply(ctx context.Context, ref *api.CameraWor
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 17, 18, 21:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraWorkerPatchColumns, s.Db.Dialect())

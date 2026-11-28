@@ -140,19 +140,19 @@ func (st CertificateAuthorityServiceServer) create(ctx context.Context, req *api
 	q.SetState(int32(req.GetState()))
 	q.SetFingerprint(req.GetFingerprint())
 	if req.HasDateExpires() {
-		q.SetDateExpires(req.GetDateExpires().AsTime())
+		q.SetDateExpires(written(req.GetDateExpires().AsTime()))
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateActive() {
-		q.SetDateActive(req.GetDateActive().AsTime())
+		q.SetDateActive(written(req.GetDateActive().AsTime()))
 	}
 	if req.HasDateRetired() {
-		q.SetDateRetired(req.GetDateRetired().AsTime())
+		q.SetDateRetired(written(req.GetDateRetired().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -417,6 +417,14 @@ func (s CertificateAuthorityServiceServer) apply(ctx context.Context, ref *api.C
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 12, 13, 14, 15, 16, 17:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, certificateAuthorityPatchColumns, s.Db.Dialect())

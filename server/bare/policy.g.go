@@ -143,15 +143,15 @@ func (st SigningKeyServiceServer) create(ctx context.Context, req *api.SigningKe
 	q.SetState(int32(req.GetState()))
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateSigning() {
-		q.SetDateSigning(req.GetDateSigning().AsTime())
+		q.SetDateSigning(written(req.GetDateSigning().AsTime()))
 	}
 	if req.HasDateRetired() {
-		q.SetDateRetired(req.GetDateRetired().AsTime())
+		q.SetDateRetired(written(req.GetDateRetired().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -410,6 +410,14 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 17:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, signingKeyPatchColumns, s.Db.Dialect())
@@ -673,12 +681,12 @@ func (st PlacementPolicyServiceServer) create(ctx context.Context, req *api.Plac
 	q.SetActive(req.GetActive())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateActivated() {
-		q.SetDateActivated(req.GetDateActivated().AsTime())
+		q.SetDateActivated(written(req.GetDateActivated().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -934,6 +942,14 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, placementPolicyPatchColumns, s.Db.Dialect())
@@ -1199,12 +1215,12 @@ func (st UploadPolicyServiceServer) create(ctx context.Context, req *api.UploadP
 	q.SetActive(req.GetActive())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateActivated() {
-		q.SetDateActivated(req.GetDateActivated().AsTime())
+		q.SetDateActivated(written(req.GetDateActivated().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -1460,6 +1476,14 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, uploadPolicyPatchColumns, s.Db.Dialect())
@@ -1730,12 +1754,12 @@ func (st AddressPolicyServiceServer) create(ctx context.Context, req *api.Addres
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateActivated() {
-		q.SetDateActivated(req.GetDateActivated().AsTime())
+		q.SetDateActivated(written(req.GetDateActivated().AsTime()))
 	}
 	if req.HasDnsSync() {
 		q.SetDnsSync(req.GetDnsSync())
@@ -2000,6 +2024,14 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, addressPolicyPatchColumns, s.Db.Dialect())

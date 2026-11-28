@@ -253,36 +253,36 @@ func (st LaminaServiceServer) create(ctx context.Context, req *api.LaminaAddRequ
 	q.SetState(int32(req.GetState()))
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateStarted() {
-		q.SetDateStarted(req.GetDateStarted().AsTime())
+		q.SetDateStarted(written(req.GetDateStarted().AsTime()))
 	} else {
 		q.SetDateStarted(st.now())
 	}
 	if req.HasDateEnded() {
-		q.SetDateEnded(req.GetDateEnded().AsTime())
+		q.SetDateEnded(written(req.GetDateEnded().AsTime()))
 	}
 	q.SetEndedEstimated(req.GetEndedEstimated())
 	q.SetSize(req.GetSize())
 	q.SetIncomplete(req.GetIncomplete())
 	if req.HasDateExpired() {
-		q.SetDateExpired(req.GetDateExpired().AsTime())
+		q.SetDateExpired(written(req.GetDateExpired().AsTime()))
 	} else {
 		q.SetDateExpired(st.now())
 	}
 	if req.HasDateDeleted() {
-		q.SetDateDeleted(req.GetDateDeleted().AsTime())
+		q.SetDateDeleted(written(req.GetDateDeleted().AsTime()))
 	}
 	q.SetDatesSynced(req.GetDatesSynced())
 	q.SetPlacementVersion(req.GetPlacementVersion())
 	if req.HasDateCommitted() {
-		q.SetDateCommitted(req.GetDateCommitted().AsTime())
+		q.SetDateCommitted(written(req.GetDateCommitted().AsTime()))
 	}
 	if req.HasDateFinished() {
-		q.SetDateFinished(req.GetDateFinished().AsTime())
+		q.SetDateFinished(written(req.GetDateFinished().AsTime()))
 	}
 	if req.HasChecksum() {
 		q.SetChecksum(req.GetChecksum())
@@ -694,6 +694,14 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 15, 16, 17, 21, 22, 25, 26:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, laminaPatchColumns, s.Db.Dialect())
@@ -1111,17 +1119,17 @@ func (st AttemptServiceServer) create(ctx context.Context, req *api.AttemptAddRe
 	q.SetFailureReason(req.GetFailureReason())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateExpires() {
-		q.SetDateExpires(req.GetDateExpires().AsTime())
+		q.SetDateExpires(written(req.GetDateExpires().AsTime()))
 	} else {
 		q.SetDateExpires(st.now())
 	}
 	if req.HasDateFinished() {
-		q.SetDateFinished(req.GetDateFinished().AsTime())
+		q.SetDateFinished(written(req.GetDateFinished().AsTime()))
 	}
 	q.SetRank(req.GetRank())
 	return q, ds, nil
@@ -1441,6 +1449,14 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 15, 16, 17:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, attemptPatchColumns, s.Db.Dialect())

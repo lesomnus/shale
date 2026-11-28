@@ -220,12 +220,12 @@ func (st CameraCredentialServiceServer) create(ctx context.Context, req *api.Cam
 	q.SetCurrentVersion(req.GetCurrentVersion())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateRevoked() {
-		q.SetDateRevoked(req.GetDateRevoked().AsTime())
+		q.SetDateRevoked(written(req.GetDateRevoked().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -529,6 +529,14 @@ func (s CameraCredentialServiceServer) apply(ctx context.Context, ref *api.Camer
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraCredentialPatchColumns, s.Db.Dialect())
