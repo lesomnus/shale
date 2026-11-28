@@ -161,12 +161,12 @@ func (st DeviceServiceServer) create(ctx context.Context, req *api.DeviceAddRequ
 	q.SetFailureScore(req.GetFailureScore())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateScored() {
-		q.SetDateScored(req.GetDateScored().AsTime())
+		q.SetDateScored(written(req.GetDateScored().AsTime()))
 	}
 	if req.HasQuarantine() {
 		q.SetQuarantine(req.GetQuarantine())
@@ -180,7 +180,7 @@ func (st DeviceServiceServer) create(ctx context.Context, req *api.DeviceAddRequ
 		q.SetReport(req.GetReport())
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -482,6 +482,14 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 22:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, devicePatchColumns, s.Db.Dialect())
@@ -792,7 +800,7 @@ func (st SinkServiceServer) create(ctx context.Context, req *api.SinkAddRequest)
 	q.SetFree(req.GetFree())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -803,11 +811,11 @@ func (st SinkServiceServer) create(ctx context.Context, req *api.SinkAddRequest)
 	q.SetAttachment(int32(req.GetAttachment()))
 	q.SetAcceptWrites(req.GetAcceptWrites())
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	q.SetUploadsInFlight(req.GetUploadsInFlight())
 	if req.HasDateReconciled() {
-		q.SetDateReconciled(req.GetDateReconciled().AsTime())
+		q.SetDateReconciled(written(req.GetDateReconciled().AsTime()))
 	}
 	if req.HasReportedBy() {
 		if v, err := entuuid.FromBytes(req.GetReportedBy()); err != nil {
@@ -1145,6 +1153,14 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 20, 22:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, sinkPatchColumns, s.Db.Dialect())

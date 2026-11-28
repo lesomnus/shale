@@ -189,7 +189,7 @@ func (st SetServiceServer) create(ctx context.Context, req *api.SetAddRequest) (
 	q.SetAutoRaise(req.GetAutoRaise())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -488,6 +488,14 @@ func (s SetServiceServer) apply(ctx context.Context, ref *api.SetRef, doc *patch
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, setPatchColumns, s.Db.Dialect())
@@ -905,7 +913,7 @@ func (st SourceServiceServer) create(ctx context.Context, req *api.SourceAddRequ
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1226,6 +1234,14 @@ func (s SourceServiceServer) apply(ctx context.Context, ref *api.SourceRef, doc 
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, sourcePatchColumns, s.Db.Dialect())

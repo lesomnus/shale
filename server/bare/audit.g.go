@@ -149,7 +149,7 @@ func (st AuditServiceServer) create(ctx context.Context, req *api.AuditAddReques
 	}
 	q.SetPatch(req.GetPatch())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}

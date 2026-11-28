@@ -179,25 +179,25 @@ func (st DelegationServiceServer) create(ctx context.Context, req *api.Delegatio
 		q.SetSources(u)
 	}
 	if req.HasRecordingsFrom() {
-		q.SetRecordingsFrom(req.GetRecordingsFrom().AsTime())
+		q.SetRecordingsFrom(written(req.GetRecordingsFrom().AsTime()))
 	}
 	if req.HasRecordingsTo() {
-		q.SetRecordingsTo(req.GetRecordingsTo().AsTime())
+		q.SetRecordingsTo(written(req.GetRecordingsTo().AsTime()))
 	}
 	if req.HasDateEnds() {
-		q.SetDateEnds(req.GetDateEnds().AsTime())
+		q.SetDateEnds(written(req.GetDateEnds().AsTime()))
 	} else {
 		q.SetDateEnds(st.now())
 	}
 	if req.HasDateRevoked() {
-		q.SetDateRevoked(req.GetDateRevoked().AsTime())
+		q.SetDateRevoked(written(req.GetDateRevoked().AsTime()))
 	}
 	if req.HasDateUsed() {
-		q.SetDateUsed(req.GetDateUsed().AsTime())
+		q.SetDateUsed(written(req.GetDateUsed().AsTime()))
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -497,6 +497,14 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 19, 20, 21, 22, 23, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, delegationPatchColumns, s.Db.Dialect())

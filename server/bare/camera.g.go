@@ -198,7 +198,7 @@ func (st CameraNetworkServiceServer) create(ctx context.Context, req *api.Camera
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -492,6 +492,14 @@ func (s CameraNetworkServiceServer) apply(ctx context.Context, ref *api.CameraNe
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraNetworkPatchColumns, s.Db.Dialect())
@@ -848,7 +856,7 @@ func (st CameraDeviceServiceServer) create(ctx context.Context, req *api.CameraD
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1172,6 +1180,14 @@ func (s CameraDeviceServiceServer) apply(ctx context.Context, ref *api.CameraDev
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraDevicePatchColumns, s.Db.Dialect())
@@ -1561,7 +1577,7 @@ func (st CameraAssignmentServiceServer) create(ctx context.Context, req *api.Cam
 	q.SetCatalogRevision(req.GetCatalogRevision())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1904,6 +1920,14 @@ func (s CameraAssignmentServiceServer) apply(ctx context.Context, ref *api.Camer
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraAssignmentPatchColumns, s.Db.Dialect())
@@ -2303,7 +2327,7 @@ func (st CameraBindingServiceServer) create(ctx context.Context, req *api.Camera
 	q.SetAdmittedAssignmentGeneration(req.GetAdmittedAssignmentGeneration())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -2657,6 +2681,14 @@ func (s CameraBindingServiceServer) apply(ctx context.Context, ref *api.CameraBi
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraBindingPatchColumns, s.Db.Dialect())
@@ -3034,7 +3066,7 @@ func (st CameraJobServiceServer) create(ctx context.Context, req *api.CameraJobA
 		}
 	}
 	if req.HasLeaseExpires() {
-		q.SetLeaseExpires(req.GetLeaseExpires().AsTime())
+		q.SetLeaseExpires(written(req.GetLeaseExpires().AsTime()))
 	}
 	if req.HasInputs() {
 		q.SetInputs(req.GetInputs())
@@ -3044,7 +3076,7 @@ func (st CameraJobServiceServer) create(ctx context.Context, req *api.CameraJobA
 	}
 	q.SetPublishedRevision(req.GetPublishedRevision())
 	if req.HasDatePublished() {
-		q.SetDatePublished(req.GetDatePublished().AsTime())
+		q.SetDatePublished(written(req.GetDatePublished().AsTime()))
 	}
 	q.SetLastOperationKey(req.GetLastOperationKey())
 	if req.HasLastOperationHash() {
@@ -3055,7 +3087,7 @@ func (st CameraJobServiceServer) create(ctx context.Context, req *api.CameraJobA
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -3403,6 +3435,14 @@ func (s CameraJobServiceServer) apply(ctx context.Context, ref *api.CameraJobRef
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 19, 23, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, cameraJobPatchColumns, s.Db.Dialect())

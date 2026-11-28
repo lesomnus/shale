@@ -142,18 +142,18 @@ func (st NodeServiceServer) create(ctx context.Context, req *api.NodeAddRequest)
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateAdopted() {
-		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+		q.SetDateAdopted(written(req.GetDateAdopted().AsTime()))
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	if req.HasDateCertExpires() {
-		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+		q.SetDateCertExpires(written(req.GetDateCertExpires().AsTime()))
 	}
 	if u := req.GetInterfaces(); len(u) > 0 {
 		q.SetInterfaces(u)
@@ -170,7 +170,7 @@ func (st NodeServiceServer) create(ctx context.Context, req *api.NodeAddRequest)
 	}
 	q.SetFailureScore(req.GetFailureScore())
 	if req.HasDateScored() {
-		q.SetDateScored(req.GetDateScored().AsTime())
+		q.SetDateScored(written(req.GetDateScored().AsTime()))
 	}
 	return q, ds, nil
 }
@@ -465,6 +465,14 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 17, 18, 27:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, nodePatchColumns, s.Db.Dialect())
@@ -804,18 +812,18 @@ func (st RelayServiceServer) create(ctx context.Context, req *api.RelayAddReques
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateAdopted() {
-		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+		q.SetDateAdopted(written(req.GetDateAdopted().AsTime()))
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	if req.HasDateCertExpires() {
-		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+		q.SetDateCertExpires(written(req.GetDateCertExpires().AsTime()))
 	}
 	if u := req.GetInterfaces(); len(u) > 0 {
 		q.SetInterfaces(u)
@@ -1117,6 +1125,14 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 17, 18:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, relayPatchColumns, s.Db.Dialect())
@@ -1456,18 +1472,18 @@ func (st SatelliteServiceServer) create(ctx context.Context, req *api.SatelliteA
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateAdopted() {
-		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+		q.SetDateAdopted(written(req.GetDateAdopted().AsTime()))
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	if req.HasDateCertExpires() {
-		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+		q.SetDateCertExpires(written(req.GetDateCertExpires().AsTime()))
 	}
 	if u := req.GetInterfaces(); len(u) > 0 {
 		q.SetInterfaces(u)
@@ -1765,6 +1781,14 @@ func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 17, 18:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, satellitePatchColumns, s.Db.Dialect())
@@ -2200,7 +2224,7 @@ func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAdd
 	q.SetCertSerial(req.GetCertSerial())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -2208,13 +2232,13 @@ func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAdd
 		q.SetJoin(req.GetJoin())
 	}
 	if req.HasDateAdopted() {
-		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+		q.SetDateAdopted(written(req.GetDateAdopted().AsTime()))
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	if req.HasDateCertExpires() {
-		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+		q.SetDateCertExpires(written(req.GetDateCertExpires().AsTime()))
 	}
 	if req.HasRelay() {
 		if k, err := RelayGetKey(ctx, st.Db, req.GetRelay()); err != nil {
@@ -2631,6 +2655,14 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 17, 18, 19:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, producerPatchColumns, s.Db.Dialect())
@@ -3001,18 +3033,18 @@ func (st ReaderServiceServer) create(ctx context.Context, req *api.ReaderAddRequ
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
 	if req.HasDateAdopted() {
-		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+		q.SetDateAdopted(written(req.GetDateAdopted().AsTime()))
 	}
 	if req.HasDateSeen() {
-		q.SetDateSeen(req.GetDateSeen().AsTime())
+		q.SetDateSeen(written(req.GetDateSeen().AsTime()))
 	}
 	if req.HasDateCertExpires() {
-		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+		q.SetDateCertExpires(written(req.GetDateCertExpires().AsTime()))
 	}
 	q.SetVersion(req.GetVersion())
 	q.SetAllSites(req.GetAllSites())
@@ -3311,6 +3343,14 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 16, 17, 18:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, readerPatchColumns, s.Db.Dialect())
