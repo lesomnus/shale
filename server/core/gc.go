@@ -151,6 +151,18 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 					}.Build()); err != nil {
 						return err
 					}
+					// A LOST lamina's bytes were taken from its tenant when it
+					// was lost (§21.4). The node proposes its file, so the file
+					// is there after all: it counts again from here, as every
+					// DELETING lamina's does, until its deletion is confirmed,
+					// its file is confirmed absent or its device is declared
+					// dead -- each of which takes a DELETING lamina's bytes
+					// away, once. Without this they were taken a second time.
+					if c.obj.State == int32(api.LaminaState_LAMINA_STATE_LOST) {
+						if err := s.storedBytes(ctx, own, pdid.Id(c.obj.TenantId), c.obj.Size); err != nil {
+							return err
+						}
+					}
 				}
 			}
 			decisions = append(decisions, d.Build())

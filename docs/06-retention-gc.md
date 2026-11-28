@@ -218,7 +218,9 @@ stored bytes from commit and confirmed deletion events. A file counts while
 it is its lamina's: its size is added when its stored event wins, and taken
 away once when it stops being the lamina's (its deletion confirmed, the
 lamina lost, or a complete file stored in place of a truncated one). A
-duplicate's file never counts.
+duplicate's file never counts. A lost lamina whose file a node still has
+and proposes counts again from the approval of its deletion until that
+deletion is confirmed.
 
 When GC approves candidates, **expired laminae of tenants over their share go
 first**, then the rest by `date_expired`. Recording is never refused. A tenant
