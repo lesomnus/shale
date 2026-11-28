@@ -88,8 +88,9 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 	}
 	var out *api.CameraAssignment
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: api.CameraAssignmentRef_builder{Id: out.GetId()}.Build()}.Build())
@@ -293,8 +294,9 @@ func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignm
 	}
 	var out *api.CameraAssignment
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: api.CameraAssignmentRef_builder{Id: out.GetId()}.Build()}.Build())

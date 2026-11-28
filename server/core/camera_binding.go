@@ -58,8 +58,9 @@ func (s coreCameraBinding) bind(ctx context.Context, r *api.CameraBindingBindReq
 	}
 	var out *api.CameraBinding
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: out.GetId()}.Build()}.Build())
@@ -184,8 +185,9 @@ func (s coreCameraBinding) SetCollect(ctx context.Context, r *api.CameraBindingS
 	}
 	var out *api.CameraBinding
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: out.GetId()}.Build()}.Build())

@@ -167,7 +167,8 @@ type Deps struct {
 	// generated servers -- a set placed in a site -- is told to it the same
 	// way (Place). Nil records nothing, as a server built without one.
 	Recorder bare.Recorder
-	// Now is the clock.
+	// Now is the clock; the core reads it through now, which cuts what it
+	// says to what the database keeps.
 	Now func() time.Time
 	Log *slog.Logger
 	// M are the instruments; made from a bare context when nil.
@@ -270,12 +271,28 @@ func (d *Deps) allowReport(node, producer pdid.Id, now time.Time) bool {
 	return true
 }
 
+// now is the core's clock, in UTC and at the microsecond: what the
+// clock (Now, else the wall's) says, cut to what PostgreSQL's timestamptz
+// keeps and the generated store writes on every database. Everything the
+// core stamps, compares and answers from it is then one value, and it is
+// the value a read of the row gives again: an answer built from now
+// beside a row just written agrees with the row. It carries no monotonic
+// reading, so a span between two of its readings is the wall's.
 func (d *Deps) now() time.Time {
 	if d.Now != nil {
-		return d.Now()
+		return written(d.Now())
 	}
 
-	return time.Now()
+	return written(time.Now())
+}
+
+// written is a time the core writes past the generated store, or answers
+// as written, that comes from a request or an event rather than from now:
+// in UTC and cut to the microsecond, as the generated store cuts what it
+// is handed and the database keeps. It is also what a time from outside
+// is cut to before it is compared for equality with a stored one.
+func written(t time.Time) time.Time {
+	return t.UTC().Truncate(time.Microsecond)
 }
 
 // nodeDownAfter is §27's `node_down_after`, which says when a Storage
