@@ -108,8 +108,9 @@ func (s coreCameraJob) create(ctx context.Context, r *api.CameraJobCreateRequest
 	}
 	var out *api.CameraJob
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetId()}.Build()}.Build())
@@ -233,8 +234,9 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
 	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetId()}.Build()}.Build())
@@ -344,8 +346,9 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
 	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetId()}.Build()}.Build())

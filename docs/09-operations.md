@@ -819,3 +819,19 @@ credential, purpose and version, not to a site.
 The trail has one line, the set's, with who placed it and the site it was
 in and is in; the counts are in the answer and the log.
 
+
+### 32.5 Upgrading to times kept at the microsecond
+
+The control plane now writes and answers every time at the microsecond,
+in UTC: its own clock, what it writes past the generated rows, and the
+times it answers beside a row it has just written, such as an
+allocation's start and expiry. On SQLite it kept nanoseconds before, and
+an answer could carry digits no read gave again; PostgreSQL has always
+kept microseconds, so a deployment on PostgreSQL sees nothing change.
+
+**Nothing stored is rewritten, and nothing needs doing.** A row an
+earlier build wrote on SQLite keeps its nanoseconds and is read, compared
+and patched as it is: a version is compared as a read gave it, a page of
+the timeline goes on from the row it ended at, and no lamina, attempt or
+file is looked up by a time with digits a stored one has not, so none is
+missed, recorded twice or uploaded again.

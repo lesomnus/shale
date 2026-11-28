@@ -58,8 +58,9 @@ func (s coreCameraNetwork) Configure(ctx context.Context, r *api.CameraNetworkCo
 	}
 	var out *api.CameraNetwork
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: out.GetId()}.Build()}.Build())
@@ -156,8 +157,9 @@ func (s coreCameraDevice) Claim(ctx context.Context, r *api.CameraDeviceClaimReq
 	}
 	var out *api.CameraDevice
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: out.GetId()}.Build()}.Build())
@@ -204,8 +206,9 @@ func (s coreCameraDevice) Observe(ctx context.Context, r *api.CameraDeviceObserv
 	}
 	var out *api.CameraDevice
 	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
-		// Return the database's persisted timestamp precision (PostgreSQL uses
-		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		// Answered as a read gives the row. The generated store's Add and
+		// Patch answer what was written, at the microsecond the database
+		// keeps, so this read is no longer what makes the times agree.
 		defer func() {
 			if result == nil && out != nil {
 				out, result = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: out.GetId()}.Build()}.Build())

@@ -382,6 +382,10 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 
 	ttl := s.d.allocationTTL(link, prof)
 	expires := a.now.Add(ttl)
+	// The segment's start as the lamina's row keeps it, and as the answer
+	// gives it: the producer's own time, at the microsecond. The slot's
+	// lookup above is a range and takes it as it came.
+	kept := written(started)
 
 	var (
 		objId    pdid.Id
@@ -397,7 +401,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 				CaptureEpoch:   captureEpoch,
 				SourceId:       src.GetId(),
 				Ordinal:        src.GetOrdinal(),
-				DateStarted:    timestamppb.New(started),
+				DateStarted:    timestamppb.New(kept),
 				ProfileVersion: a.set.GetProfileVersion(),
 				DateExpires:    timestamppb.New(a.now),
 				Profile:        prof,
@@ -455,15 +459,15 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 				Set:              api.SetRef_builder{Id: a.set.GetId()}.Build(),
 				Source:           api.SourceRef_builder{Id: src.GetId()}.Build(),
 				State:            api.LaminaState_LAMINA_STATE_PENDING,
-				DateStarted:      timestamppb.New(started),
-				DateExpired:      timestamppb.New(started.Add(expire)),
+				DateStarted:      timestamppb.New(kept),
+				DateExpired:      timestamppb.New(kept.Add(expire)),
 				DatesSynced:      true,
 				PlacementVersion: a.placeV,
 				Epoch:            placement.Epoch(started.Unix(), int64(epoch.Seconds())),
 				CaptureEpoch:     z.Ptr(captureEpoch),
 			}
 			if !none {
-				add.DateDeleted = timestamppb.New(started.Add(del))
+				add.DateDeleted = timestamppb.New(kept.Add(del))
 			}
 			if _, err := next.Lamina().Add(ctx, add.Build()); err != nil {
 				return nil, err
@@ -577,7 +581,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		CaptureEpoch:   captureEpoch,
 		SourceId:       src.GetId(),
 		Ordinal:        src.GetOrdinal(),
-		DateStarted:    timestamppb.New(started),
+		DateStarted:    timestamppb.New(kept),
 		ProfileVersion: a.set.GetProfileVersion(),
 		Candidates:     cands,
 		DateExpires:    exp,
